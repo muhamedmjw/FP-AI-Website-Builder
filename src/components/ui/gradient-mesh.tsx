@@ -9,6 +9,7 @@ export default function GradientMesh({ soft = false }: GradientMeshProps) {
       <div className="mesh-orb mesh-orb-violet" />
       <div className="mesh-orb mesh-orb-emerald" />
       <div className="mesh-orb mesh-orb-indigo" />
+      <div className="mesh-orb mesh-orb-yellow" />
       <div className="mesh-vignette" />
     </div>
   );

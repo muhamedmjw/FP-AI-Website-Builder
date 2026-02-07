@@ -36,8 +36,7 @@
   position: absolute;
   border-radius: 9999px;
   filter: blur(74px) saturate(140%);
-  transform: translate3d(0, 0, 0);
-  will-change: transform, opacity;
+  will-change: opacity;
 }
 
 .mesh-orb-cyan {
@@ -46,7 +45,6 @@
   left: -8%;
   top: -10%;
   background: radial-gradient(circle at 35% 35%, rgba(92, 197, 255, 0.68), rgba(92, 197, 255, 0));
-  animation: meshFloatA 20s ease-in-out infinite alternate;
 }
 
 .mesh-orb-violet {
@@ -55,7 +53,6 @@
   right: -12%;
   top: 14%;
   background: radial-gradient(circle at 44% 45%, rgba(170, 92, 255, 0.64), rgba(170, 92, 255, 0));
-  animation: meshFloatB 24s ease-in-out infinite alternate;
 }
 
 .mesh-orb-emerald {
@@ -64,7 +61,6 @@
   left: 16%;
   bottom: -18%;
   background: radial-gradient(circle at 50% 40%, rgba(34, 227, 177, 0.62), rgba(34, 227, 177, 0));
-  animation: meshFloatC 26s ease-in-out infinite alternate;
 }
 
 .mesh-orb-indigo {
@@ -73,7 +69,14 @@
   right: 8%;
   bottom: -10%;
   background: radial-gradient(circle at 45% 42%, rgba(84, 109, 255, 0.54), rgba(84, 109, 255, 0));
-  animation: meshFloatD 22s ease-in-out infinite alternate;
+}
+
+.mesh-orb-yellow {
+  width: clamp(180px, 15vw, 250px);
+  height: clamp(180px, 15vw, 250px);
+  right: 32%;
+  top: 8%;
+  background: radial-gradient(circle at 45% 45%, rgba(255, 230, 0, 0.5), rgba(255, 214, 92, 0));
 }
 
 .mesh-vignette {
@@ -91,46 +94,4 @@
 
 .gradient-mesh-bold .mesh-orb {
   opacity: 1;
-}
-
-@keyframes meshFloatA {
-  0% {
-    transform: translate3d(0, 0, 0) scale(1);
-  }
-  100% {
-    transform: translate3d(48px, 30px, 0) scale(1.14);
-  }
-}
-
-@keyframes meshFloatB {
-  0% {
-    transform: translate3d(0, 0, 0) scale(1);
-  }
-  100% {
-    transform: translate3d(-42px, -30px, 0) scale(1.1);
-  }
-}
-
-@keyframes meshFloatC {
-  0% {
-    transform: translate3d(0, 0, 0) scale(1);
-  }
-  100% {
-    transform: translate3d(34px, -36px, 0) scale(1.12);
-  }
-}
-
-@keyframes meshFloatD {
-  0% {
-    transform: translate3d(0, 0, 0) scale(1);
-  }
-  100% {
-    transform: translate3d(-28px, 26px, 0) scale(1.08);
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .mesh-orb {
-    animation: none;
-  }
 }
