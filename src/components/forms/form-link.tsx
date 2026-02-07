@@ -1,0 +1,16 @@
+type FormLinkProps = {
+  question: string;
+  linkText: string;
+  href: string;
+};
+
+export default function FormLink({ question, linkText, href }: FormLinkProps) {
+  return (
+    <p className="text-sm text-slate-400">
+      {question}{" "}
+      <a className="text-slate-100 underline-offset-4 hover:underline" href={href}>
+        {linkText}
+      </a>
+    </p>
+  );
+}
