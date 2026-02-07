@@ -1,4 +1,5 @@
 import { ReactNode } from "react";
+import GradientMesh from "@/components/ui/gradient-mesh";
 
 type PageShellProps = {
   title: string;
@@ -8,8 +9,9 @@ type PageShellProps = {
 
 export default function PageShell({ title, subtitle, children }: PageShellProps) {
   return (
-    <main className="min-h-screen bg-slate-950 text-slate-100">
-      <div className="mx-auto flex min-h-screen w-full max-w-5xl items-center justify-center px-6 py-12">
+    <main className="relative min-h-screen overflow-hidden bg-slate-950 text-slate-100">
+      <GradientMesh />
+      <div className="relative z-10 mx-auto flex min-h-screen w-full max-w-5xl items-center justify-center px-6 py-12">
         <div className="grid w-full gap-10 lg:grid-cols-[1.1fr_0.9fr]">
           <section className="space-y-4">
             <p className="text-sm uppercase tracking-[0.3em] text-slate-400">AI Website Builder</p>

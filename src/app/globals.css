@@ -1,1 +1,136 @@
 @import "tailwindcss";
+
+.gradient-mesh {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+  isolation: isolate;
+  z-index: 0;
+}
+
+.gradient-mesh::before {
+  content: "";
+  position: absolute;
+  inset: -20%;
+  background:
+    radial-gradient(circle at 12% 14%, rgba(103, 186, 255, 0.3), transparent 50%),
+    radial-gradient(circle at 88% 24%, rgba(192, 108, 255, 0.28), transparent 48%),
+    radial-gradient(circle at 24% 86%, rgba(42, 231, 188, 0.26), transparent 46%),
+    linear-gradient(160deg, rgba(8, 17, 52, 0.9), rgba(2, 8, 30, 0.95));
+  opacity: 1;
+  transform: translateZ(0);
+}
+
+.gradient-mesh::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-image: radial-gradient(rgba(255, 255, 255, 0.028) 0.9px, transparent 1.1px);
+  background-size: 2px 2px;
+  opacity: 0.35;
+  mix-blend-mode: soft-light;
+}
+
+.mesh-orb {
+  position: absolute;
+  border-radius: 9999px;
+  filter: blur(74px) saturate(140%);
+  transform: translate3d(0, 0, 0);
+  will-change: transform, opacity;
+}
+
+.mesh-orb-cyan {
+  width: clamp(260px, 32vw, 520px);
+  height: clamp(260px, 32vw, 520px);
+  left: -8%;
+  top: -10%;
+  background: radial-gradient(circle at 35% 35%, rgba(92, 197, 255, 0.68), rgba(92, 197, 255, 0));
+  animation: meshFloatA 20s ease-in-out infinite alternate;
+}
+
+.mesh-orb-violet {
+  width: clamp(320px, 38vw, 620px);
+  height: clamp(320px, 38vw, 620px);
+  right: -12%;
+  top: 14%;
+  background: radial-gradient(circle at 44% 45%, rgba(170, 92, 255, 0.64), rgba(170, 92, 255, 0));
+  animation: meshFloatB 24s ease-in-out infinite alternate;
+}
+
+.mesh-orb-emerald {
+  width: clamp(280px, 34vw, 560px);
+  height: clamp(280px, 34vw, 560px);
+  left: 16%;
+  bottom: -18%;
+  background: radial-gradient(circle at 50% 40%, rgba(34, 227, 177, 0.62), rgba(34, 227, 177, 0));
+  animation: meshFloatC 26s ease-in-out infinite alternate;
+}
+
+.mesh-orb-indigo {
+  width: clamp(240px, 30vw, 460px);
+  height: clamp(240px, 30vw, 460px);
+  right: 8%;
+  bottom: -10%;
+  background: radial-gradient(circle at 45% 42%, rgba(84, 109, 255, 0.54), rgba(84, 109, 255, 0));
+  animation: meshFloatD 22s ease-in-out infinite alternate;
+}
+
+.mesh-vignette {
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(circle at 50% 40%, transparent 0%, rgba(1, 6, 22, 0.2) 56%, rgba(1, 6, 22, 0.6) 100%),
+    linear-gradient(to bottom, rgba(0, 0, 0, 0.1), rgba(1, 4, 16, 0.38));
+}
+
+.gradient-mesh-soft .mesh-orb {
+  opacity: 0.78;
+  filter: blur(82px) saturate(130%);
+}
+
+.gradient-mesh-bold .mesh-orb {
+  opacity: 1;
+}
+
+@keyframes meshFloatA {
+  0% {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+  100% {
+    transform: translate3d(48px, 30px, 0) scale(1.14);
+  }
+}
+
+@keyframes meshFloatB {
+  0% {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+  100% {
+    transform: translate3d(-42px, -30px, 0) scale(1.1);
+  }
+}
+
+@keyframes meshFloatC {
+  0% {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+  100% {
+    transform: translate3d(34px, -36px, 0) scale(1.12);
+  }
+}
+
+@keyframes meshFloatD {
+  0% {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+  100% {
+    transform: translate3d(-28px, 26px, 0) scale(1.08);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mesh-orb {
+    animation: none;
+  }
+}

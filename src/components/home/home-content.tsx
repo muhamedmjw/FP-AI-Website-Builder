@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { getSupabaseBrowserClient } from "@/lib/supabase/browser-client";
+import GradientMesh from "@/components/ui/gradient-mesh";
 
 type ViewState = "loading" | "guest" | "user";
 
@@ -29,8 +30,9 @@ export default function HomeContent() {
 
   if (viewState === "loading") {
     return (
-      <main className="min-h-screen bg-slate-950 text-slate-100">
-        <div className="mx-auto flex min-h-screen w-full max-w-3xl items-center px-6">
+      <main className="relative min-h-screen overflow-hidden bg-slate-950 text-slate-100">
+        <GradientMesh soft />
+        <div className="relative z-10 mx-auto flex min-h-screen w-full max-w-3xl items-center px-6">
           <p className="text-slate-300">Loading...</p>
         </div>
       </main>
@@ -45,8 +47,9 @@ export default function HomeContent() {
     }
 
     return (
-      <main className="min-h-screen bg-slate-950 text-slate-100">
-        <div className="mx-auto flex min-h-screen w-full max-w-5xl items-center px-6">
+      <main className="relative min-h-screen overflow-hidden bg-slate-950 text-slate-100">
+        <GradientMesh soft />
+        <div className="relative z-10 mx-auto flex min-h-screen w-full max-w-5xl items-center px-6">
           <div>
             <h1 className="text-3xl font-semibold text-white">Workspace</h1>
             <p className="mt-3 text-slate-300">This page is intentionally empty for now.</p>
@@ -64,8 +67,9 @@ export default function HomeContent() {
   }
 
   return (
-    <main className="min-h-screen bg-slate-950 text-slate-100">
-      <div className="mx-auto flex min-h-screen w-full max-w-3xl flex-col items-start justify-center gap-6 px-6">
+    <main className="relative min-h-screen overflow-hidden bg-slate-950 text-slate-100">
+      <GradientMesh />
+      <div className="relative z-10 mx-auto flex min-h-screen w-full max-w-3xl flex-col items-start justify-center gap-6 px-6">
         <p className="text-xs uppercase tracking-[0.3em] text-slate-500">AI Website Builder</p>
         <h1 className="text-4xl font-semibold text-white">Build full websites from a short prompt.</h1>
         <p className="text-base text-slate-300">
