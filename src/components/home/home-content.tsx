@@ -1,14 +1,15 @@
-"use client";
+"use client"; // [FRONTEND] This file is a client component, which means it will be rendered on the client side and can use React hooks and browser APIs.
 
 import { useEffect, useState } from "react";
-import { getSupabaseBrowserClient } from "@/lib/supabase/browser-client";
+import { getSupabaseBrowserClient } from "@/lib/supabase/browser-client"; // Import the function to get the Supabase client for browser usage
 import GradientMesh from "@/components/ui/gradient-mesh";
 
 type ViewState = "loading" | "guest" | "user";
 
 export default function HomeContent() {
-  const [viewState, setViewState] = useState<ViewState>("loading");
+  const [viewState, setViewState] = useState<ViewState>("loading"); // Initially set the view state to "loading" while we check the user's session
 
+  // Use useEffect to check the user's session when the component mounts and set up an auth state change listener
   useEffect(() => {
     const supabase = getSupabaseBrowserClient();
 
@@ -39,6 +40,7 @@ export default function HomeContent() {
     );
   }
 
+  // If the user is authenticated, show the workspace view with a sign-out button. Otherwise, show the landing page with sign-in and registration options.
   if (viewState === "user") {
     async function handleSignOut() {
       const supabase = getSupabaseBrowserClient();
