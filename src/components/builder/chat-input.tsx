@@ -36,7 +36,7 @@ export default function ChatInput({
   return (
     <form
       onSubmit={handleSubmit}
-      className="flex items-center gap-2 border-t border-slate-800 px-4 py-3"
+      className="flex items-center gap-2 border-t border-slate-800 px-4 py-3.5"
     >
       <input
         ref={inputRef}

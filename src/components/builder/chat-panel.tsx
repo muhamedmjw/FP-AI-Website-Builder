@@ -46,7 +46,7 @@ export default function ChatPanel({
       </div>
 
       {/* Message list */}
-      <div ref={scrollRef} className="flex-1 space-y-5 overflow-y-auto px-5 py-5">
+      <div ref={scrollRef} className="flex-1 space-y-8 overflow-y-auto px-14 py-6">
         {messages.length === 0 ? (
           <div className="flex h-full items-center justify-center">
             <p className="text-sm text-slate-500">
@@ -62,7 +62,7 @@ export default function ChatPanel({
         )}
 
         {isSending && (
-          <div className="flex items-start gap-3 pr-10">
+          <div className="flex items-start gap-3 pr-16">
             <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-violet-500/20 text-violet-400">
               <MessageSquare size={14} />
             </div>

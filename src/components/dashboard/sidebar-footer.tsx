@@ -17,11 +17,11 @@ export default function SidebarFooter() {
   }
 
   return (
-    <div className="border-t border-slate-800 px-4 py-4">
+    <div className="border-t border-slate-800 px-4 py-3.5">
       <button
         type="button"
         onClick={handleSignOut}
-        className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm text-slate-400 transition hover:bg-slate-800 hover:text-slate-200"
+        className="flex h-10 w-full items-center gap-2 rounded-lg px-3 text-sm text-slate-400 transition hover:bg-slate-800 hover:text-slate-200"
       >
         <LogOut size={15} />
         Sign out
