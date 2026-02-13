@@ -1,16 +1,24 @@
 import { Chat } from "@/lib/types/database";
+import ChatListItem from "@/components/dashboard/chat-list-item";
 
 /**
  * Displays the list of user's chat/projects in the sidebar.
- * Each item is a clickable card that navigates to the builder.
+ * Each item supports rename and delete via an actions menu.
  */
 
 type ChatListProps = {
   chats: Chat[];
   activeChatId?: string;
+  onRename: (chatId: string, newTitle: string) => Promise<void>;
+  onDelete: (chatId: string) => Promise<void>;
 };
 
-export default function ChatList({ chats, activeChatId }: ChatListProps) {
+export default function ChatList({
+  chats,
+  activeChatId,
+  onRename,
+  onDelete,
+}: ChatListProps) {
   if (chats.length === 0) {
     return (
       <div className="px-4 py-6 text-center">
@@ -24,26 +32,15 @@ export default function ChatList({ chats, activeChatId }: ChatListProps) {
 
   return (
     <nav className="space-y-1 px-3">
-      {chats.map((chat) => {
-        const isActive = chat.id === activeChatId;
-
-        return (
-          <a
-            key={chat.id}
-            href={`/builder/${chat.id}`}
-            className={`block rounded-lg px-3 py-2.5 text-sm transition ${
-              isActive
-                ? "bg-slate-800 text-white"
-                : "text-slate-300 hover:bg-slate-800/60 hover:text-slate-100"
-            }`}
-          >
-            <p className="truncate font-medium">{chat.title}</p>
-            <p className="mt-0.5 truncate text-xs text-slate-500">
-              {new Date(chat.updated_at).toLocaleDateString()}
-            </p>
-          </a>
-        );
-      })}
+      {chats.map((chat) => (
+        <ChatListItem
+          key={chat.id}
+          chat={chat}
+          isActive={chat.id === activeChatId}
+          onRename={onRename}
+          onDelete={onDelete}
+        />
+      ))}
     </nav>
   );
 }

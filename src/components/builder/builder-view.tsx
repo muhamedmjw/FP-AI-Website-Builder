@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useState } from "react";
+import { X, PanelRightOpen } from "lucide-react";
 import { HistoryMessage } from "@/lib/types/database";
 import ChatPanel from "@/components/builder/chat-panel";
 import PreviewPanel from "@/components/builder/preview-panel";
@@ -123,32 +124,42 @@ export default function BuilderView({
         />
       </div>
 
-      {/* Resize handle + collapse toggle */}
+      {/* Resize handle */}
       {previewOpen && (
         <ResizeHandle onResize={handleResize} onResizeEnd={handleResizeEnd} />
       )}
 
-      {/* Toggle button */}
-      <button
-        type="button"
-        onClick={() => setPreviewOpen((prev) => !prev)}
-        className="flex w-6 shrink-0 items-center justify-center border-l border-slate-800 bg-slate-900 text-slate-500 transition hover:bg-slate-800 hover:text-slate-300"
-        title={previewOpen ? "Hide preview" : "Show preview"}
-      >
-        <span className="text-xs">{previewOpen ? "›" : "‹"}</span>
-      </button>
-
       {/* Right: Preview panel — resizable */}
-      {previewOpen && (
+      {previewOpen ? (
         <div
-          className="shrink-0"
+          className="relative shrink-0"
           style={{
             width: previewWidth ?? "55%",
-            // Prevent iframe from capturing mouse events while resizing
             pointerEvents: isResizing ? "none" : "auto",
           }}
         >
+          {/* Close preview button */}
+          <button
+            type="button"
+            onClick={() => setPreviewOpen(false)}
+            className="absolute left-3 top-3 z-10 flex h-8 w-8 items-center justify-center rounded-lg bg-slate-800/80 text-slate-400 backdrop-blur-sm transition hover:bg-slate-700 hover:text-white"
+            title="Close preview"
+          >
+            <X size={16} />
+          </button>
           <PreviewPanel html={html} />
+        </div>
+      ) : (
+        /* Open preview button — shown when preview is collapsed */
+        <div className="flex shrink-0 items-center border-l border-slate-800 px-2">
+          <button
+            type="button"
+            onClick={() => setPreviewOpen(true)}
+            className="flex h-9 w-9 items-center justify-center rounded-lg text-slate-500 transition hover:bg-slate-800 hover:text-slate-300"
+            title="Open preview"
+          >
+            <PanelRightOpen size={18} />
+          </button>
         </div>
       )}
     </div>

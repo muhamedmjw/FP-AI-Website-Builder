@@ -1,6 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
+import { LogOut } from "lucide-react";
 import { getSupabaseBrowserClient } from "@/lib/supabase/browser-client";
 
 /**
@@ -20,8 +21,9 @@ export default function SidebarFooter() {
       <button
         type="button"
         onClick={handleSignOut}
-        className="w-full rounded-lg px-3 py-2 text-left text-sm text-slate-400 hover:bg-slate-800 hover:text-slate-200"
+        className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm text-slate-400 transition hover:bg-slate-800 hover:text-slate-200"
       >
+        <LogOut size={15} />
         Sign out
       </button>
     </div>

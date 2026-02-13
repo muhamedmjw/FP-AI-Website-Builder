@@ -1,6 +1,7 @@
 "use client";
 
 import { FormEvent, useRef } from "react";
+import { SendHorizontal } from "lucide-react";
 
 /**
  * Chat input bar — text input + send button at the bottom of the chat panel.
@@ -47,9 +48,10 @@ export default function ChatInput({
       <button
         type="submit"
         disabled={disabled}
-        className="rounded-lg bg-white px-4 py-2.5 text-sm font-semibold text-slate-900 transition hover:bg-slate-200 disabled:opacity-50"
+        className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-white text-slate-900 transition hover:bg-slate-200 disabled:opacity-50"
+        title="Send"
       >
-        Send
+        <SendHorizontal size={16} />
       </button>
     </form>
   );
