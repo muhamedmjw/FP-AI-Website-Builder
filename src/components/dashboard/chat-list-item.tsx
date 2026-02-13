@@ -120,10 +120,10 @@ export default function ChatListItem({
     <div className="group relative">
       <Link
         href={`/chat/${chat.id}`}
-        className={`block rounded-xl px-3.5 py-3 pr-9 text-base transition ui-fade-up ${
+        className={`ui-fade-up block rounded-xl px-3.5 py-3 pr-9 text-base ${
           isActive
             ? "bg-white/[0.08] text-white shadow-[0_8px_20px_rgba(0,0,0,0.25)]"
-            : "text-neutral-400 hover:bg-white/[0.04] hover:text-neutral-200"
+            : "text-neutral-370 hover:bg-white/[0.09] hover:text-neutral-100"
         }`}
       >
         <p className="truncate text-[15px] font-semibold">{chat.title}</p>
@@ -144,10 +144,10 @@ export default function ChatListItem({
         aria-haspopup="menu"
         aria-expanded={menuOpen}
         aria-controls={menuId}
-        className={`absolute right-2 top-1/2 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-xl text-neutral-500 transition hover:bg-white/10 hover:text-neutral-200 ${
+        className={`absolute right-2 top-1/2 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-xl text-neutral-500 transition-[opacity,background-color,color] duration-75 ease-out hover:bg-white/10 hover:text-neutral-200 ${
           menuOpen
-            ? "opacity-100"
-            : "opacity-0 group-hover:opacity-100 group-focus-within:opacity-100"
+            ? "pointer-events-auto opacity-100"
+            : "pointer-events-none opacity-0 group-hover:pointer-events-auto group-hover:opacity-100 group-focus-within:pointer-events-auto group-focus-within:opacity-100"
         }`}
         title="Actions"
       >
