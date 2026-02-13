@@ -1,6 +1,7 @@
 "use client";
 
 import { useRef, useEffect } from "react";
+import { MessageSquare } from "lucide-react";
 import { HistoryMessage } from "@/lib/types/database";
 import ChatBubble from "@/components/builder/chat-bubble";
 import ChatInput from "@/components/builder/chat-input";
@@ -11,12 +12,14 @@ import ChatInput from "@/components/builder/chat-input";
  */
 
 type ChatPanelProps = {
+  chatTitle?: string;
   messages: HistoryMessage[];
   onSend: (message: string) => void;
   isSending?: boolean;
 };
 
 export default function ChatPanel({
+  chatTitle = "Chat",
   messages,
   onSend,
   isSending = false,
@@ -32,8 +35,18 @@ export default function ChatPanel({
 
   return (
     <div className="flex h-full flex-col">
+      {/* Header with blur */}
+      <div className="sticky top-0 z-10 border-b border-slate-800/60 bg-slate-950/70 px-5 py-3 backdrop-blur-xl">
+        <div className="flex items-center gap-2">
+          <MessageSquare size={15} className="text-violet-400" />
+          <h2 className="truncate text-sm font-medium text-slate-300">
+            {chatTitle}
+          </h2>
+        </div>
+      </div>
+
       {/* Message list */}
-      <div ref={scrollRef} className="flex-1 space-y-4 overflow-y-auto p-4">
+      <div ref={scrollRef} className="flex-1 space-y-5 overflow-y-auto px-5 py-5">
         {messages.length === 0 ? (
           <div className="flex h-full items-center justify-center">
             <p className="text-sm text-slate-500">
@@ -49,8 +62,11 @@ export default function ChatPanel({
         )}
 
         {isSending && (
-          <div className="flex justify-start">
-            <div className="rounded-2xl bg-slate-800 px-4 py-3 text-sm text-slate-400">
+          <div className="flex items-start gap-3 pr-10">
+            <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-violet-500/20 text-violet-400">
+              <MessageSquare size={14} />
+            </div>
+            <div className="rounded-2xl bg-slate-800/80 px-4 py-3 text-sm text-slate-400">
               Generating...
             </div>
           </div>

@@ -19,7 +19,7 @@ export default async function BuilderPage({ params }: BuilderPageProps) {
   // Verify the chat exists and belongs to the user (RLS handles this)
   const { data: chat, error } = await supabase
     .from("chats")
-    .select("id")
+    .select("id, title")
     .eq("id", chatId)
     .single();
 
@@ -36,6 +36,7 @@ export default async function BuilderPage({ params }: BuilderPageProps) {
   return (
     <BuilderView
       chatId={chatId}
+      chatTitle={chat.title ?? "Untitled"}
       initialMessages={messages}
       initialHtml={html}
     />

@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Chat } from "@/lib/types/database";
 import { getSupabaseBrowserClient } from "@/lib/supabase/browser-client";
-import { createChat, renameChat, deleteChat } from "@/lib/services/chat-service";
+import { renameChat, deleteChat } from "@/lib/services/chat-service";
 import SidebarHeader from "@/components/dashboard/sidebar-header";
 import SidebarFooter from "@/components/dashboard/sidebar-footer";
 import NewChatButton from "@/components/dashboard/new-chat-button";
@@ -13,7 +13,6 @@ import ChatList from "@/components/dashboard/chat-list";
 type SidebarProps = {
   chats: Chat[];
   userName: string | null;
-  userId: string;
   activeChatId?: string;
 };
 
@@ -24,28 +23,10 @@ type SidebarProps = {
 export default function Sidebar({
   chats: initialChats,
   userName,
-  userId,
   activeChatId,
 }: SidebarProps) {
   const router = useRouter();
   const [chats, setChats] = useState<Chat[]>(initialChats);
-  const [isCreating, setIsCreating] = useState(false);
-
-  async function handleNewChat() {
-    setIsCreating(true);
-
-    try {
-      const supabase = getSupabaseBrowserClient();
-      const newChat = await createChat(supabase, userId);
-
-      setChats((prev) => [newChat, ...prev]);
-      router.push(`/builder/${newChat.id}`);
-    } catch (error) {
-      console.error("Failed to create chat:", error);
-    } finally {
-      setIsCreating(false);
-    }
-  }
 
   async function handleRename(chatId: string, newTitle: string) {
     try {
@@ -82,7 +63,7 @@ export default function Sidebar({
       <SidebarHeader userName={userName} />
 
       {/* New website button */}
-      <NewChatButton onClick={handleNewChat} disabled={isCreating} />
+      <NewChatButton />
 
       {/* Scrollable chat list */}
       <div className="flex-1 overflow-y-auto">

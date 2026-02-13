@@ -39,7 +39,6 @@ export default async function DashboardLayout({
       <Sidebar
         chats={chats}
         userName={profile?.name ?? null}
-        userId={user.id}
       />
       <main className="flex-1 overflow-y-auto">{children}</main>
     </div>

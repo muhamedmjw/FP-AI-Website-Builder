@@ -15,6 +15,7 @@ import ResizeHandle from "@/components/builder/resize-handle";
 
 type BuilderViewProps = {
   chatId: string;
+  chatTitle?: string;
   initialMessages: HistoryMessage[];
   initialHtml: string | null;
 };
@@ -26,6 +27,7 @@ const DEFAULT_PREVIEW_FRACTION = 0.55;
 
 export default function BuilderView({
   chatId,
+  chatTitle = "Untitled",
   initialMessages,
   initialHtml,
 }: BuilderViewProps) {
@@ -35,7 +37,7 @@ export default function BuilderView({
   const [isSending, setIsSending] = useState(false);
 
   // Preview panel state
-  const [previewOpen, setPreviewOpen] = useState(true);
+  const [previewOpen, setPreviewOpen] = useState(false);
   const [previewWidth, setPreviewWidth] = useState<number | null>(null);
   const [isResizing, setIsResizing] = useState(false);
 
@@ -118,6 +120,7 @@ export default function BuilderView({
       {/* Left: Chat panel — takes remaining space */}
       <div className="flex min-w-0 flex-1 flex-col border-r border-slate-800">
         <ChatPanel
+          chatTitle={chatTitle}
           messages={messages}
           onSend={handleSend}
           isSending={isSending}
@@ -142,7 +145,7 @@ export default function BuilderView({
           <button
             type="button"
             onClick={() => setPreviewOpen(false)}
-            className="absolute left-3 top-3 z-10 flex h-8 w-8 items-center justify-center rounded-lg bg-slate-800/80 text-slate-400 backdrop-blur-sm transition hover:bg-slate-700 hover:text-white"
+            className="absolute right-3 top-3 z-10 flex h-8 w-8 items-center justify-center rounded-lg bg-slate-800/80 text-slate-400 backdrop-blur-sm transition hover:bg-slate-700 hover:text-white"
             title="Close preview"
           >
             <X size={16} />
