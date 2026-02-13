@@ -8,7 +8,7 @@ import { NextResponse, type NextRequest } from "next/server";
  * 3. Redirects authenticated users away from login/register pages.
  */
 export async function middleware(request: NextRequest) {
-  let supabaseResponse = NextResponse.next({ request });
+  const supabaseResponse = NextResponse.next({ request });
 
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
