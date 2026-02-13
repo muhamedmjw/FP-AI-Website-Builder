@@ -6,9 +6,9 @@ type FormLinkProps = {
 
 export default function FormLink({ question, linkText, href }: FormLinkProps) {
   return (
-    <p className="text-sm text-slate-400">
+    <p className="text-sm text-neutral-500">
       {question}{" "}
-      <a className="text-slate-100 underline-offset-4 hover:underline" href={href}>
+      <a className="prismatic-text font-medium underline-offset-4 hover:underline" href={href}>
         {linkText}
       </a>
     </p>

@@ -95,7 +95,7 @@ export default function ChatListItem({
   // Editing mode - show inline input
   if (isEditing) {
     return (
-      <div className="rounded-xl bg-white/[0.06] px-3 py-3 shadow-[0_10px_24px_rgba(2,6,23,0.28)]">
+      <div className="rounded-xl bg-white/[0.06] px-3 py-3 shadow-[0_10px_24px_rgba(0,0,0,0.3)]">
         <input
           ref={inputRef}
           type="text"
@@ -109,7 +109,7 @@ export default function ChatListItem({
               setIsEditing(false);
             }
           }}
-          className="w-full rounded-lg bg-[#121726] px-3 py-2 text-base text-slate-100 focus:outline-none"
+          className="w-full rounded-lg bg-[#0e0e0e] px-3 py-2 text-base text-neutral-100 focus:outline-none"
         />
       </div>
     );
@@ -122,12 +122,12 @@ export default function ChatListItem({
         href={`/builder/${chat.id}`}
         className={`block rounded-xl px-3.5 py-3 pr-9 text-base transition ui-fade-up ${
           isActive
-            ? "bg-sky-300/10 text-white shadow-[0_8px_20px_rgba(14,116,144,0.18)]"
-            : "text-slate-300 hover:bg-white/[0.04] hover:text-slate-100"
+            ? "bg-white/[0.08] text-white shadow-[0_8px_20px_rgba(0,0,0,0.25)]"
+            : "text-neutral-400 hover:bg-white/[0.04] hover:text-neutral-200"
         }`}
       >
         <p className="truncate text-[15px] font-semibold">{chat.title}</p>
-        <p className="mt-0.5 truncate text-xs uppercase tracking-[0.08em] text-slate-500">
+        <p className="mt-0.5 truncate text-xs uppercase tracking-[0.08em] text-neutral-600">
           {new Date(chat.updated_at).toLocaleDateString()}
         </p>
       </Link>
@@ -144,7 +144,7 @@ export default function ChatListItem({
         aria-haspopup="menu"
         aria-expanded={menuOpen}
         aria-controls={menuId}
-        className={`absolute right-2 top-1/2 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-lg text-slate-500 transition hover:bg-white/10 hover:text-slate-200 ${
+        className={`absolute right-2 top-1/2 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-xl text-neutral-500 transition hover:bg-white/10 hover:text-neutral-200 ${
           menuOpen
             ? "opacity-100"
             : "opacity-0 group-hover:opacity-100 group-focus-within:opacity-100"
@@ -160,7 +160,7 @@ export default function ChatListItem({
           id={menuId}
           ref={menuRef}
           role="menu"
-          className="absolute right-0 top-full z-50 mt-1.5 w-40 rounded-xl bg-[#151922] py-1 shadow-2xl"
+          className="absolute right-0 top-full z-50 mt-1.5 w-40 rounded-xl bg-[#181818] py-1 shadow-2xl"
         >
           <button
             type="button"
@@ -170,7 +170,7 @@ export default function ChatListItem({
               setIsEditing(true);
             }}
             role="menuitem"
-            className="flex w-full items-center gap-2 px-3 py-2.5 text-left text-sm text-slate-300 transition hover:bg-white/10 hover:text-white"
+            className="flex w-full items-center gap-2 px-3 py-2.5 text-left text-sm text-neutral-300 transition hover:bg-white/10 hover:text-white"
           >
             <Pencil size={13} />
             Rename

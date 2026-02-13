@@ -1,35 +1,43 @@
 @import "tailwindcss";
 
 :root {
-  --app-bg: #020617;
-  --app-bg-soft: #0b1120;
-  --app-panel: #0b1325;
-  --app-panel-soft: #121b31;
-  --app-border: rgba(255, 255, 255, 0.08);
+  --app-bg: #0a0a0a;
+  --app-bg-soft: #111111;
+  --app-panel: #121212;
+  --app-panel-soft: #1a1a1a;
+  --app-border: rgba(255, 255, 255, 0.07);
+
+  /* Prismatic palette */
+  --prism-1: #a78bfa;
+  --prism-2: #6ee7b7;
+  --prism-3: #f9a8d4;
+  --prism-4: #67e8f9;
+  --prism-5: #fcd34d;
+  --prism-6: #c4b5fd;
 }
 
 body {
   font-family: var(--font-ui), "Segoe UI", sans-serif;
-  color: #e5e7eb;
+  color: #d4d4d4;
   background:
-    radial-gradient(900px 500px at 12% 10%, rgba(103, 186, 255, 0.18), transparent 54%),
-    radial-gradient(760px 460px at 90% 14%, rgba(192, 108, 255, 0.16), transparent 56%),
-    radial-gradient(900px 520px at 30% 100%, rgba(42, 231, 188, 0.1), transparent 58%),
-    linear-gradient(170deg, #081126, #020617 70%);
+    radial-gradient(900px 500px at 12% 10%, rgba(167, 139, 250, 0.07), transparent 54%),
+    radial-gradient(760px 460px at 90% 14%, rgba(249, 168, 212, 0.06), transparent 56%),
+    radial-gradient(900px 520px at 30% 100%, rgba(110, 231, 183, 0.05), transparent 58%),
+    linear-gradient(170deg, #111111, #0a0a0a 70%);
 }
 
 * {
   scrollbar-width: thin;
-  scrollbar-color: rgba(148, 163, 184, 0.34) transparent;
+  scrollbar-color: rgba(255, 255, 255, 0.15) transparent;
 }
 
 *::-webkit-scrollbar {
-  width: 10px;
-  height: 10px;
+  width: 8px;
+  height: 8px;
 }
 
 *::-webkit-scrollbar-thumb {
-  background: rgba(148, 163, 184, 0.3);
+  background: rgba(255, 255, 255, 0.12);
   border-radius: 999px;
   border: 2px solid transparent;
   background-clip: content-box;
@@ -40,44 +48,158 @@ body {
 }
 
 .ui-fade-up {
-  animation: ui-fade-up 260ms ease-out;
+  animation: ui-fade-up 280ms cubic-bezier(0.22, 1, 0.36, 1);
 }
 
-/* Soft rainbow halo for interactive buttons */
+/* ─── Prismatic / Iridescent text ─── */
+.prismatic-text {
+  background: linear-gradient(
+    135deg,
+    var(--prism-4) 0%,
+    var(--prism-1) 25%,
+    var(--prism-3) 50%,
+    var(--prism-2) 75%,
+    var(--prism-4) 100%
+  );
+  background-size: 200% 200%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: prismatic-shift 6s ease-in-out infinite;
+}
+
+/* ─── Prismatic icon glow ─── */
+.prismatic-icon {
+  filter: drop-shadow(0 0 3px rgba(167, 139, 250, 0.4));
+  color: var(--prism-4);
+  animation: prismatic-icon-shift 6s ease-in-out infinite;
+}
+
+@keyframes prismatic-shift {
+  0%, 100% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+}
+
+@keyframes prismatic-icon-shift {
+  0%, 100% { color: var(--prism-4); filter: drop-shadow(0 0 4px rgba(103, 232, 249, 0.5)); }
+  25% { color: var(--prism-1); filter: drop-shadow(0 0 4px rgba(167, 139, 250, 0.5)); }
+  50% { color: var(--prism-3); filter: drop-shadow(0 0 4px rgba(249, 168, 212, 0.5)); }
+  75% { color: var(--prism-2); filter: drop-shadow(0 0 4px rgba(110, 231, 183, 0.5)); }
+}
+
+/* ─── Prismatic border glow for buttons on hover ─── */
 .rainbow-hover {
   position: relative;
   z-index: 0;
-  transition: transform 180ms ease, box-shadow 220ms ease;
+  transition: transform 200ms cubic-bezier(0.22, 1, 0.36, 1), box-shadow 250ms ease;
 }
 
 .rainbow-hover::after {
   content: "";
   position: absolute;
-  inset: -2px;
+  inset: -3px;
   border-radius: inherit;
   z-index: -1;
-  opacity: 0;
-  filter: blur(10px) saturate(130%);
-  transition: opacity 220ms ease;
+  opacity: 0.25;
+  filter: blur(16px) saturate(200%) brightness(1.15);
+  transition: opacity 300ms ease, filter 300ms ease, inset 300ms ease;
   background: conic-gradient(
-    from 120deg,
-    rgba(103, 186, 255, 0.68),
-    rgba(192, 108, 255, 0.68),
-    rgba(42, 231, 188, 0.62),
-    rgba(255, 214, 92, 0.55),
-    rgba(103, 186, 255, 0.68)
+    from 140deg,
+    var(--prism-4),
+    var(--prism-1),
+    var(--prism-3),
+    var(--prism-2),
+    var(--prism-5),
+    var(--prism-4)
   );
+  animation: prismatic-rotate 3.5s linear infinite;
+}
+
+@keyframes prismatic-rotate {
+  to { filter: blur(16px) saturate(200%) brightness(1.15) hue-rotate(360deg); }
 }
 
 .rainbow-hover:hover::after,
 .rainbow-hover:focus-visible::after {
-  opacity: 0.95;
+  opacity: 1;
+  inset: -5px;
+  filter: blur(20px) saturate(220%) brightness(1.3);
 }
 
 .rainbow-hover:hover,
 .rainbow-hover:focus-visible {
-  transform: translateY(-1px);
-  box-shadow: 0 10px 28px rgba(6, 12, 32, 0.45);
+  transform: translateY(-2px);
+  box-shadow:
+    0 10px 30px rgba(0, 0, 0, 0.5),
+    0 0 20px rgba(167, 139, 250, 0.15),
+    0 0 40px rgba(103, 232, 249, 0.08);
+}
+
+/* ─── Prismatic border (always visible, subtle) ─── */
+.prismatic-border {
+  position: relative;
+  z-index: 0;
+}
+
+.prismatic-border::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1px;
+  background: conic-gradient(
+    from 140deg,
+    rgba(103, 232, 249, 0.25),
+    rgba(167, 139, 250, 0.25),
+    rgba(249, 168, 212, 0.25),
+    rgba(110, 231, 183, 0.25),
+    rgba(103, 232, 249, 0.25)
+  );
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  pointer-events: none;
+  animation: prismatic-shift 6s ease-in-out infinite;
+}
+
+/* ─── Prismatic border (only on hover) ─── */
+.prismatic-border-hover {
+  position: relative;
+  z-index: 0;
+  transition: border-color 250ms ease;
+}
+
+.prismatic-border-hover::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1px;
+  background: conic-gradient(
+    from 140deg,
+    rgba(103, 232, 249, 0.5),
+    rgba(167, 139, 250, 0.5),
+    rgba(249, 168, 212, 0.5),
+    rgba(110, 231, 183, 0.5),
+    rgba(103, 232, 249, 0.5)
+  );
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 250ms ease;
+  animation: prismatic-shift 6s ease-in-out infinite;
+}
+
+.prismatic-border-hover:hover::before,
+.prismatic-border-hover:focus-visible::before {
+  opacity: 1;
+}
+
+.prismatic-border-hover:hover,
+.prismatic-border-hover:focus-visible {
+  border-color: transparent;
 }
 
 @keyframes ui-fade-up {
@@ -91,6 +213,7 @@ body {
   }
 }
 
+/* ─── Gradient mesh background ─── */
 .gradient-mesh {
   position: absolute;
   inset: 0;
@@ -105,10 +228,10 @@ body {
   position: absolute;
   inset: -20%;
   background:
-    radial-gradient(circle at 12% 14%, rgba(103, 186, 255, 0.3), transparent 50%),
-    radial-gradient(circle at 88% 24%, rgba(192, 108, 255, 0.28), transparent 48%),
-    radial-gradient(circle at 24% 86%, rgba(42, 231, 188, 0.26), transparent 46%),
-    linear-gradient(160deg, rgba(8, 17, 52, 0.9), rgba(2, 8, 30, 0.95));
+    radial-gradient(circle at 12% 14%, rgba(167, 139, 250, 0.12), transparent 50%),
+    radial-gradient(circle at 88% 24%, rgba(249, 168, 212, 0.10), transparent 48%),
+    radial-gradient(circle at 24% 86%, rgba(110, 231, 183, 0.10), transparent 46%),
+    linear-gradient(160deg, rgba(18, 18, 18, 0.95), rgba(10, 10, 10, 0.98));
   opacity: 1;
   transform: translateZ(0);
 }
@@ -117,16 +240,16 @@ body {
   content: "";
   position: absolute;
   inset: 0;
-  background-image: radial-gradient(rgba(255, 255, 255, 0.028) 0.9px, transparent 1.1px);
+  background-image: radial-gradient(rgba(255, 255, 255, 0.03) 0.9px, transparent 1.1px);
   background-size: 2px 2px;
-  opacity: 0.35;
+  opacity: 0.3;
   mix-blend-mode: soft-light;
 }
 
 .mesh-orb {
   position: absolute;
   border-radius: 9999px;
-  filter: blur(74px) saturate(140%);
+  filter: blur(80px) saturate(120%);
   will-change: opacity;
 }
 
@@ -135,7 +258,7 @@ body {
   height: clamp(260px, 32vw, 520px);
   left: -8%;
   top: -10%;
-  background: radial-gradient(circle at 35% 35%, rgba(92, 197, 255, 0.68), rgba(92, 197, 255, 0));
+  background: radial-gradient(circle at 35% 35%, rgba(103, 232, 249, 0.35), rgba(103, 232, 249, 0));
 }
 
 .mesh-orb-violet {
@@ -143,7 +266,7 @@ body {
   height: clamp(320px, 38vw, 620px);
   right: -12%;
   top: 14%;
-  background: radial-gradient(circle at 44% 45%, rgba(170, 92, 255, 0.64), rgba(170, 92, 255, 0));
+  background: radial-gradient(circle at 44% 45%, rgba(167, 139, 250, 0.30), rgba(167, 139, 250, 0));
 }
 
 .mesh-orb-emerald {
@@ -151,7 +274,7 @@ body {
   height: clamp(280px, 34vw, 560px);
   left: 16%;
   bottom: -18%;
-  background: radial-gradient(circle at 50% 40%, rgba(34, 227, 177, 0.62), rgba(34, 227, 177, 0));
+  background: radial-gradient(circle at 50% 40%, rgba(110, 231, 183, 0.28), rgba(110, 231, 183, 0));
 }
 
 .mesh-orb-indigo {
@@ -159,7 +282,7 @@ body {
   height: clamp(240px, 30vw, 460px);
   right: 8%;
   bottom: -10%;
-  background: radial-gradient(circle at 45% 42%, rgba(84, 109, 255, 0.54), rgba(84, 109, 255, 0));
+  background: radial-gradient(circle at 45% 42%, rgba(249, 168, 212, 0.24), rgba(249, 168, 212, 0));
 }
 
 .mesh-orb-yellow {
@@ -167,20 +290,20 @@ body {
   height: clamp(180px, 15vw, 250px);
   right: 32%;
   top: 8%;
-  background: radial-gradient(circle at 45% 45%, rgba(255, 230, 0, 0.5), rgba(255, 214, 92, 0));
+  background: radial-gradient(circle at 45% 45%, rgba(252, 211, 77, 0.25), rgba(252, 211, 77, 0));
 }
 
 .mesh-vignette {
   position: absolute;
   inset: 0;
   background:
-    radial-gradient(circle at 50% 40%, transparent 0%, rgba(1, 6, 22, 0.2) 56%, rgba(1, 6, 22, 0.6) 100%),
-    linear-gradient(to bottom, rgba(0, 0, 0, 0.1), rgba(1, 4, 16, 0.38));
+    radial-gradient(circle at 50% 40%, transparent 0%, rgba(10, 10, 10, 0.25) 56%, rgba(10, 10, 10, 0.65) 100%),
+    linear-gradient(to bottom, rgba(0, 0, 0, 0.08), rgba(10, 10, 10, 0.4));
 }
 
 .gradient-mesh-soft .mesh-orb {
-  opacity: 0.78;
-  filter: blur(82px) saturate(130%);
+  opacity: 0.65;
+  filter: blur(90px) saturate(110%);
 }
 
 .gradient-mesh-bold .mesh-orb {

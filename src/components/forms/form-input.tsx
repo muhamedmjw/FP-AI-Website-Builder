@@ -12,10 +12,10 @@ export default function FormInput({
   placeholder,
 }: FormInputProps) {
   return (
-    <label className="grid gap-2 text-sm text-slate-300">
-      <span className="font-medium text-slate-200">{label}</span>
+    <label className="grid gap-2 text-sm text-neutral-400">
+      <span className="font-medium text-neutral-300">{label}</span>
       <input
-        className="h-11 rounded-xl border border-slate-800 bg-slate-950 px-4 text-sm text-slate-100 placeholder:text-slate-600 focus:border-slate-500 focus:outline-none"
+        className="h-11 rounded-xl border border-white/[0.08] bg-[#0e0e0e] px-4 text-sm text-neutral-100 placeholder:text-neutral-600 transition focus:border-white/20 focus:outline-none"
         name={name}
         type={type}
         placeholder={placeholder}

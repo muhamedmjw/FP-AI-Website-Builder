@@ -38,10 +38,10 @@ export default function ChatPanel({
   return (
     <div className="flex h-full flex-col">
       {/* Header with blur */}
-      <div className="sticky top-0 z-10 bg-[#0d1529]/70 px-5 py-4 backdrop-blur-xl">
+      <div className="sticky top-0 z-10 bg-transparent px-5 py-4">
         <div className="mx-auto flex w-full max-w-4xl items-center gap-2.5">
-          <MessageSquare size={16} className="text-cyan-300" />
-          <h2 className="truncate text-base font-semibold text-slate-100">
+          <MessageSquare size={16} className="prismatic-icon" />
+          <h2 className="truncate text-base font-semibold text-neutral-100">
             {chatTitle}
           </h2>
         </div>
@@ -55,10 +55,10 @@ export default function ChatPanel({
         {messages.length === 0 ? (
           <div className="flex h-full items-center justify-center">
             <div className="max-w-lg text-center">
-              <p className="text-xl font-semibold text-slate-200">
+              <p className="text-xl font-semibold text-neutral-200">
                 Start your website with one prompt
               </p>
-              <p className="mt-2 text-base text-slate-400">
+              <p className="mt-2 text-base text-neutral-500">
                 Describe your business, style, and goals. I will turn it into a
                 complete website structure.
               </p>
@@ -79,10 +79,10 @@ export default function ChatPanel({
 
             {isSending && (
               <div className="ui-fade-up mr-auto flex max-w-[78%] items-start gap-2.5">
-                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-cyan-400/20 text-cyan-300">
+                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-white/[0.08] text-neutral-300">
                   <MessageSquare size={15} />
                 </div>
-                <div className="rounded-2xl bg-[#121b31] px-4 py-3.5 text-base text-slate-300 shadow-[0_10px_24px_rgba(2,6,23,0.25)]">
+                <div className="rounded-2xl bg-[#1a1a1a] px-4 py-3.5 text-base text-neutral-300 shadow-[0_10px_24px_rgba(0,0,0,0.3)]">
                   Generating...
                 </div>
               </div>

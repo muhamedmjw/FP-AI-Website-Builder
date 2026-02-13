@@ -72,8 +72,8 @@ export default function Sidebar({
   }
 
   return (
-    <aside className="relative flex h-screen w-80 flex-col bg-[var(--app-panel)]/90 shadow-[12px_0_36px_rgba(2,6,23,0.35)] backdrop-blur-xl">
-      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(380px_180px_at_20%_0%,rgba(94,108,158,0.2),transparent_70%)]" />
+    <aside className="relative flex h-screen w-80 flex-col bg-[var(--app-panel)]/95 shadow-[12px_0_36px_rgba(0,0,0,0.45)] backdrop-blur-xl">
+      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(380px_180px_at_20%_0%,rgba(167,139,250,0.06),transparent_70%)]" />
       {/* Top: brand + greeting */}
       <div className="relative z-10">
         <SidebarHeader userName={userName} userAvatarUrl={userAvatarUrl} />

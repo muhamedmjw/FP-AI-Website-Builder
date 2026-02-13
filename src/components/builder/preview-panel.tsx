@@ -12,11 +12,11 @@ type PreviewPanelProps = {
 export default function PreviewPanel({ html }: PreviewPanelProps) {
   if (!html) {
     return (
-      <div className="flex h-full items-center justify-center bg-slate-900">
+      <div className="flex h-full items-center justify-center bg-[#111111]">
         <div className="flex flex-col items-center gap-3 text-center">
-          <Globe size={32} className="text-slate-700" />
-          <p className="text-sm text-slate-500">No preview yet.</p>
-          <p className="text-xs text-slate-600">
+          <Globe size={32} className="text-neutral-700" />
+          <p className="text-sm text-neutral-500">No preview yet.</p>
+          <p className="text-xs text-neutral-600">
             Send a message to generate your website.
           </p>
         </div>

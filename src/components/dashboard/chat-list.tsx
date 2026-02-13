@@ -22,8 +22,8 @@ export default function ChatList({
   if (chats.length === 0) {
     return (
       <div className="px-5 py-9 text-center">
-        <p className="text-base text-slate-400">No projects yet.</p>
-        <p className="mt-1 text-sm text-slate-500">
+        <p className="text-base text-neutral-500">No projects yet.</p>
+        <p className="mt-1 text-sm text-neutral-600">
           Click &quot;New Website&quot; to start.
         </p>
       </div>

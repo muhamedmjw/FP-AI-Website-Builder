@@ -9,22 +9,22 @@ type PageShellProps = {
 
 export default function PageShell({ title, subtitle, children }: PageShellProps) {
   return (
-    <main className="relative min-h-screen overflow-hidden bg-slate-950 text-slate-100">
+    <main className="relative min-h-screen overflow-hidden bg-[#0a0a0a] text-neutral-200">
       <GradientMesh />
       <div className="relative z-10 mx-auto flex min-h-screen w-full max-w-5xl items-center justify-center px-6 py-12">
         <div className="grid w-full gap-10 lg:grid-cols-[1.1fr_0.9fr]">
           <section className="space-y-4">
-            <p className="text-sm uppercase tracking-[0.3em] text-slate-400">AI Website Builder</p>
+            <p className="prismatic-text text-sm font-semibold uppercase tracking-[0.3em]">AI Website Builder</p>
             <h1 className="text-4xl font-semibold leading-tight text-white">{title}</h1>
-            <p className="text-base text-slate-300">{subtitle}</p>
-            <ul className="space-y-2 text-sm text-slate-400">
+            <p className="text-base text-neutral-400">{subtitle}</p>
+            <ul className="space-y-2 text-sm text-neutral-500">
               <li>Generate a full website structure from a short prompt.</li>
               <li>Save multiple chats and revisit your history.</li>
               <li>Export ready-to-run code templates.</li>
             </ul>
           </section>
 
-          <section className="rounded-3xl border border-slate-800 bg-slate-900/60 p-8 shadow-[0_0_0_1px_rgba(148,163,184,0.05)]">
+          <section className="prismatic-border rounded-3xl border border-white/[0.06] bg-[#141414]/80 p-8 shadow-[0_8px_32px_rgba(0,0,0,0.4)] backdrop-blur-sm">
             {children}
           </section>
         </div>

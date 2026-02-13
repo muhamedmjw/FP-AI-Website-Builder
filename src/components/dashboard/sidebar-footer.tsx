@@ -220,7 +220,7 @@ export default function SidebarFooter({
           type="button"
           onClick={() => setMenuOpen((prev) => !prev)}
           disabled={isSigningOut}
-          className="rainbow-hover flex h-12 w-full items-center gap-3 rounded-xl bg-white/[0.06] px-3 text-left shadow-[0_10px_24px_rgba(2,6,23,0.3)] transition hover:bg-white/[0.1] disabled:cursor-not-allowed disabled:opacity-50"
+          className="flex h-12 w-full items-center gap-3 rounded-xl bg-white/[0.05] px-3 text-left transition hover:bg-white/[0.12] disabled:cursor-not-allowed disabled:opacity-50"
           aria-expanded={menuOpen}
           aria-haspopup="menu"
           title="Account"
@@ -232,28 +232,28 @@ export default function SidebarFooter({
               className="h-8 w-8 rounded-full border border-white/10 object-cover"
             />
           ) : (
-            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-sky-500/20 text-sm font-semibold text-sky-200">
+            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-white/[0.08] text-sm font-semibold text-neutral-300">
               {initials}
             </div>
           )}
 
           <div className="min-w-0 flex-1">
-            <p className="truncate text-sm font-semibold text-slate-100">
+            <p className="truncate text-sm font-semibold text-neutral-100">
               {accountLabel}
             </p>
-            <p className="truncate text-xs text-slate-400">Account</p>
+            <p className="truncate text-xs text-neutral-500">Account</p>
           </div>
 
           <ChevronUp
             size={16}
-            className={`text-slate-500 transition ${menuOpen ? "rotate-180" : ""}`}
+            className={`text-neutral-500 transition ${menuOpen ? "rotate-180" : ""}`}
           />
         </button>
 
         {menuOpen && (
           <div
             role="menu"
-            className="absolute bottom-full left-4 right-4 z-30 mb-2 overflow-hidden rounded-xl bg-[#151922] shadow-[0_20px_40px_rgba(2,6,23,0.6)]"
+            className="absolute bottom-full left-4 right-4 z-30 mb-2 overflow-hidden rounded-xl border border-white/[0.06] bg-[#181818] shadow-[0_12px_28px_rgba(0,0,0,0.5)]"
           >
             <button
               type="button"
@@ -263,7 +263,7 @@ export default function SidebarFooter({
                 setSettingsOpen(true);
               }}
               role="menuitem"
-              className="rainbow-hover flex w-full items-center gap-2.5 px-3.5 py-3 text-sm text-slate-200 transition hover:bg-white/10"
+              className="cursor-pointer flex w-full items-center gap-2.5 px-3.5 py-3 text-sm text-neutral-300 transition hover:bg-white/[0.1] hover:text-white"
             >
               <Settings size={15} />
               Settings
@@ -274,7 +274,7 @@ export default function SidebarFooter({
               target="_blank"
               rel="noreferrer"
               role="menuitem"
-              className="rainbow-hover flex w-full items-center gap-2.5 px-3.5 py-3 text-sm text-slate-200 transition hover:bg-white/10"
+              className="cursor-pointer flex w-full items-center gap-2.5 px-3.5 py-3 text-sm text-neutral-300 transition hover:bg-white/[0.1] hover:text-white"
             >
               <Github size={15} />
               GitHub Repo
@@ -284,7 +284,7 @@ export default function SidebarFooter({
               type="button"
               onClick={handleSignOut}
               role="menuitem"
-              className="rainbow-hover flex w-full items-center gap-2.5 px-3.5 py-3 text-sm text-rose-300 transition hover:bg-white/10"
+              className="cursor-pointer flex w-full items-center gap-2.5 px-3.5 py-3 text-sm text-rose-300 transition hover:bg-white/[0.1] hover:text-rose-200"
             >
               <LogOut size={15} />
               {isSigningOut ? "Signing out..." : "Log out"}
@@ -295,25 +295,25 @@ export default function SidebarFooter({
 
       {settingsOpen && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-[#0c0f14]/80 p-4 backdrop-blur-sm"
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 p-4 backdrop-blur-sm"
           onClick={(event) => {
             if (event.target === event.currentTarget) {
               setSettingsOpen(false);
             }
           }}
         >
-          <div className="w-full max-w-xl rounded-2xl bg-[#12161e] shadow-[0_24px_48px_rgba(2,6,23,0.65)]">
+          <div className="w-full max-w-xl rounded-2xl bg-[#151515] shadow-[0_24px_48px_rgba(0,0,0,0.65)]">
             <div className="flex items-center justify-between px-6 py-4">
               <div>
-                <h3 className="text-lg font-semibold text-slate-100">Settings</h3>
-                <p className="text-sm text-slate-400">
+                <h3 className="text-lg font-semibold text-neutral-100">Settings</h3>
+                <p className="text-sm text-neutral-500">
                   Update your account picture, name, and email.
                 </p>
               </div>
               <button
                 type="button"
                 onClick={() => setSettingsOpen(false)}
-                className="rounded-lg p-2 text-slate-400 transition hover:bg-white/10 hover:text-slate-200"
+                className="rounded-lg p-2 text-neutral-500 transition hover:bg-white/10 hover:text-neutral-200"
                 title="Close settings"
               >
                 <X size={16} />
@@ -326,10 +326,10 @@ export default function SidebarFooter({
                   <img
                     src={avatarPreview}
                     alt="Profile preview"
-                    className="h-16 w-16 rounded-full border border-slate-700 object-cover"
+                    className="h-16 w-16 rounded-full border border-white/[0.08] object-cover"
                   />
                 ) : (
-                  <div className="flex h-16 w-16 items-center justify-center rounded-full border border-slate-700 bg-slate-800 text-slate-500">
+                  <div className="flex h-16 w-16 items-center justify-center rounded-full border border-white/[0.08] bg-[#1a1a1a] text-neutral-500">
                     <UserCircle2 size={30} />
                   </div>
                 )}
@@ -338,7 +338,7 @@ export default function SidebarFooter({
                   <button
                     type="button"
                     onClick={() => fileInputRef.current?.click()}
-                    className="rainbow-hover inline-flex items-center gap-2 rounded-lg bg-white/[0.04] px-3 py-2 text-sm text-slate-200 transition hover:bg-white/10"
+                    className="rainbow-hover inline-flex items-center gap-2 rounded-lg bg-white/[0.04] px-3 py-2 text-sm text-neutral-300 transition hover:bg-white/10"
                   >
                     <Upload size={14} />
                     Upload Picture
@@ -346,7 +346,7 @@ export default function SidebarFooter({
                   <button
                     type="button"
                     onClick={handleRemoveAvatar}
-                    className="rainbow-hover rounded-lg bg-white/[0.04] px-3 py-2 text-sm text-slate-300 transition hover:bg-white/10"
+                    className="rainbow-hover rounded-lg bg-white/[0.04] px-3 py-2 text-sm text-neutral-400 transition hover:bg-white/10"
                   >
                     Remove
                   </button>
@@ -362,22 +362,22 @@ export default function SidebarFooter({
               />
 
               <label className="block space-y-2">
-                <span className="text-sm font-medium text-slate-300">Name</span>
+                <span className="text-sm font-medium text-neutral-400">Name</span>
                 <input
                   type="text"
                   value={nameInput}
                   onChange={(event) => setNameInput(event.target.value)}
-                  className="w-full rounded-lg bg-[#0f131a] px-3.5 py-2.5 text-base text-slate-100 focus:outline-none"
+                  className="w-full rounded-lg bg-[#0e0e0e] px-3.5 py-2.5 text-base text-neutral-100 focus:outline-none"
                 />
               </label>
 
               <label className="block space-y-2">
-                <span className="text-sm font-medium text-slate-300">Email</span>
+                <span className="text-sm font-medium text-neutral-400">Email</span>
                 <input
                   type="email"
                   value={emailInput}
                   onChange={(event) => setEmailInput(event.target.value)}
-                  className="w-full rounded-lg bg-[#0f131a] px-3.5 py-2.5 text-base text-slate-100 focus:outline-none"
+                  className="w-full rounded-lg bg-[#0e0e0e] px-3.5 py-2.5 text-base text-neutral-100 focus:outline-none"
                 />
               </label>
 
@@ -389,14 +389,14 @@ export default function SidebarFooter({
                 <button
                   type="button"
                   onClick={() => setSettingsOpen(false)}
-                  className="rainbow-hover rounded-lg bg-white/[0.04] px-4 py-2.5 text-sm text-slate-300 transition hover:bg-white/10"
+                  className="rainbow-hover rounded-lg bg-white/[0.04] px-4 py-2.5 text-sm text-neutral-400 transition hover:bg-white/10"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={isSaving}
-                  className="rainbow-hover rounded-lg bg-white px-4 py-2.5 text-sm font-semibold text-slate-900 transition hover:bg-slate-200 disabled:cursor-not-allowed disabled:opacity-60"
+                  className="rainbow-hover rounded-lg bg-white px-4 py-2.5 text-sm font-semibold text-neutral-900 transition hover:bg-neutral-100 disabled:cursor-not-allowed disabled:opacity-60"
                 >
                   {isSaving ? "Saving..." : "Save Changes"}
                 </button>

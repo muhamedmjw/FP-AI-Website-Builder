@@ -12,7 +12,7 @@ export default function PrimaryButton({
   return (
     <button
       type={type}
-      className={`inline-flex h-11 items-center justify-center rounded-xl bg-white px-5 text-sm font-semibold text-slate-900 transition hover:bg-slate-200 ${
+      className={`rainbow-hover inline-flex h-11 items-center justify-center rounded-xl bg-white px-5 text-sm font-semibold text-neutral-900 transition hover:bg-neutral-100 ${
         fullWidth ? "w-full" : ""
       }`}
     >

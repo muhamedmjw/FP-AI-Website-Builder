@@ -80,23 +80,23 @@ export default function DashboardPage() {
         <h1 className="text-3xl font-semibold text-white">
           What website do you want to build?
         </h1>
-        <p className="text-sm text-slate-400">
+        <p className="text-sm text-neutral-500">
           Describe your website and AI will generate it for you.
         </p>
 
         <form onSubmit={handleSubmit} className="mt-6">
-          <div className="flex items-center gap-3 rounded-2xl border border-slate-800 bg-slate-900/60 px-4 py-3 transition focus-within:border-slate-600">
+          <div className="prismatic-border flex items-center gap-3 rounded-2xl border border-white/[0.06] bg-[#141414]/80 px-4 py-3 transition focus-within:border-white/15">
             <input
               ref={inputRef}
               type="text"
               placeholder="e.g. A landing page for a coffee shop in Erbil..."
               disabled={isCreating}
-              className="flex-1 bg-transparent text-sm text-slate-100 placeholder:text-slate-500 focus:outline-none disabled:opacity-50"
+              className="flex-1 bg-transparent text-sm text-neutral-100 placeholder:text-neutral-600 focus:outline-none disabled:opacity-50"
             />
             <button
               type="submit"
               disabled={isCreating}
-              className="shrink-0 rounded-lg bg-white px-4 py-2 text-sm font-semibold text-slate-900 transition hover:bg-slate-200 disabled:opacity-50"
+              className="rainbow-hover shrink-0 rounded-lg bg-white px-4 py-2 text-sm font-semibold text-neutral-900 transition hover:bg-neutral-100 disabled:opacity-50"
             >
               {isCreating ? "Creating..." : "Start"}
             </button>

@@ -131,7 +131,7 @@ export default function BuilderView({
   return (
     <div
       id="builder-container"
-      className="flex h-full bg-[radial-gradient(1000px_420px_at_50%_-140px,rgba(96,165,250,0.16),transparent_62%),var(--app-bg)]"
+      className="flex h-full bg-[radial-gradient(1000px_420px_at_50%_-140px,rgba(167,139,250,0.06),transparent_62%),var(--app-bg)]"
     >
       {/* Left: Chat panel */}
       <div className="flex min-w-0 flex-1 flex-col">
@@ -154,7 +154,7 @@ export default function BuilderView({
           {/* Right: Preview panel */}
           {previewOpen ? (
             <div
-              className="relative shrink-0 bg-[#0b1225]/85 shadow-[-12px_0_32px_rgba(2,6,23,0.35)]"
+              className="relative shrink-0 bg-[#101010]/90 shadow-[-12px_0_32px_rgba(0,0,0,0.4)]"
               style={{
                 width: previewWidth ?? "55%",
                 pointerEvents: isResizing ? "none" : "auto",
@@ -164,7 +164,7 @@ export default function BuilderView({
               <button
                 type="button"
                 onClick={() => setPreviewOpen(false)}
-                className="rainbow-hover absolute right-3 top-3 z-10 flex h-9 w-9 items-center justify-center rounded-xl bg-[#11182d]/80 text-slate-400 backdrop-blur-sm transition hover:bg-[#1a233d] hover:text-white"
+                className="rainbow-hover absolute right-3 top-3 z-10 flex h-9 w-9 items-center justify-center rounded-xl bg-[#161616]/80 text-neutral-400 backdrop-blur-sm transition hover:bg-[#222222] hover:text-white"
                 title="Close preview"
               >
                 <X size={16} />
@@ -177,7 +177,7 @@ export default function BuilderView({
               <button
                 type="button"
                 onClick={() => setPreviewOpen(true)}
-                className="rainbow-hover flex h-10 w-10 items-center justify-center rounded-xl bg-[#11182d] text-slate-400 transition hover:bg-[#1a233d] hover:text-slate-200"
+                className="rainbow-hover flex h-10 w-10 items-center justify-center rounded-xl bg-[#161616] text-neutral-400 transition hover:bg-[#222222] hover:text-neutral-200"
                 title="Open preview"
               >
                 <PanelRightOpen size={18} />

@@ -35,7 +35,7 @@ export default async function DashboardLayout({
   const chats = await getUserChats(supabase);
 
   return (
-    <div className="flex h-screen bg-[var(--app-bg)] text-slate-100">
+    <div className="flex h-screen bg-[var(--app-bg)] text-neutral-200">
       <Sidebar
         chats={chats}
         userName={profile?.name ?? null}
