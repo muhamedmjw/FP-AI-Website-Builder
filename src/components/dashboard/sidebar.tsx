@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { Chat } from "@/lib/types/database";
 import { getSupabaseBrowserClient } from "@/lib/supabase/browser-client";
@@ -37,6 +37,11 @@ export default function Sidebar({
   const [userAvatarUrl, setUserAvatarUrl] = useState<string | null>(
     initialUserAvatarUrl
   );
+
+  // Sync chat list when the server re-fetches (e.g. after router.refresh())
+  useEffect(() => {
+    setChats(initialChats);
+  }, [initialChats]);
   const pathActiveChatId = pathname.startsWith("/builder/")
     ? pathname.split("/")[2]
     : undefined;

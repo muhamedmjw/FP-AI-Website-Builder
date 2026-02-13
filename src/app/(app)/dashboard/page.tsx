@@ -62,8 +62,9 @@ export default function DashboardPage() {
         throw new Error(apiError);
       }
 
-      // Navigate to builder
+      // Navigate to builder and refresh to update sidebar
       router.push(`/builder/${chat.id}`);
+      router.refresh();
     } catch (error) {
       console.error("Failed to create chat:", error);
       setErrorMessage(
@@ -85,13 +86,13 @@ export default function DashboardPage() {
         </p>
 
         <form onSubmit={handleSubmit} className="mt-6">
-          <div className="prismatic-border flex items-center gap-3 rounded-2xl border border-white/[0.06] bg-[#141414]/80 px-4 py-3 transition focus-within:border-white/15">
+          <div className="flex items-center gap-3 rounded-2xl border border-white/[0.08] bg-[#0f0f0f] px-4 py-3 transition focus-within:border-white/[0.16] focus-within:ring-1 focus-within:ring-white/[0.06]">
             <input
               ref={inputRef}
               type="text"
               placeholder="e.g. A landing page for a coffee shop in Erbil..."
               disabled={isCreating}
-              className="flex-1 bg-transparent text-sm text-neutral-100 placeholder:text-neutral-600 focus:outline-none disabled:opacity-50"
+              className="flex-1 bg-transparent text-sm text-neutral-100 placeholder:text-neutral-500 focus:outline-none disabled:opacity-50"
             />
             <button
               type="submit"

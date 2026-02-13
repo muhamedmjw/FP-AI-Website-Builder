@@ -160,7 +160,7 @@ export default function ChatListItem({
           id={menuId}
           ref={menuRef}
           role="menu"
-          className="absolute right-0 top-full z-50 mt-1.5 w-40 rounded-xl bg-[#181818] py-1 shadow-2xl"
+          className="absolute right-0 top-full z-50 mt-1.5 w-40 overflow-hidden rounded-xl bg-[#181818] shadow-2xl"
         >
           <button
             type="button"

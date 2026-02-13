@@ -24,7 +24,7 @@ export default function PageShell({ title, subtitle, children }: PageShellProps)
             </ul>
           </section>
 
-          <section className="prismatic-border rounded-3xl border border-white/[0.06] bg-[#141414]/80 p-8 shadow-[0_8px_32px_rgba(0,0,0,0.4)] backdrop-blur-sm">
+          <section className="rounded-3xl border border-white/[0.08] bg-[#0f0f0f] p-8 shadow-[0_8px_32px_rgba(0,0,0,0.5)]">
             {children}
           </section>
         </div>

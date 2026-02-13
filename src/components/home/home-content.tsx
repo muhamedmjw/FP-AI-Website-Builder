@@ -27,7 +27,7 @@ export default function HomeContent() {
             Sign in
           </Link>
           <Link
-            className="prismatic-border-hover inline-flex h-11 items-center justify-center rounded-xl border border-white/10 px-6 text-sm font-semibold text-neutral-200 transition hover:text-white"
+            className="inline-flex h-11 items-center justify-center rounded-xl border-2 border-white/25 px-6 text-sm font-semibold text-neutral-200 shadow-[0_4px_16px_rgba(255,255,255,0.1)] transition hover:translate-y-[-2px] hover:border-white/40 hover:text-white hover:shadow-[0_8px_24px_rgba(255,255,255,0.18)]"
             href="/register"
           >
             Create account

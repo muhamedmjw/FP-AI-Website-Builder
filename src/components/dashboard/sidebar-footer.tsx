@@ -2,6 +2,7 @@
 /* eslint-disable @next/next/no-img-element */
 
 import { ChangeEvent, FormEvent, useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import {
   ChevronUp,
   Github,
@@ -293,7 +294,7 @@ export default function SidebarFooter({
         )}
       </div>
 
-      {settingsOpen && (
+      {settingsOpen && createPortal(
         <div
           className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 p-4 backdrop-blur-sm"
           onClick={(event) => {
@@ -338,7 +339,7 @@ export default function SidebarFooter({
                   <button
                     type="button"
                     onClick={() => fileInputRef.current?.click()}
-                    className="rainbow-hover inline-flex items-center gap-2 rounded-lg bg-white/[0.04] px-3 py-2 text-sm text-neutral-300 transition hover:bg-white/10"
+                    className="inline-flex items-center gap-2 rounded-lg bg-white/[0.04] px-3 py-2 text-sm text-neutral-300 transition hover:bg-white/10"
                   >
                     <Upload size={14} />
                     Upload Picture
@@ -346,7 +347,7 @@ export default function SidebarFooter({
                   <button
                     type="button"
                     onClick={handleRemoveAvatar}
-                    className="rainbow-hover rounded-lg bg-white/[0.04] px-3 py-2 text-sm text-neutral-400 transition hover:bg-white/10"
+                    className="rounded-lg bg-white/[0.04] px-3 py-2 text-sm text-neutral-400 transition hover:bg-white/10"
                   >
                     Remove
                   </button>
@@ -389,7 +390,7 @@ export default function SidebarFooter({
                 <button
                   type="button"
                   onClick={() => setSettingsOpen(false)}
-                  className="rainbow-hover rounded-lg bg-white/[0.04] px-4 py-2.5 text-sm text-neutral-400 transition hover:bg-white/10"
+                  className="rounded-lg bg-white/[0.04] px-4 py-2.5 text-sm text-neutral-400 transition hover:bg-white/10"
                 >
                   Cancel
                 </button>
@@ -403,7 +404,8 @@ export default function SidebarFooter({
               </div>
             </form>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </>
   );
