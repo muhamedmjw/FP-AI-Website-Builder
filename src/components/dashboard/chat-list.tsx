@@ -21,9 +21,9 @@ export default function ChatList({
 }: ChatListProps) {
   if (chats.length === 0) {
     return (
-      <div className="px-4 py-6 text-center">
-        <p className="text-sm text-slate-500">No projects yet.</p>
-        <p className="mt-1 text-xs text-slate-600">
+      <div className="px-5 py-9 text-center">
+        <p className="text-base text-slate-400">No projects yet.</p>
+        <p className="mt-1 text-sm text-slate-500">
           Click &quot;New Website&quot; to start.
         </p>
       </div>
@@ -31,7 +31,7 @@ export default function ChatList({
   }
 
   return (
-    <nav className="space-y-1 px-3">
+    <nav className="space-y-2 px-4 pb-4">
       {chats.map((chat) => (
         <ChatListItem
           key={chat.id}

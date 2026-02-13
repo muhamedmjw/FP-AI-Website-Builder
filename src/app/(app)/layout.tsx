@@ -24,10 +24,10 @@ export default async function DashboardLayout({
     redirect("/login");
   }
 
-  // Fetch user profile for display name
+  // Fetch user profile for sidebar account data
   const { data: profile } = await supabase
     .from("users")
-    .select("name")
+    .select("name, email, avatar_url")
     .eq("id", user.id)
     .single();
 
@@ -35,12 +35,14 @@ export default async function DashboardLayout({
   const chats = await getUserChats(supabase);
 
   return (
-    <div className="flex h-screen bg-slate-950 text-slate-100">
+    <div className="flex h-screen bg-[var(--app-bg)] text-slate-100">
       <Sidebar
         chats={chats}
         userName={profile?.name ?? null}
+        userEmail={profile?.email ?? user.email ?? null}
+        userAvatarUrl={profile?.avatar_url ?? null}
       />
-      <main className="flex-1 overflow-y-auto">{children}</main>
+      <main className="flex-1 overflow-y-auto bg-[var(--app-bg)]">{children}</main>
     </div>
   );
 }

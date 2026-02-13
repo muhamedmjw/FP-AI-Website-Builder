@@ -15,6 +15,9 @@ type BuilderPageProps = {
 export default async function BuilderPage({ params }: BuilderPageProps) {
   const { chatId } = await params;
   const supabase = await getSupabaseServerClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
 
   // Verify the chat exists and belongs to the user (RLS handles this)
   const { data: chat, error } = await supabase
@@ -32,6 +35,13 @@ export default async function BuilderPage({ params }: BuilderPageProps) {
 
   const website = await getWebsiteByChatId(supabase, chatId);
   const html = website ? await getGeneratedHtml(supabase, website.id) : null;
+  const { data: profile } = user
+    ? await supabase
+        .from("users")
+        .select("avatar_url")
+        .eq("id", user.id)
+        .maybeSingle()
+    : { data: null };
 
   return (
     <BuilderView
@@ -39,6 +49,7 @@ export default async function BuilderPage({ params }: BuilderPageProps) {
       chatTitle={chat.title ?? "Untitled"}
       initialMessages={messages}
       initialHtml={html}
+      currentUserAvatarUrl={profile?.avatar_url ?? null}
     />
   );
 }

@@ -1,5 +1,96 @@
 @import "tailwindcss";
 
+:root {
+  --app-bg: #020617;
+  --app-bg-soft: #0b1120;
+  --app-panel: #0b1325;
+  --app-panel-soft: #121b31;
+  --app-border: rgba(255, 255, 255, 0.08);
+}
+
+body {
+  font-family: var(--font-ui), "Segoe UI", sans-serif;
+  color: #e5e7eb;
+  background:
+    radial-gradient(900px 500px at 12% 10%, rgba(103, 186, 255, 0.18), transparent 54%),
+    radial-gradient(760px 460px at 90% 14%, rgba(192, 108, 255, 0.16), transparent 56%),
+    radial-gradient(900px 520px at 30% 100%, rgba(42, 231, 188, 0.1), transparent 58%),
+    linear-gradient(170deg, #081126, #020617 70%);
+}
+
+* {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(148, 163, 184, 0.34) transparent;
+}
+
+*::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+*::-webkit-scrollbar-thumb {
+  background: rgba(148, 163, 184, 0.3);
+  border-radius: 999px;
+  border: 2px solid transparent;
+  background-clip: content-box;
+}
+
+*::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.ui-fade-up {
+  animation: ui-fade-up 260ms ease-out;
+}
+
+/* Soft rainbow halo for interactive buttons */
+.rainbow-hover {
+  position: relative;
+  z-index: 0;
+  transition: transform 180ms ease, box-shadow 220ms ease;
+}
+
+.rainbow-hover::after {
+  content: "";
+  position: absolute;
+  inset: -2px;
+  border-radius: inherit;
+  z-index: -1;
+  opacity: 0;
+  filter: blur(10px) saturate(130%);
+  transition: opacity 220ms ease;
+  background: conic-gradient(
+    from 120deg,
+    rgba(103, 186, 255, 0.68),
+    rgba(192, 108, 255, 0.68),
+    rgba(42, 231, 188, 0.62),
+    rgba(255, 214, 92, 0.55),
+    rgba(103, 186, 255, 0.68)
+  );
+}
+
+.rainbow-hover:hover::after,
+.rainbow-hover:focus-visible::after {
+  opacity: 0.95;
+}
+
+.rainbow-hover:hover,
+.rainbow-hover:focus-visible {
+  transform: translateY(-1px);
+  box-shadow: 0 10px 28px rgba(6, 12, 32, 0.45);
+}
+
+@keyframes ui-fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
 .gradient-mesh {
   position: absolute;
   inset: 0;

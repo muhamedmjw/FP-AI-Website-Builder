@@ -13,6 +13,8 @@ import ChatList from "@/components/dashboard/chat-list";
 type SidebarProps = {
   chats: Chat[];
   userName: string | null;
+  userEmail: string | null;
+  userAvatarUrl: string | null;
   activeChatId?: string;
 };
 
@@ -22,12 +24,19 @@ type SidebarProps = {
  */
 export default function Sidebar({
   chats: initialChats,
-  userName,
+  userName: initialUserName,
+  userEmail: initialUserEmail,
+  userAvatarUrl: initialUserAvatarUrl,
   activeChatId,
 }: SidebarProps) {
   const router = useRouter();
   const pathname = usePathname();
   const [chats, setChats] = useState<Chat[]>(initialChats);
+  const [userName, setUserName] = useState<string | null>(initialUserName);
+  const [userEmail, setUserEmail] = useState<string | null>(initialUserEmail);
+  const [userAvatarUrl, setUserAvatarUrl] = useState<string | null>(
+    initialUserAvatarUrl
+  );
   const pathActiveChatId = pathname.startsWith("/builder/")
     ? pathname.split("/")[2]
     : undefined;
@@ -63,15 +72,20 @@ export default function Sidebar({
   }
 
   return (
-    <aside className="flex h-screen w-64 flex-col border-r border-slate-800 bg-slate-950">
+    <aside className="relative flex h-screen w-80 flex-col bg-[var(--app-panel)]/90 shadow-[12px_0_36px_rgba(2,6,23,0.35)] backdrop-blur-xl">
+      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(380px_180px_at_20%_0%,rgba(94,108,158,0.2),transparent_70%)]" />
       {/* Top: brand + greeting */}
-      <SidebarHeader userName={userName} />
+      <div className="relative z-10">
+        <SidebarHeader userName={userName} userAvatarUrl={userAvatarUrl} />
+      </div>
 
       {/* New website button */}
-      <NewChatButton />
+      <div className="relative z-10">
+        <NewChatButton />
+      </div>
 
       {/* Scrollable chat list */}
-      <div className="flex-1 overflow-y-auto">
+      <div className="relative z-10 flex-1 overflow-y-auto">
         <ChatList
           chats={chats}
           activeChatId={resolvedActiveChatId}
@@ -80,8 +94,19 @@ export default function Sidebar({
         />
       </div>
 
-      {/* Bottom: sign out */}
-      <SidebarFooter />
+      {/* Bottom: account menu */}
+      <div className="relative z-10">
+        <SidebarFooter
+          userName={userName}
+          userEmail={userEmail}
+          userAvatarUrl={userAvatarUrl}
+          onProfileUpdated={(nextProfile) => {
+            setUserName(nextProfile.name);
+            setUserEmail(nextProfile.email);
+            setUserAvatarUrl(nextProfile.avatarUrl);
+          }}
+        />
+      </div>
     </aside>
   );
 }

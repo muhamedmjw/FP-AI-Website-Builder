@@ -26,9 +26,14 @@ create table if not exists public.users (
   id uuid primary key references auth.users(id) on delete cascade,
   email text not null unique,
   name text,
+  avatar_url text,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
+
+-- Keep schema re-runnable for existing projects
+alter table public.users
+add column if not exists avatar_url text;
 
 -- Auto-create public.users row when a new auth user signs up
 create or replace function public.handle_new_auth_user()
