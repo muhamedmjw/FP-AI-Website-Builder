@@ -1,82 +1,22 @@
-"use client"; // [FRONTEND] This file is a client component, which means it will be rendered on the client side and can use React hooks and browser APIs.
-
-import { useEffect, useState } from "react";
-import { getSupabaseBrowserClient } from "@/lib/supabase/browser-client"; // Import the function to get the Supabase client for browser usage
 import GradientMesh from "@/components/ui/gradient-mesh";
 
-type ViewState = "loading" | "guest" | "user";
-
+/**
+ * Landing page — always shows the public/guest marketing view.
+ * Authenticated users are directed to /dashboard by the middleware,
+ * so this component never needs to check auth state.
+ */
 export default function HomeContent() {
-  const [viewState, setViewState] = useState<ViewState>("loading"); // Initially set the view state to "loading" while we check the user's session
-
-  // Use useEffect to check the user's session when the component mounts and set up an auth state change listener
-  useEffect(() => {
-    const supabase = getSupabaseBrowserClient();
-
-    async function loadSession() {
-      const { data } = await supabase.auth.getSession();
-      setViewState(data.session ? "user" : "guest");
-    }
-
-    loadSession();
-
-    const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => {
-      setViewState(session ? "user" : "guest");
-    });
-
-    return () => {
-      listener.subscription.unsubscribe();
-    };
-  }, []);
-
-  if (viewState === "loading") {
-    return (
-      <main className="relative min-h-screen overflow-hidden bg-slate-950 text-slate-100">
-        <GradientMesh soft />
-        <div className="relative z-10 mx-auto flex min-h-screen w-full max-w-3xl items-center px-6">
-          <p className="text-slate-300">Loading...</p>
-        </div>
-      </main>
-    );
-  }
-
-  // If the user is authenticated, show the workspace view with a sign-out button. Otherwise, show the landing page with sign-in and registration options.
-  if (viewState === "user") {
-    async function handleSignOut() {
-      const supabase = getSupabaseBrowserClient();
-      await supabase.auth.signOut();
-      setViewState("guest");
-    }
-
-    return (
-      <main className="relative min-h-screen overflow-hidden bg-slate-950 text-slate-100">
-        <GradientMesh soft />
-        <div className="relative z-10 mx-auto flex min-h-screen w-full max-w-5xl items-center px-6">
-          <div>
-            <h1 className="text-3xl font-semibold text-white">Workspace</h1>
-            <p className="mt-3 text-slate-300">This page is intentionally empty for now.</p>
-            <button
-              type="button"
-              onClick={handleSignOut}
-              className="mt-6 inline-flex h-10 items-center justify-center rounded-xl border border-slate-700 px-4 text-sm font-semibold text-slate-100 hover:bg-slate-800"
-            >
-              Sign out
-            </button>
-          </div>
-        </div>
-      </main>
-    );
-  }
-
   return (
     <main className="relative min-h-screen overflow-hidden bg-slate-950 text-slate-100">
       <GradientMesh />
       <div className="relative z-10 mx-auto flex min-h-screen w-full max-w-3xl flex-col items-start justify-center gap-6 px-6">
         <p className="text-xs uppercase tracking-[0.3em] text-slate-500">AI Website Builder</p>
-        <h1 className="text-4xl font-semibold text-white">Build full websites from a short prompt.</h1>
+        <h1 className="text-4xl font-semibold text-white">
+          Build full websites from a short prompt.
+        </h1>
         <p className="text-base text-slate-300">
-          Sign in to start a new chat and generate a complete website structure with pages,
-          sections, and ready-to-run code.
+          Sign in to start a new chat and generate a complete website structure
+          with pages, sections, and ready-to-run code.
         </p>
         <div className="flex flex-wrap gap-3">
           <a

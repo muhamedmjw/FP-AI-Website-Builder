@@ -50,7 +50,7 @@ export default function SignupForm() {
     }
 
     if (data.session) {
-      router.push("/");
+      router.push("/dashboard");
       return;
     }
 

@@ -1,19 +1,12 @@
-import { createClient, SupabaseClient } from "@supabase/supabase-js";
+import { createBrowserClient } from "@supabase/ssr";
 
-let supabaseClient: SupabaseClient | null = null;
-
+/**
+ * Creates a Supabase client for use in Client Components.
+ * Uses @supabase/ssr so auth cookies stay in sync with the middleware.
+ */
 export function getSupabaseBrowserClient() {
-  if (supabaseClient) {
-    return supabaseClient;
-  }
-
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-
-  if (!supabaseUrl || !supabaseAnonKey) {
-    throw new Error("Missing Supabase environment variables.");
-  }
-
-  supabaseClient = createClient(supabaseUrl, supabaseAnonKey);
-  return supabaseClient;
+  return createBrowserClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+  );
 }
