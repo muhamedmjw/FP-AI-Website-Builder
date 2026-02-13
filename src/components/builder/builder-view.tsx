@@ -8,7 +8,7 @@ import PreviewPanel from "@/components/builder/preview-panel";
 /**
  * Builder view — the main split-view component.
  * Chat panel on the left, live preview on the right.
- * Actual message sending + AI integration will be wired in the next step.
+ * Sends messages via /api/chat/send and persists them to the database.
  */
 
 type BuilderViewProps = {
@@ -23,7 +23,7 @@ export default function BuilderView({
   initialHtml,
 }: BuilderViewProps) {
   const [messages, setMessages] = useState<HistoryMessage[]>(initialMessages);
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars -- will be used when AI generates HTML
   const [html, setHtml] = useState<string | null>(initialHtml);
   const [isSending, setIsSending] = useState(false);
 
@@ -40,25 +40,35 @@ export default function BuilderView({
     setMessages((prev) => [...prev, tempUserMessage]);
     setIsSending(true);
 
-    // TODO: In the next step, this will call the API to:
-    // 1. Save the user message to DB
-    // 2. Send prompt to AI
-    // 3. Save AI response to DB
-    // 4. Update preview HTML
+    try {
+      const response = await fetch("/api/chat/send", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ chatId, content }),
+      });
 
-    // For now, simulate a short delay and show a placeholder response
-    await new Promise((resolve) => setTimeout(resolve, 1000));
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || "Failed to send message.");
+      }
 
-    const tempAssistantMessage: HistoryMessage = {
-      id: `temp-${Date.now() + 1}`,
-      chat_id: chatId,
-      role: "assistant",
-      content: "AI generation will be connected in the next step. Your message was: " + content,
-      created_at: new Date().toISOString(),
-    };
+      const data = await response.json();
 
-    setMessages((prev) => [...prev, tempAssistantMessage]);
-    setIsSending(false);
+      // Replace optimistic messages with the real ones from DB
+      setMessages(data.messages);
+
+      // TODO (Week 2): Update preview HTML from AI response
+      // setHtml(data.html);
+    } catch (error) {
+      console.error("Failed to send message:", error);
+
+      // Remove the optimistic message on failure
+      setMessages((prev) =>
+        prev.filter((msg) => msg.id !== tempUserMessage.id)
+      );
+    } finally {
+      setIsSending(false);
+    }
   }
 
   return (
