@@ -21,7 +21,7 @@ export default function SidebarFooter() {
       <button
         type="button"
         onClick={handleSignOut}
-        className="flex h-10 w-full items-center gap-2 rounded-lg px-3 text-sm text-slate-400 transition hover:bg-slate-800 hover:text-slate-200"
+        className="flex h-10.5 w-full items-center gap-2 rounded-lg px-3 text-sm text-slate-400 transition hover:bg-slate-800 hover:text-slate-200"
       >
         <LogOut size={15} />
         Sign out

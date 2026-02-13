@@ -46,7 +46,7 @@ export default function ChatPanel({
       </div>
 
       {/* Message list */}
-      <div ref={scrollRef} className="flex-1 space-y-8 overflow-y-auto px-14 py-6">
+      <div ref={scrollRef} className="flex-1 space-y-4 overflow-y-auto px-14 py-6">
         {messages.length === 0 ? (
           <div className="flex h-full items-center justify-center">
             <p className="text-sm text-slate-500">

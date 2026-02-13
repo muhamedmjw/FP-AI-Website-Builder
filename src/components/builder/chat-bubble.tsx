@@ -15,8 +15,8 @@ export default function ChatBubble({ role, content }: ChatBubbleProps) {
 
   return (
     <div
-      className={`flex items-start gap-3 ${
-        isUser ? "flex-row-reverse pl-16" : "pr-16"
+      className={`flex items-start gap-3.5 ${
+        isUser ? "flex-row-reverse" : ""
       }`}
     >
       {/* Avatar */}
