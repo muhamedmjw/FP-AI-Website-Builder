@@ -1,13 +1,14 @@
 "use client";
 
-import { useState } from "react";
+import { useCallback, useState } from "react";
 import { HistoryMessage } from "@/lib/types/database";
 import ChatPanel from "@/components/builder/chat-panel";
 import PreviewPanel from "@/components/builder/preview-panel";
+import ResizeHandle from "@/components/builder/resize-handle";
 
 /**
  * Builder view — the main split-view component.
- * Chat panel on the left, live preview on the right.
+ * Chat panel on the left, resizable preview on the right.
  * Sends messages via /api/chat/send and persists them to the database.
  */
 
@@ -16,6 +17,11 @@ type BuilderViewProps = {
   initialMessages: HistoryMessage[];
   initialHtml: string | null;
 };
+
+/** Minimum preview width in pixels */
+const MIN_PREVIEW_WIDTH = 200;
+/** Default preview width as a fraction of the container (0–1) */
+const DEFAULT_PREVIEW_FRACTION = 0.55;
 
 export default function BuilderView({
   chatId,
@@ -26,6 +32,41 @@ export default function BuilderView({
   // eslint-disable-next-line @typescript-eslint/no-unused-vars -- will be used when AI generates HTML
   const [html, setHtml] = useState<string | null>(initialHtml);
   const [isSending, setIsSending] = useState(false);
+
+  // Preview panel state
+  const [previewOpen, setPreviewOpen] = useState(true);
+  const [previewWidth, setPreviewWidth] = useState<number | null>(null);
+  const [isResizing, setIsResizing] = useState(false);
+
+  // Initialise previewWidth lazily from container width
+  const getInitialWidth = useCallback((containerWidth: number) => {
+    return Math.round(containerWidth * DEFAULT_PREVIEW_FRACTION);
+  }, []);
+
+  const handleResize = useCallback(
+    (deltaX: number) => {
+      setIsResizing(true);
+      setPreviewWidth((prev) => {
+        const container = document.getElementById("builder-container");
+        if (!container) return prev;
+
+        const containerWidth = container.offsetWidth;
+        const current = prev ?? getInitialWidth(containerWidth);
+
+        // Moving the handle right = shrink preview, left = grow preview
+        const next = current - deltaX;
+
+        // Clamp between min and (container - 300px for chat panel)
+        const maxPreview = containerWidth - 300;
+        return Math.max(MIN_PREVIEW_WIDTH, Math.min(next, maxPreview));
+      });
+    },
+    [getInitialWidth]
+  );
+
+  const handleResizeEnd = useCallback(() => {
+    setIsResizing(false);
+  }, []);
 
   async function handleSend(content: string) {
     // Optimistically add the user message to the UI
@@ -72,9 +113,9 @@ export default function BuilderView({
   }
 
   return (
-    <div className="flex h-full">
-      {/* Left: Chat panel */}
-      <div className="w-105 shrink-0 border-r border-slate-800">
+    <div id="builder-container" className="flex h-full">
+      {/* Left: Chat panel — takes remaining space */}
+      <div className="flex min-w-0 flex-1 flex-col border-r border-slate-800">
         <ChatPanel
           messages={messages}
           onSend={handleSend}
@@ -82,10 +123,34 @@ export default function BuilderView({
         />
       </div>
 
-      {/* Right: Preview panel */}
-      <div className="flex-1">
-        <PreviewPanel html={html} />
-      </div>
+      {/* Resize handle + collapse toggle */}
+      {previewOpen && (
+        <ResizeHandle onResize={handleResize} onResizeEnd={handleResizeEnd} />
+      )}
+
+      {/* Toggle button */}
+      <button
+        type="button"
+        onClick={() => setPreviewOpen((prev) => !prev)}
+        className="flex w-6 shrink-0 items-center justify-center border-l border-slate-800 bg-slate-900 text-slate-500 transition hover:bg-slate-800 hover:text-slate-300"
+        title={previewOpen ? "Hide preview" : "Show preview"}
+      >
+        <span className="text-xs">{previewOpen ? "›" : "‹"}</span>
+      </button>
+
+      {/* Right: Preview panel — resizable */}
+      {previewOpen && (
+        <div
+          className="shrink-0"
+          style={{
+            width: previewWidth ?? "55%",
+            // Prevent iframe from capturing mouse events while resizing
+            pointerEvents: isResizing ? "none" : "auto",
+          }}
+        >
+          <PreviewPanel html={html} />
+        </div>
+      )}
     </div>
   );
 }

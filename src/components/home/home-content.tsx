@@ -26,7 +26,7 @@ export default function HomeContent() {
             Sign in
           </a>
           <a
-            className="inline-flex h-11 items-center justify-center rounded-xl border border-slate-700 px-6 text-sm font-semibold text-slate-100"
+            className="inline-flex h-11 items-center justify-center rounded-xl border border-slate-700 px-6 text-sm font-semibold text-slate-100 transition hover:border-white hover:text-white"
             href="/register"
           >
             Create account
