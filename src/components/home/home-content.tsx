@@ -1,3 +1,4 @@
+import Link from "next/link";
 import GradientMesh from "@/components/ui/gradient-mesh";
 
 /**
@@ -19,18 +20,18 @@ export default function HomeContent() {
           with pages, sections, and ready-to-run code.
         </p>
         <div className="flex flex-wrap gap-3">
-          <a
+          <Link
             className="inline-flex h-11 items-center justify-center rounded-xl bg-white px-6 text-sm font-semibold text-slate-900"
             href="/login"
           >
             Sign in
-          </a>
-          <a
+          </Link>
+          <Link
             className="inline-flex h-11 items-center justify-center rounded-xl border border-slate-700 px-6 text-sm font-semibold text-slate-100 transition hover:border-white hover:text-white"
             href="/register"
           >
             Create account
-          </a>
+          </Link>
         </div>
       </div>
     </main>

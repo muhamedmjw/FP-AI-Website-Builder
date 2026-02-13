@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { Chat } from "@/lib/types/database";
 import { getSupabaseBrowserClient } from "@/lib/supabase/browser-client";
 import { renameChat, deleteChat } from "@/lib/services/chat-service";
@@ -26,7 +26,12 @@ export default function Sidebar({
   activeChatId,
 }: SidebarProps) {
   const router = useRouter();
+  const pathname = usePathname();
   const [chats, setChats] = useState<Chat[]>(initialChats);
+  const pathActiveChatId = pathname.startsWith("/builder/")
+    ? pathname.split("/")[2]
+    : undefined;
+  const resolvedActiveChatId = activeChatId ?? pathActiveChatId;
 
   async function handleRename(chatId: string, newTitle: string) {
     try {
@@ -49,7 +54,7 @@ export default function Sidebar({
       setChats((prev) => prev.filter((c) => c.id !== chatId));
 
       // If deleting the active chat, go back to dashboard
-      if (chatId === activeChatId) {
+      if (chatId === resolvedActiveChatId) {
         router.push("/dashboard");
       }
     } catch (error) {
@@ -69,7 +74,7 @@ export default function Sidebar({
       <div className="flex-1 overflow-y-auto">
         <ChatList
           chats={chats}
-          activeChatId={activeChatId}
+          activeChatId={resolvedActiveChatId}
           onRename={handleRename}
           onDelete={handleDelete}
         />

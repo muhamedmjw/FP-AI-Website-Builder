@@ -14,6 +14,7 @@ export default function DashboardPage() {
   const router = useRouter();
   const inputRef = useRef<HTMLInputElement>(null);
   const [isCreating, setIsCreating] = useState(false);
+  const [errorMessage, setErrorMessage] = useState("");
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -21,6 +22,7 @@ export default function DashboardPage() {
     const message = inputRef.current?.value.trim();
     if (!message) return;
 
+    setErrorMessage("");
     setIsCreating(true);
 
     try {
@@ -31,22 +33,43 @@ export default function DashboardPage() {
         data: { user },
       } = await supabase.auth.getUser();
 
-      if (!user) return;
+      if (!user) {
+        throw new Error("You need to sign in again.");
+      }
 
       // Create a new chat
       const chat = await createChat(supabase, user.id, "New Website");
 
       // Send the first message via the API
-      await fetch("/api/chat/send", {
+      const response = await fetch("/api/chat/send", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ chatId: chat.id, content: message }),
       });
 
+      if (!response.ok) {
+        let apiError = "Failed to send the first message.";
+
+        try {
+          const data = await response.json();
+          if (data?.error && typeof data.error === "string") {
+            apiError = data.error;
+          }
+        } catch {
+          // Keep fallback error message if response body is not JSON.
+        }
+
+        throw new Error(apiError);
+      }
+
       // Navigate to builder
       router.push(`/builder/${chat.id}`);
     } catch (error) {
       console.error("Failed to create chat:", error);
+      setErrorMessage(
+        error instanceof Error ? error.message : "Something went wrong."
+      );
+    } finally {
       setIsCreating(false);
     }
   }
@@ -78,6 +101,11 @@ export default function DashboardPage() {
               {isCreating ? "Creating..." : "Start"}
             </button>
           </div>
+          {errorMessage ? (
+            <p className="mt-3 text-left text-sm text-rose-400">
+              {errorMessage}
+            </p>
+          ) : null}
         </form>
       </div>
     </div>

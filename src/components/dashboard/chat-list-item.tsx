@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import Link from "next/link";
+import { useEffect, useRef, useState } from "react";
 import { MoreHorizontal, Pencil, Trash2 } from "lucide-react";
 import { Chat } from "@/lib/types/database";
 
@@ -27,6 +28,7 @@ export default function ChatListItem({
   const [editValue, setEditValue] = useState(chat.title);
   const inputRef = useRef<HTMLInputElement>(null);
   const menuRef = useRef<HTMLDivElement>(null);
+  const menuId = `chat-actions-${chat.id}`;
 
   // Focus input when entering edit mode
   useEffect(() => {
@@ -53,6 +55,23 @@ export default function ChatListItem({
     };
   }, [menuOpen]);
 
+  // Close menu on Escape
+  useEffect(() => {
+    function handleEscape(event: KeyboardEvent) {
+      if (event.key === "Escape") {
+        setMenuOpen(false);
+      }
+    }
+
+    if (menuOpen) {
+      document.addEventListener("keydown", handleEscape);
+    }
+
+    return () => {
+      document.removeEventListener("keydown", handleEscape);
+    };
+  }, [menuOpen]);
+
   async function handleRenameSubmit() {
     const trimmed = editValue.trim();
     if (trimmed && trimmed !== chat.title) {
@@ -73,7 +92,7 @@ export default function ChatListItem({
     }
   }
 
-  // Editing mode — show inline input
+  // Editing mode - show inline input
   if (isEditing) {
     return (
       <div className="rounded-lg bg-slate-800 px-3 py-2.5">
@@ -96,10 +115,10 @@ export default function ChatListItem({
     );
   }
 
-  // Normal mode — show chat link with actions button
+  // Normal mode - show chat link with actions button
   return (
     <div className="group relative">
-      <a
+      <Link
         href={`/builder/${chat.id}`}
         className={`block rounded-lg px-3 py-2.5 pr-8 text-sm transition ${
           isActive
@@ -111,9 +130,9 @@ export default function ChatListItem({
         <p className="mt-0.5 truncate text-xs text-slate-500">
           {new Date(chat.updated_at).toLocaleDateString()}
         </p>
-      </a>
+      </Link>
 
-      {/* Actions button — visible on hover or when menu is open */}
+      {/* Actions button - visible on hover or when menu is open */}
       <button
         type="button"
         onClick={(e) => {
@@ -121,8 +140,14 @@ export default function ChatListItem({
           e.stopPropagation();
           setMenuOpen((prev) => !prev);
         }}
+        aria-label={`Open actions for ${chat.title}`}
+        aria-haspopup="menu"
+        aria-expanded={menuOpen}
+        aria-controls={menuId}
         className={`absolute right-2 top-1/2 flex h-6 w-6 -translate-y-1/2 items-center justify-center rounded text-slate-500 transition hover:bg-slate-700 hover:text-slate-300 ${
-          menuOpen ? "opacity-100" : "opacity-0 group-hover:opacity-100"
+          menuOpen
+            ? "opacity-100"
+            : "opacity-0 group-hover:opacity-100 group-focus-within:opacity-100"
         }`}
         title="Actions"
       >
@@ -132,7 +157,9 @@ export default function ChatListItem({
       {/* Dropdown menu */}
       {menuOpen && (
         <div
+          id={menuId}
           ref={menuRef}
+          role="menu"
           className="absolute right-0 top-full z-50 mt-1 w-36 rounded-lg border border-slate-700 bg-slate-900 py-1 shadow-xl"
         >
           <button
@@ -142,6 +169,7 @@ export default function ChatListItem({
               setEditValue(chat.title);
               setIsEditing(true);
             }}
+            role="menuitem"
             className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-slate-300 hover:bg-slate-800 hover:text-white"
           >
             <Pencil size={13} />
@@ -150,6 +178,7 @@ export default function ChatListItem({
           <button
             type="button"
             onClick={handleDelete}
+            role="menuitem"
             className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-rose-400 hover:bg-slate-800 hover:text-rose-300"
           >
             <Trash2 size={13} />

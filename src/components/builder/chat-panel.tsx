@@ -36,7 +36,7 @@ export default function ChatPanel({
   return (
     <div className="flex h-full flex-col">
       {/* Header with blur */}
-      <div className="sticky top-0 z-10 border-b border-slate-800/60 bg-slate-950/70 px-5 py-3 backdrop-blur-xl">
+      <div className="sticky top-0 z-10 border-b border-slate-800/60 bg-slate-950/70 px-4 py-3 backdrop-blur-xl sm:px-5">
         <div className="flex items-center gap-2">
           <MessageSquare size={15} className="text-violet-400" />
           <h2 className="truncate text-sm font-medium text-slate-300">
@@ -46,7 +46,10 @@ export default function ChatPanel({
       </div>
 
       {/* Message list */}
-      <div ref={scrollRef} className="flex-1 space-y-4 overflow-y-auto px-14 py-6">
+      <div
+        ref={scrollRef}
+        className="flex-1 space-y-4 overflow-y-auto px-4 py-6 sm:px-8 lg:px-14"
+      >
         {messages.length === 0 ? (
           <div className="flex h-full items-center justify-center">
             <p className="text-sm text-slate-500">
@@ -62,7 +65,7 @@ export default function ChatPanel({
         )}
 
         {isSending && (
-          <div className="flex items-start gap-3 pr-16">
+          <div className="flex items-start gap-3 pr-4 sm:pr-8 lg:pr-16">
             <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-violet-500/20 text-violet-400">
               <MessageSquare size={14} />
             </div>

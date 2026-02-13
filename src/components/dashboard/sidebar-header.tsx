@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { Sparkles } from "lucide-react";
 
 type SidebarHeaderProps = {
@@ -11,7 +12,7 @@ type SidebarHeaderProps = {
 export default function SidebarHeader({ userName }: SidebarHeaderProps) {
   return (
     <div className="space-y-2 px-4 pb-4 pt-6">
-      <a
+      <Link
         href="/dashboard"
         className="flex items-center gap-2 transition hover:opacity-80"
       >
@@ -19,7 +20,7 @@ export default function SidebarHeader({ userName }: SidebarHeaderProps) {
         <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">
           AI Website Builder
         </p>
-      </a>
+      </Link>
       {userName ? (
         <p className="text-sm text-slate-300">Hi, {userName}</p>
       ) : null}
