@@ -42,7 +42,7 @@ export default function Sidebar({
   useEffect(() => {
     setChats(initialChats);
   }, [initialChats]);
-  const pathActiveChatId = pathname.startsWith("/builder/")
+  const pathActiveChatId = pathname.startsWith("/chat/")
     ? pathname.split("/")[2]
     : undefined;
   const resolvedActiveChatId = activeChatId ?? pathActiveChatId;
@@ -67,9 +67,9 @@ export default function Sidebar({
 
       setChats((prev) => prev.filter((c) => c.id !== chatId));
 
-      // If deleting the active chat, go back to dashboard
+      // If deleting the active chat, go back to app home
       if (chatId === resolvedActiveChatId) {
-        router.push("/dashboard");
+        router.push("/");
       }
     } catch (error) {
       console.error("Failed to delete chat:", error);
@@ -81,7 +81,7 @@ export default function Sidebar({
       <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(380px_180px_at_20%_0%,rgba(167,139,250,0.06),transparent_70%)]" />
       {/* Top: brand + greeting */}
       <div className="relative z-10">
-        <SidebarHeader userName={userName} userAvatarUrl={userAvatarUrl} />
+        <SidebarHeader userName={userName} />
       </div>
 
       {/* New website button */}

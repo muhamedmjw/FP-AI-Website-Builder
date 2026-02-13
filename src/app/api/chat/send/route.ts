@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createServerClient } from "@supabase/ssr";
 import { addMessage, getChatMessages } from "@/lib/services/chat-service";
+import { getCurrentUser } from "@/lib/services/user-service";
 
 /**
  * POST /api/chat/send
@@ -52,9 +53,7 @@ export async function POST(request: NextRequest) {
     );
 
     // Verify user is authenticated
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
+    const user = await getCurrentUser(supabase);
 
     if (!user) {
       return NextResponse.json(

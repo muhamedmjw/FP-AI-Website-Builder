@@ -129,7 +129,7 @@ export default function SidebarFooter({
 
       if (error) throw error;
 
-      router.push("/");
+      router.push("/account");
     } catch (error) {
       console.error("Failed to sign out:", error);
     } finally {

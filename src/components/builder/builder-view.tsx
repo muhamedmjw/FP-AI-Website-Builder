@@ -3,6 +3,7 @@
 import { useCallback, useState } from "react";
 import { PanelRightOpen, X } from "lucide-react";
 import { HistoryMessage } from "@/lib/types/database";
+import { sendChatMessage } from "@/lib/services/chat-api";
 import ChatPanel from "@/components/builder/chat-panel";
 import PreviewPanel from "@/components/builder/preview-panel";
 import ResizeHandle from "@/components/builder/resize-handle";
@@ -89,18 +90,7 @@ export default function BuilderView({
     setIsSending(true);
 
     try {
-      const response = await fetch("/api/chat/send", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ chatId, content }),
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || "Failed to send message.");
-      }
-
-      const data = await response.json();
+      const data = await sendChatMessage(chatId, content);
 
       // Replace optimistic messages with the real ones from DB
       setMessages(data.messages);

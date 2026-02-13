@@ -5,7 +5,7 @@ import { NextResponse, type NextRequest } from "next/server";
  * Middleware that runs on every matched route.
  * 1. Refreshes the Supabase auth session (keeps cookies alive).
  * 2. Redirects unauthenticated users away from protected routes.
- * 3. Redirects authenticated users away from login/register pages.
+ * 3. Redirects authenticated users away from auth pages.
  */
 export async function middleware(request: NextRequest) {
   const supabaseResponse = NextResponse.next({ request });
@@ -29,32 +29,32 @@ export async function middleware(request: NextRequest) {
     }
   );
 
-  // Refresh session — IMPORTANT: do not remove this line
+  // Refresh session - IMPORTANT: do not remove this line
   const {
     data: { user },
   } = await supabase.auth.getUser();
 
   const pathname = request.nextUrl.pathname;
 
-  // Protected routes — must be logged in
-  const protectedRoutes = ["/dashboard", "/builder"];
+  // Protected routes - must be logged in
+  const protectedRoutes = ["/", "/chat", "/dashboard", "/builder"];
   const isProtected = protectedRoutes.some(
     (route) => pathname === route || pathname.startsWith(route + "/")
   );
 
   if (isProtected && !user) {
     const url = request.nextUrl.clone();
-    url.pathname = "/login";
+    url.pathname = "/account";
     return NextResponse.redirect(url);
   }
 
-  // Auth routes — redirect to dashboard if already logged in
-  const authRoutes = ["/login", "/register"];
+  // Auth routes - redirect to app home if already logged in
+  const authRoutes = ["/account", "/signin", "/signup", "/login", "/register"];
   const isAuthRoute = authRoutes.includes(pathname);
 
   if (isAuthRoute && user) {
     const url = request.nextUrl.clone();
-    url.pathname = "/dashboard";
+    url.pathname = "/";
     return NextResponse.redirect(url);
   }
 
@@ -64,8 +64,13 @@ export async function middleware(request: NextRequest) {
 // Only run middleware on these paths (skip static files, images, etc.)
 export const config = {
   matcher: [
+    "/",
+    "/chat/:path*",
     "/dashboard/:path*",
     "/builder/:path*",
+    "/account",
+    "/signin",
+    "/signup",
     "/login",
     "/register",
   ],

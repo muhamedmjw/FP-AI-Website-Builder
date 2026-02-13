@@ -119,7 +119,7 @@ export default function ChatListItem({
   return (
     <div className="group relative">
       <Link
-        href={`/builder/${chat.id}`}
+        href={`/chat/${chat.id}`}
         className={`block rounded-xl px-3.5 py-3 pr-9 text-base transition ui-fade-up ${
           isActive
             ? "bg-white/[0.08] text-white shadow-[0_8px_20px_rgba(0,0,0,0.25)]"
