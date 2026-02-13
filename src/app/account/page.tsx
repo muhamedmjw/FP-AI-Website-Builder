@@ -1,5 +1,5 @@
-import HomeContent from "@/components/home/home-content";
+import AccountPageView from "@/client/pages/account";
 
 export default function AccountPage() {
-  return <HomeContent />;
+  return <AccountPageView />;
 }

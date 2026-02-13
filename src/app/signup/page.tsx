@@ -1,7 +1,7 @@
-import FormHeading from "@/components/forms/form-heading";
-import FormLink from "@/components/forms/form-link";
-import PageShell from "@/components/forms/page-shell";
-import SignupForm from "@/components/forms/signup-form";
+import FormHeading from "@/client/components/forms/form-heading";
+import FormLink from "@/client/components/forms/form-link";
+import PageShell from "@/client/components/forms/page-shell";
+import SignupForm from "@/client/components/forms/signup-form";
 
 export default function SignupPage() {
   return (

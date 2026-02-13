@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createServerClient } from "@supabase/ssr";
-import { addMessage, getChatMessages } from "@/lib/services/chat-service";
-import { getCurrentUser } from "@/lib/services/user-service";
+import { addMessage, getChatMessages } from "@/shared/services/chat-service";
+import { getCurrentUser } from "@/shared/services/user-service";
 
 /**
  * POST /api/chat/send

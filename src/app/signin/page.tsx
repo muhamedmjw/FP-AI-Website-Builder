@@ -1,7 +1,7 @@
-import FormHeading from "@/components/forms/form-heading";
-import FormLink from "@/components/forms/form-link";
-import LoginForm from "@/components/forms/login-form";
-import PageShell from "@/components/forms/page-shell";
+import FormHeading from "@/client/components/forms/form-heading";
+import FormLink from "@/client/components/forms/form-link";
+import LoginForm from "@/client/components/forms/login-form";
+import PageShell from "@/client/components/forms/page-shell";
 
 export default function SignInPage() {
   return (
