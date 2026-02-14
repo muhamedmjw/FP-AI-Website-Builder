@@ -97,12 +97,12 @@ body {
 .rainbow-hover::after {
   content: "";
   position: absolute;
-  inset: -3px;
+  inset: -2px;
   border-radius: inherit;
   z-index: -1;
-  opacity: 0.25;
-  filter: blur(16px) saturate(200%) brightness(1.15);
-  transition: opacity 300ms ease, filter 300ms ease, inset 300ms ease;
+  opacity: 0;
+  filter: blur(12px) saturate(160%);
+  transition: opacity 250ms ease;
   background: conic-gradient(
     from 140deg,
     var(--prism-4),
@@ -112,27 +112,38 @@ body {
     var(--prism-5),
     var(--prism-4)
   );
-  animation: prismatic-rotate 3.5s linear infinite;
+  animation: prismatic-rotate 4s linear infinite;
 }
 
 @keyframes prismatic-rotate {
-  to { filter: blur(16px) saturate(200%) brightness(1.15) hue-rotate(360deg); }
+  to { filter: blur(12px) saturate(160%) hue-rotate(360deg); }
 }
 
 .rainbow-hover:hover::after,
 .rainbow-hover:focus-visible::after {
-  opacity: 1;
-  inset: -5px;
-  filter: blur(20px) saturate(220%) brightness(1.3);
+  opacity: 0.85;
 }
 
 .rainbow-hover:hover,
 .rainbow-hover:focus-visible {
-  transform: translateY(-2px);
+  transform: translateY(-1px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+}
+
+/* ─── Prismatic shadow for primary buttons ─── */
+.prismatic-shadow {
   box-shadow:
-    0 10px 30px rgba(0, 0, 0, 0.5),
-    0 0 20px rgba(167, 139, 250, 0.15),
-    0 0 40px rgba(103, 232, 249, 0.08);
+    0 4px 12px rgba(167, 139, 250, 0.25),
+    0 6px 20px rgba(103, 232, 249, 0.15),
+    0 2px 8px rgba(249, 168, 212, 0.15);
+  transition: box-shadow 250ms ease, transform 200ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.prismatic-shadow:hover {
+  box-shadow:
+    0 6px 18px rgba(167, 139, 250, 0.35),
+    0 8px 28px rgba(103, 232, 249, 0.2),
+    0 4px 14px rgba(249, 168, 212, 0.2);
 }
 
 /* ─── Prismatic border (always visible, subtle) ─── */
@@ -160,6 +171,68 @@ body {
   mask-composite: exclude;
   pointer-events: none;
   animation: prismatic-shift 6s ease-in-out infinite;
+}
+
+/* ─── Prismatic animated border with glow ─── */
+.prismatic-glow {
+  position: relative;
+  z-index: 0;
+  overflow: hidden;
+}
+
+.prismatic-glow::before {
+  content: "";
+  position: absolute;
+  inset: -150%;
+  background: conic-gradient(
+    var(--prism-4),
+    var(--prism-1),
+    var(--prism-3),
+    var(--prism-2),
+    var(--prism-5),
+    var(--prism-4)
+  );
+  animation: prismatic-glow-spin 3s linear infinite;
+  pointer-events: none;
+}
+
+.prismatic-glow > * {
+  position: relative;
+  z-index: 1;
+}
+
+.prismatic-glow::after {
+  content: "";
+  position: absolute;
+  inset: 1.5px;
+  border-radius: inherit;
+  background: #161616;
+  pointer-events: none;
+}
+
+/* outer glow layer — uses a wrapping box-shadow */
+.prismatic-glow-wrap {
+  filter: drop-shadow(0 0 8px rgba(167, 139, 250, 0.3))
+          drop-shadow(0 0 16px rgba(103, 232, 249, 0.2))
+          drop-shadow(0 0 24px rgba(249, 168, 212, 0.15));
+  animation: prismatic-glow-pulse 3s ease-in-out infinite;
+}
+
+@keyframes prismatic-glow-spin {
+  to { transform: rotate(360deg); }
+}
+
+@keyframes prismatic-glow-pulse {
+  0%, 100% {
+    filter: drop-shadow(0 0 8px rgba(167, 139, 250, 0.3))
+            drop-shadow(0 0 16px rgba(103, 232, 249, 0.2))
+            drop-shadow(0 0 24px rgba(249, 168, 212, 0.15));
+  }
+  50% {
+    filter: drop-shadow(0 0 12px rgba(249, 168, 212, 0.35))
+            drop-shadow(0 0 20px rgba(110, 231, 183, 0.25))
+            drop-shadow(0 0 30px rgba(167, 139, 250, 0.2));
+  }
 }
 
 /* ─── Prismatic border (only on hover) ─── */
@@ -200,6 +273,62 @@ body {
 .prismatic-border-hover:hover,
 .prismatic-border-hover:focus-visible {
   border-color: transparent;
+}
+
+/* Create-account CTA: animated prismatic outline with ambient glow */
+.prismatic-outline-glow {
+  position: relative;
+  z-index: 0;
+  isolation: isolate;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  background: #141414;
+  box-shadow:
+    0 0 0 1px rgba(255, 255, 255, 0.04) inset,
+    0 0 16px rgba(103, 232, 249, 0.12),
+    0 0 22px rgba(167, 139, 250, 0.12),
+    0 0 28px rgba(249, 168, 212, 0.1);
+  transition: transform 220ms cubic-bezier(0.22, 1, 0.36, 1), box-shadow 260ms ease, color 260ms ease;
+}
+
+.prismatic-outline-glow::before {
+  content: "";
+  position: absolute;
+  inset: -140%;
+  border-radius: inherit;
+  background: conic-gradient(
+    from 120deg,
+    var(--prism-4),
+    var(--prism-1),
+    var(--prism-3),
+    var(--prism-2),
+    var(--prism-5),
+    var(--prism-4)
+  );
+  animation: prismatic-glow-spin 4.2s linear infinite;
+  pointer-events: none;
+  z-index: -2;
+}
+
+.prismatic-outline-glow::after {
+  content: "";
+  position: absolute;
+  inset: 1.2px;
+  border-radius: inherit;
+  background: #141414;
+  pointer-events: none;
+  z-index: -1;
+}
+
+.prismatic-outline-glow:hover,
+.prismatic-outline-glow:focus-visible {
+  color: #ffffff;
+  transform: translateY(-1px);
+  box-shadow:
+    0 0 0 1px rgba(255, 255, 255, 0.06) inset,
+    0 0 22px rgba(103, 232, 249, 0.2),
+    0 0 30px rgba(167, 139, 250, 0.22),
+    0 0 36px rgba(249, 168, 212, 0.18);
 }
 
 @keyframes ui-fade-up {

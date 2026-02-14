@@ -18,6 +18,32 @@ import { getSupabaseBrowserClient } from "@/client/lib/supabase-browser";
 const GITHUB_REPO_URL = "https://github.com/muhamedmjw/Final-Project";
 const MAX_AVATAR_FILE_SIZE = 2 * 1024 * 1024;
 
+function isMissingSessionError(error: unknown): boolean {
+  if (!error || typeof error !== "object") return false;
+
+  const maybeError = error as {
+    name?: string;
+    message?: string;
+    status?: number;
+    __isAuthError?: boolean;
+  };
+
+  if (maybeError.name === "AuthSessionMissingError") {
+    return true;
+  }
+
+  if (
+    maybeError.__isAuthError &&
+    maybeError.status === 400 &&
+    typeof maybeError.message === "string" &&
+    maybeError.message.toLowerCase().includes("auth session missing")
+  ) {
+    return true;
+  }
+
+  return false;
+}
+
 type SidebarFooterProps = {
   userName: string | null;
   userEmail: string | null;
@@ -127,9 +153,10 @@ export default function SidebarFooter({
       const supabase = getSupabaseBrowserClient();
       const { error } = await supabase.auth.signOut();
 
-      if (error) throw error;
+      if (error && !isMissingSessionError(error)) throw error;
 
-      router.push("/account");
+      router.push("/");
+      router.refresh();
     } catch (error) {
       console.error("Failed to sign out:", error);
     } finally {

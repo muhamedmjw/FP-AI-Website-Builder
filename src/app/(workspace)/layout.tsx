@@ -1,13 +1,12 @@
-import { redirect } from "next/navigation";
 import { getSupabaseServerClient } from "@/server/supabase/server-client";
 import { getUserChats } from "@/shared/services/chat-service";
 import { getCurrentUser, getUserProfile } from "@/shared/services/user-service";
 import Sidebar from "@/client/pages/sidebar/sidebar";
 
 /**
- * Authenticated app layout - wraps / and /chat pages.
- * Fetches session + chat list on the server, then renders
- * the sidebar alongside the page content.
+ * Workspace layout for "/" and "/chat".
+ * - Authenticated users get the full app shell with sidebar/history.
+ * - Guests get a sidebar-free shell (chat is temporary and local).
  */
 export default async function AppLayout({
   children,
@@ -16,11 +15,17 @@ export default async function AppLayout({
 }) {
   const supabase = await getSupabaseServerClient();
 
-  // Get the current user (middleware already protects this route)
+  // "/" is public for guest mode, while "/chat/*" remains protected.
   const user = await getCurrentUser(supabase);
 
   if (!user) {
-    redirect("/account");
+    return (
+      <div className="flex h-screen bg-[var(--app-bg)] text-neutral-200">
+        <main className="flex-1 overflow-y-auto bg-[var(--app-bg)]">
+          {children}
+        </main>
+      </div>
+    );
   }
 
   // Fetch user profile for sidebar account data

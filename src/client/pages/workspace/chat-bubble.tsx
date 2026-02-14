@@ -44,7 +44,7 @@ export default function ChatBubble({
             <User size={16} />
           )
         ) : (
-          <Bot size={16} className="prismatic-icon" />
+          <Bot size={16} className="text-neutral-100" />
         )}
       </div>
 

@@ -6,9 +6,36 @@ export type UserProfile = {
   avatarUrl: string | null;
 };
 
+function isMissingSessionError(error: unknown): boolean {
+  if (!error || typeof error !== "object") return false;
+
+  const maybeError = error as {
+    name?: string;
+    message?: string;
+    status?: number;
+    __isAuthError?: boolean;
+  };
+
+  if (maybeError.name === "AuthSessionMissingError") {
+    return true;
+  }
+
+  if (
+    maybeError.__isAuthError &&
+    maybeError.status === 400 &&
+    typeof maybeError.message === "string" &&
+    maybeError.message.toLowerCase().includes("auth session missing")
+  ) {
+    return true;
+  }
+
+  return false;
+}
+
 /**
  * Returns the authenticated user for the current request/session.
- * Throws if Supabase returns an auth error.
+ * Returns null when no auth session exists.
+ * Throws for unexpected Supabase auth errors.
  */
 export async function getCurrentUser(
   supabase: SupabaseClient
@@ -18,7 +45,13 @@ export async function getCurrentUser(
     error,
   } = await supabase.auth.getUser();
 
-  if (error) throw error;
+  if (error) {
+    if (isMissingSessionError(error)) {
+      return null;
+    }
+    throw error;
+  }
+
   return user;
 }
 

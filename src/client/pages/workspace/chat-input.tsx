@@ -11,12 +11,14 @@ type ChatInputProps = {
   onSend: (message: string) => void;
   disabled?: boolean;
   placeholder?: string;
+  isSticky?: boolean;
 };
 
 export default function ChatInput({
   onSend,
   disabled = false,
   placeholder = "Describe the website you want to build...",
+  isSticky = true,
 }: ChatInputProps) {
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -36,7 +38,7 @@ export default function ChatInput({
   return (
     <form
       onSubmit={handleSubmit}
-      className="sticky bottom-0 z-10 bg-transparent px-5 py-4"
+      className={`${isSticky ? "sticky bottom-0 z-10" : ""} bg-transparent px-5 py-4`}
     >
       <div className="mx-auto flex w-full max-w-4xl items-center gap-2 rounded-2xl bg-[#161616]/80 p-2 shadow-[0_16px_30px_rgba(0,0,0,0.4)]">
         <input
