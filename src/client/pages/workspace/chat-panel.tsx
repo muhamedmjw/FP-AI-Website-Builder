@@ -19,6 +19,7 @@ type ChatPanelProps = {
   currentUserAvatarUrl?: string | null;
   disableInput?: boolean;
   inputPlaceholder?: string;
+  inputErrorMessage?: string;
   showHeader?: boolean;
   centerInputWhenEmpty?: boolean;
 };
@@ -31,6 +32,7 @@ export default function ChatPanel({
   currentUserAvatarUrl = null,
   disableInput = false,
   inputPlaceholder = "Describe the website you want to build...",
+  inputErrorMessage = "",
   showHeader = true,
   centerInputWhenEmpty = false,
 }: ChatPanelProps) {
@@ -73,7 +75,16 @@ export default function ChatPanel({
               disabled={isSending || disableInput}
               placeholder={inputPlaceholder}
               isSticky={false}
+              autoFocus
             />
+            {inputErrorMessage ? (
+              <p
+                className="mx-auto mt-1 max-w-4xl px-5 text-sm text-rose-400"
+                role="alert"
+              >
+                {inputErrorMessage}
+              </p>
+            ) : null}
           </div>
         </div>
       ) : (
@@ -123,12 +134,19 @@ export default function ChatPanel({
           </div>
 
           {/* Input bar */}
-          <ChatInput
-            onSend={onSend}
-            disabled={isSending || disableInput}
-            placeholder={inputPlaceholder}
-            isSticky
-          />
+          <div>
+            {inputErrorMessage ? (
+              <p className="mx-auto max-w-4xl px-5 text-sm text-rose-400" role="alert">
+                {inputErrorMessage}
+              </p>
+            ) : null}
+            <ChatInput
+              onSend={onSend}
+              disabled={isSending || disableInput}
+              placeholder={inputPlaceholder}
+              isSticky
+            />
+          </div>
         </>
       )}
     </div>

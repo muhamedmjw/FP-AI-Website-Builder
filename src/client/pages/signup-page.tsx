@@ -20,10 +20,22 @@ export default function SignupForm() {
     setSuccessMessage("");
 
     const formData = new FormData(event.currentTarget);
-    const fullName = String(formData.get("fullName") ?? "");
-    const email = String(formData.get("email") ?? "");
+    const fullName = String(formData.get("fullName") ?? "").trim();
+    const email = String(formData.get("email") ?? "").trim().toLowerCase();
     const password = String(formData.get("password") ?? "");
     const confirmPassword = String(formData.get("confirmPassword") ?? "");
+
+    if (!fullName || !email || !password || !confirmPassword) {
+      setIsLoading(false);
+      setErrorMessage("All fields are required.");
+      return;
+    }
+
+    if (password.length < 8) {
+      setIsLoading(false);
+      setErrorMessage("Password must be at least 8 characters.");
+      return;
+    }
 
     if (password !== confirmPassword) {
       setIsLoading(false);
@@ -51,6 +63,7 @@ export default function SignupForm() {
 
     if (data.session) {
       router.push("/");
+      router.refresh();
       return;
     }
 
@@ -59,18 +72,57 @@ export default function SignupForm() {
 
   return (
     <form className="space-y-4" onSubmit={handleSubmit}>
-      <FormInput label="Full name" name="fullName" placeholder="Your name" />
-      <FormInput label="Email" name="email" type="email" placeholder="you@example.com" />
-      <FormInput label="Password" name="password" type="password" placeholder="Create a password" />
+      <FormInput
+        label="Full name"
+        name="fullName"
+        placeholder="Your name"
+        autoComplete="name"
+        required
+        minLength={2}
+        maxLength={60}
+      />
+      <FormInput
+        label="Email"
+        name="email"
+        type="email"
+        placeholder="you@example.com"
+        autoComplete="email"
+        required
+      />
+      <FormInput
+        label="Password"
+        name="password"
+        type="password"
+        placeholder="Create a password"
+        autoComplete="new-password"
+        required
+        minLength={8}
+      />
       <FormInput
         label="Confirm password"
         name="confirmPassword"
         type="password"
         placeholder="Repeat password"
+        autoComplete="new-password"
+        required
+        minLength={8}
       />
-      <PrimaryButton type="submit" label={isLoading ? "Creating..." : "Create account"} fullWidth />
-      {errorMessage ? <p className="text-sm text-rose-400">{errorMessage}</p> : null}
-      {successMessage ? <p className="text-sm text-emerald-400">{successMessage}</p> : null}
+      <PrimaryButton
+        type="submit"
+        label={isLoading ? "Creating..." : "Create account"}
+        fullWidth
+        disabled={isLoading}
+      />
+      {errorMessage ? (
+        <p className="text-sm text-rose-400" role="alert">
+          {errorMessage}
+        </p>
+      ) : null}
+      {successMessage ? (
+        <p className="text-sm text-emerald-400" role="status">
+          {successMessage}
+        </p>
+      ) : null}
     </form>
   );
 }

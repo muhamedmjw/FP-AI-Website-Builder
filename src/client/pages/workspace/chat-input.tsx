@@ -12,6 +12,7 @@ type ChatInputProps = {
   disabled?: boolean;
   placeholder?: string;
   isSticky?: boolean;
+  autoFocus?: boolean;
 };
 
 export default function ChatInput({
@@ -19,6 +20,7 @@ export default function ChatInput({
   disabled = false,
   placeholder = "Describe the website you want to build...",
   isSticky = true,
+  autoFocus = false,
 }: ChatInputProps) {
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -46,6 +48,7 @@ export default function ChatInput({
           type="text"
           placeholder={placeholder}
           disabled={disabled}
+          autoFocus={autoFocus}
           className="flex-1 rounded-xl bg-transparent px-3 py-2.5 text-base text-neutral-100 placeholder:text-neutral-600 focus:outline-none disabled:opacity-50"
         />
         <button

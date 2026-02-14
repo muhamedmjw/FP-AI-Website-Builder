@@ -1,36 +1,11 @@
 import { SupabaseClient, User as SupabaseUser } from "@supabase/supabase-js";
+import { isMissingSessionError } from "@/shared/utils/auth-errors";
 
 export type UserProfile = {
   name: string | null;
   email: string | null;
   avatarUrl: string | null;
 };
-
-function isMissingSessionError(error: unknown): boolean {
-  if (!error || typeof error !== "object") return false;
-
-  const maybeError = error as {
-    name?: string;
-    message?: string;
-    status?: number;
-    __isAuthError?: boolean;
-  };
-
-  if (maybeError.name === "AuthSessionMissingError") {
-    return true;
-  }
-
-  if (
-    maybeError.__isAuthError &&
-    maybeError.status === 400 &&
-    typeof maybeError.message === "string" &&
-    maybeError.message.toLowerCase().includes("auth session missing")
-  ) {
-    return true;
-  }
-
-  return false;
-}
 
 /**
  * Returns the authenticated user for the current request/session.

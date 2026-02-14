@@ -18,8 +18,14 @@ export default function LoginForm() {
     setErrorMessage("");
 
     const formData = new FormData(event.currentTarget);
-    const email = String(formData.get("email") ?? "");
+    const email = String(formData.get("email") ?? "").trim().toLowerCase();
     const password = String(formData.get("password") ?? "");
+
+    if (!email || !password) {
+      setIsLoading(false);
+      setErrorMessage("Email and password are required.");
+      return;
+    }
 
     const supabase = getSupabaseBrowserClient();
     const { error } = await supabase.auth.signInWithPassword({ email, password });
@@ -37,14 +43,38 @@ export default function LoginForm() {
     }
 
     router.push("/");
+    router.refresh();
   }
 
   return (
     <form className="space-y-4" onSubmit={handleSubmit}>
-      <FormInput label="Email" name="email" type="email" placeholder="you@example.com" />
-      <FormInput label="Password" name="password" type="password" placeholder="********" />
-      <PrimaryButton type="submit" label={isLoading ? "Signing in..." : "Sign in"} fullWidth />
-      {errorMessage ? <p className="text-sm text-rose-400">{errorMessage}</p> : null}
+      <FormInput
+        label="Email"
+        name="email"
+        type="email"
+        placeholder="you@example.com"
+        autoComplete="email"
+        required
+      />
+      <FormInput
+        label="Password"
+        name="password"
+        type="password"
+        placeholder="********"
+        autoComplete="current-password"
+        required
+      />
+      <PrimaryButton
+        type="submit"
+        label={isLoading ? "Signing in..." : "Sign in"}
+        fullWidth
+        disabled={isLoading}
+      />
+      {errorMessage ? (
+        <p className="text-sm text-rose-400" role="alert">
+          {errorMessage}
+        </p>
+      ) : null}
     </form>
   );
 }

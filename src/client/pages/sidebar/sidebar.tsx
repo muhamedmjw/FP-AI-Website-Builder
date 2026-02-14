@@ -37,6 +37,7 @@ export default function Sidebar({
   const [userAvatarUrl, setUserAvatarUrl] = useState<string | null>(
     initialUserAvatarUrl
   );
+  const [actionErrorMessage, setActionErrorMessage] = useState("");
 
   // Sync chat list when the server re-fetches (e.g. after router.refresh())
   useEffect(() => {
@@ -51,12 +52,14 @@ export default function Sidebar({
     try {
       const supabase = getSupabaseBrowserClient();
       await renameChat(supabase, chatId, newTitle);
+      setActionErrorMessage("");
 
       setChats((prev) =>
         prev.map((c) => (c.id === chatId ? { ...c, title: newTitle } : c))
       );
     } catch (error) {
       console.error("Failed to rename chat:", error);
+      setActionErrorMessage("Could not rename this project. Please try again.");
     }
   }
 
@@ -64,6 +67,7 @@ export default function Sidebar({
     try {
       const supabase = getSupabaseBrowserClient();
       await deleteChat(supabase, chatId);
+      setActionErrorMessage("");
 
       setChats((prev) => prev.filter((c) => c.id !== chatId));
 
@@ -73,6 +77,7 @@ export default function Sidebar({
       }
     } catch (error) {
       console.error("Failed to delete chat:", error);
+      setActionErrorMessage("Could not delete this project. Please try again.");
     }
   }
 
@@ -97,6 +102,11 @@ export default function Sidebar({
           onRename={handleRename}
           onDelete={handleDelete}
         />
+        {actionErrorMessage ? (
+          <p className="px-5 pb-3 text-sm text-rose-400" role="status">
+            {actionErrorMessage}
+          </p>
+        ) : null}
       </div>
 
       {/* Bottom: account menu */}

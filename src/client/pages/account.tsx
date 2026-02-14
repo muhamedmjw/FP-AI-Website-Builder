@@ -3,7 +3,7 @@ import GradientMesh from "@/client/components/ui/gradient-mesh";
 
 /**
  * Landing page - always shows the public/guest marketing view.
- * Authenticated users are directed to / by the middleware,
+ * Authenticated users are directed to / by the proxy,
  * so this component never needs to check auth state.
  */
 export default function AccountPageView() {

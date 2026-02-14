@@ -78,7 +78,7 @@ export default function ChatHome() {
             </button>
           </div>
           {errorMessage ? (
-            <p className="mt-3 text-left text-sm text-rose-400">
+            <p className="mt-3 text-left text-sm text-rose-400" role="alert">
               {errorMessage}
             </p>
           ) : null}

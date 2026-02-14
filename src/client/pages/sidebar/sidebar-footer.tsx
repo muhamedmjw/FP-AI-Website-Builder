@@ -14,35 +14,10 @@ import {
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { getSupabaseBrowserClient } from "@/client/lib/supabase-browser";
+import { isMissingSessionError } from "@/shared/utils/auth-errors";
 
 const GITHUB_REPO_URL = "https://github.com/muhamedmjw/Final-Project";
 const MAX_AVATAR_FILE_SIZE = 2 * 1024 * 1024;
-
-function isMissingSessionError(error: unknown): boolean {
-  if (!error || typeof error !== "object") return false;
-
-  const maybeError = error as {
-    name?: string;
-    message?: string;
-    status?: number;
-    __isAuthError?: boolean;
-  };
-
-  if (maybeError.name === "AuthSessionMissingError") {
-    return true;
-  }
-
-  if (
-    maybeError.__isAuthError &&
-    maybeError.status === 400 &&
-    typeof maybeError.message === "string" &&
-    maybeError.message.toLowerCase().includes("auth session missing")
-  ) {
-    return true;
-  }
-
-  return false;
-}
 
 type SidebarFooterProps = {
   userName: string | null;

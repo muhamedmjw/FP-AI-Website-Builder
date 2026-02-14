@@ -123,7 +123,7 @@ export default function ChatListItem({
         className={`ui-fade-up block rounded-xl px-3.5 py-3 pr-9 text-base ${
           isActive
             ? "bg-white/[0.08] text-white shadow-[0_8px_20px_rgba(0,0,0,0.25)]"
-            : "text-neutral-370 hover:bg-white/[0.09] hover:text-neutral-100"
+            : "text-neutral-400 hover:bg-white/[0.09] hover:text-neutral-100"
         }`}
       >
         <p className="truncate text-[15px] font-semibold">{chat.title}</p>

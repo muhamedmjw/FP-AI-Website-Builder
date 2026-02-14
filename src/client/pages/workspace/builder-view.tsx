@@ -39,6 +39,7 @@ export default function BuilderView({
   const [messages, setMessages] = useState<HistoryMessage[]>(initialMessages);
   const [html, setHtml] = useState<string | null>(initialHtml);
   const [isSending, setIsSending] = useState(false);
+  const [inputErrorMessage, setInputErrorMessage] = useState("");
 
   // Preview panel state
   const [previewOpen, setPreviewOpen] = useState(hasInitialPreview);
@@ -88,6 +89,7 @@ export default function BuilderView({
 
     setMessages((prev) => [...prev, tempUserMessage]);
     setIsSending(true);
+    setInputErrorMessage("");
 
     try {
       const data = await sendChatMessage(chatId, content);
@@ -108,6 +110,11 @@ export default function BuilderView({
       }
     } catch (error) {
       console.error("Failed to send message:", error);
+      setInputErrorMessage(
+        error instanceof Error
+          ? error.message
+          : "Failed to send message. Please try again."
+      );
 
       // Remove the optimistic message on failure
       setMessages((prev) =>
@@ -131,6 +138,7 @@ export default function BuilderView({
           onSend={handleSend}
           isSending={isSending}
           currentUserAvatarUrl={currentUserAvatarUrl}
+          inputErrorMessage={inputErrorMessage}
         />
       </div>
 

@@ -2,7 +2,7 @@ import { createBrowserClient } from "@supabase/ssr";
 
 /**
  * Creates a Supabase client for use in Client Components.
- * Uses @supabase/ssr so auth cookies stay in sync with the middleware.
+ * Uses @supabase/ssr so auth cookies stay in sync with the proxy.
  */
 export function getSupabaseBrowserClient() {
   return createBrowserClient(
