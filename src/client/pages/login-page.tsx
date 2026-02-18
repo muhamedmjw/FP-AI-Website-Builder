@@ -1,13 +1,11 @@
 "use client";
 
 import { FormEvent, useState } from "react";
-import { useRouter } from "next/navigation";
 import FormInput from "@/client/components/forms/form-input";
 import PrimaryButton from "@/client/components/ui/primary-button";
 import { getSupabaseBrowserClient } from "@/client/lib/supabase-browser";
 
 export default function LoginForm() {
-  const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
 
@@ -42,8 +40,7 @@ export default function LoginForm() {
       return;
     }
 
-    router.push("/");
-    router.refresh();
+    window.location.assign("/");
   }
 
   return (

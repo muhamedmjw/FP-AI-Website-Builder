@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useEffect } from "react";
+import { Fragment, ReactNode, useEffect, useRef } from "react";
 import { MessageSquare } from "lucide-react";
 import { HistoryMessage } from "@/shared/types/database";
 import ChatBubble from "@/client/pages/workspace/chat-bubble";
@@ -22,6 +22,12 @@ type ChatPanelProps = {
   inputErrorMessage?: string;
   showHeader?: boolean;
   centerInputWhenEmpty?: boolean;
+  messageListFooter?: ReactNode;
+  inlineAttachments?: Array<{
+    id: string;
+    anchorMessageId: string;
+    node: ReactNode;
+  }>;
 };
 
 export default function ChatPanel({
@@ -35,9 +41,12 @@ export default function ChatPanel({
   inputErrorMessage = "",
   showHeader = true,
   centerInputWhenEmpty = false,
+  messageListFooter = null,
+  inlineAttachments = [],
 }: ChatPanelProps) {
   const scrollRef = useRef<HTMLDivElement>(null);
-  const shouldCenterInput = centerInputWhenEmpty && messages.length === 0;
+  const visibleMessages = messages.filter((msg) => msg.role !== "system");
+  const shouldCenterInput = centerInputWhenEmpty && visibleMessages.length === 0;
 
   // Auto-scroll to bottom when new messages arrive
   useEffect(() => {
@@ -94,7 +103,7 @@ export default function ChatPanel({
             ref={scrollRef}
             className="flex-1 overflow-y-auto px-5 py-8"
           >
-            {messages.length === 0 ? (
+            {visibleMessages.length === 0 ? (
               <div className="flex h-full items-center justify-center">
                 <div className="max-w-lg text-center">
                   <p className="text-xl font-semibold text-neutral-200">
@@ -108,16 +117,22 @@ export default function ChatPanel({
               </div>
             ) : (
               <div className="mx-auto w-full max-w-4xl space-y-5 pb-8">
-                {messages
-                  .filter((msg) => msg.role !== "system")
-                  .map((msg) => (
+                {visibleMessages.map((msg) => (
+                  <Fragment key={msg.id}>
                     <ChatBubble
-                      key={msg.id}
                       role={msg.role}
                       content={msg.content}
                       userAvatarUrl={currentUserAvatarUrl}
                     />
-                  ))}
+                    {inlineAttachments
+                      .filter((attachment) => attachment.anchorMessageId === msg.id)
+                      .map((attachment) => (
+                        <Fragment key={attachment.id}>{attachment.node}</Fragment>
+                      ))}
+                  </Fragment>
+                ))}
+
+                {messageListFooter}
 
                 {isSending && (
                   <div className="ui-fade-up mr-auto flex max-w-[78%] items-start gap-2.5">

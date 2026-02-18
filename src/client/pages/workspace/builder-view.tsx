@@ -1,12 +1,14 @@
 "use client";
 
-import { useCallback, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { PanelRightOpen, X } from "lucide-react";
 import { HistoryMessage } from "@/shared/types/database";
 import { sendChatMessage } from "@/client/lib/chat-api";
+import { downloadWebsiteZip } from "@/client/lib/zip-download";
 import ChatPanel from "@/client/pages/workspace/chat-panel";
 import PreviewPanel from "@/client/pages/workspace/preview-panel";
 import ResizeHandle from "@/client/pages/workspace/resize-handle";
+import ZipArtifactCard from "@/client/pages/workspace/zip-artifact-card";
 
 /**
  * Builder view - main split layout.
@@ -25,6 +27,71 @@ type BuilderViewProps = {
 const MIN_PREVIEW_WIDTH = 200;
 /** Default preview width as a fraction of the container (0-1) */
 const DEFAULT_PREVIEW_FRACTION = 0.55;
+const ZIP_READY_PREFIX = 'Starter package ready for "';
+const ZIP_READY_SUFFIX = '". Use Download ZIP to continue.';
+
+type ZipArtifact = {
+  id: string;
+  anchorMessageId: string;
+  prompt: string;
+  createdAt: string;
+  zipName: string;
+  fileCount: number;
+  folderCount: number;
+};
+
+function extractPromptFromZipReadyMessage(content: string): string | null {
+  if (
+    !content.startsWith(ZIP_READY_PREFIX) ||
+    !content.endsWith(ZIP_READY_SUFFIX)
+  ) {
+    return null;
+  }
+
+  return content.slice(ZIP_READY_PREFIX.length, -ZIP_READY_SUFFIX.length);
+}
+
+function extractZipArtifacts(messages: HistoryMessage[]): ZipArtifact[] {
+  const artifacts: ZipArtifact[] = [];
+
+  messages.forEach((message, index) => {
+    if (message.role !== "assistant") {
+      return;
+    }
+
+    const parsedPrompt = extractPromptFromZipReadyMessage(message.content);
+    if (!parsedPrompt) {
+      return;
+    }
+
+    let prompt = parsedPrompt.trim();
+    if (!prompt) {
+      for (let cursor = index - 1; cursor >= 0; cursor -= 1) {
+        const previousMessage = messages[cursor];
+        if (previousMessage.role === "user") {
+          prompt = previousMessage.content.trim();
+          break;
+        }
+      }
+    }
+
+    if (!prompt) {
+      return;
+    }
+
+    artifacts.push({
+      id: `zip-${message.id}`,
+      anchorMessageId: message.id,
+      prompt,
+      createdAt: message.created_at,
+      zipName: "website-files.zip",
+      fileCount: 1,
+      folderCount: 0,
+    });
+  });
+
+  return artifacts;
+}
 
 export default function BuilderView({
   chatId,
@@ -46,6 +113,7 @@ export default function BuilderView({
   const [previewWidth, setPreviewWidth] = useState<number | null>(null);
   const [isResizing, setIsResizing] = useState(false);
   const hasPreview = typeof html === "string" && html.trim().length > 0;
+  const zipArtifacts = useMemo(() => extractZipArtifacts(messages), [messages]);
 
   // Initialise preview width lazily from container width
   const getInitialWidth = useCallback((containerWidth: number) => {
@@ -76,6 +144,25 @@ export default function BuilderView({
   const handleResizeEnd = useCallback(() => {
     setIsResizing(false);
   }, []);
+
+  async function handleDownloadZip(prompt: string) {
+    if (!prompt.trim()) {
+      return;
+    }
+
+    setInputErrorMessage("");
+
+    try {
+      await downloadWebsiteZip(prompt);
+    } catch (error) {
+      console.error("Failed to download ZIP:", error);
+      setInputErrorMessage(
+        error instanceof Error
+          ? error.message
+          : "Failed to download ZIP. Please try again."
+      );
+    }
+  }
 
   async function handleSend(content: string) {
     // Optimistically add the user message to the UI
@@ -139,6 +226,21 @@ export default function BuilderView({
           isSending={isSending}
           currentUserAvatarUrl={currentUserAvatarUrl}
           inputErrorMessage={inputErrorMessage}
+          inlineAttachments={zipArtifacts.map((artifact) => ({
+            id: artifact.id,
+            anchorMessageId: artifact.anchorMessageId,
+            node: (
+              <ZipArtifactCard
+                zipName={artifact.zipName}
+                fileCount={artifact.fileCount}
+                folderCount={artifact.folderCount}
+                createdAt={artifact.createdAt}
+                onDownload={() => {
+                  void handleDownloadZip(artifact.prompt);
+                }}
+              />
+            ),
+          }))}
         />
       </div>
 

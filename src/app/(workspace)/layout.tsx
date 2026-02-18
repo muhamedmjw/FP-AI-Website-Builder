@@ -2,6 +2,7 @@ import { getSupabaseServerClient } from "@/server/supabase/server-client";
 import { getUserChats } from "@/shared/services/chat-service";
 import { getCurrentUser, getUserProfile } from "@/shared/services/user-service";
 import Sidebar from "@/client/pages/sidebar/sidebar";
+import AuthSessionSync from "@/client/components/auth-session-sync";
 
 /**
  * Workspace layout for "/" and "/chat".
@@ -21,6 +22,7 @@ export default async function AppLayout({
   if (!user) {
     return (
       <div className="flex h-screen bg-[var(--app-bg)] text-neutral-200">
+        <AuthSessionSync />
         <main className="flex-1 overflow-y-auto bg-[var(--app-bg)]">
           {children}
         </main>
@@ -36,6 +38,7 @@ export default async function AppLayout({
 
   return (
     <div className="flex h-screen bg-[var(--app-bg)] text-neutral-200">
+      <AuthSessionSync />
       <Sidebar
         chats={chats}
         userName={profile?.name ?? null}

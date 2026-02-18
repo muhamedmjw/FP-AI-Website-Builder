@@ -1,11 +1,18 @@
 "use client";
 
-import { FormEvent, useRef, useState } from "react";
+import { FormEvent, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { getSupabaseBrowserClient } from "@/client/lib/supabase-browser";
-import { createChat } from "@/shared/services/chat-service";
+import { addMessage, createChat } from "@/shared/services/chat-service";
 import { sendChatMessage } from "@/client/lib/chat-api";
 import { getCurrentUser } from "@/shared/services/user-service";
+import {
+  consumePendingGuestZipPrompt,
+  downloadWebsiteZip,
+} from "@/client/lib/zip-download";
+import {
+  consumePendingGuestChatSession,
+} from "@/client/lib/guest-chat-handoff";
 
 /**
  * Authenticated home screen - centered prompt input.
@@ -17,6 +24,81 @@ export default function ChatHome() {
   const inputRef = useRef<HTMLInputElement>(null);
   const [isCreating, setIsCreating] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
+  const [downloadMessage, setDownloadMessage] = useState("");
+
+  useEffect(() => {
+    let isCancelled = false;
+
+    async function restoreGuestSessionAndDownload() {
+      const supabase = getSupabaseBrowserClient();
+      const user = await getCurrentUser(supabase);
+
+      if (!user) {
+        return;
+      }
+
+      let restoredChatId: string | null = null;
+      const pendingGuestSession = consumePendingGuestChatSession();
+
+      if (pendingGuestSession && pendingGuestSession.messages.length > 0) {
+        setDownloadMessage("Restoring your guest chat...");
+
+        const chat = await createChat(
+          supabase,
+          user.id,
+          pendingGuestSession.title || "Guest Chat"
+        );
+
+        for (const message of pendingGuestSession.messages) {
+          await addMessage(supabase, chat.id, message.role, message.content);
+        }
+
+        restoredChatId = chat.id;
+      }
+
+      const pendingPrompt = consumePendingGuestZipPrompt();
+
+      if (pendingPrompt) {
+        setDownloadMessage("Starting your pending ZIP download...");
+
+        await downloadWebsiteZip(pendingPrompt);
+      }
+
+      if (restoredChatId && !isCancelled) {
+        window.location.assign(`/chat/${restoredChatId}`);
+        return;
+      }
+
+      if (!isCancelled && pendingPrompt) {
+        setDownloadMessage("Your ZIP download has started.");
+        setTimeout(() => {
+          if (!isCancelled) {
+            setDownloadMessage("");
+          }
+        }, 3000);
+      }
+    }
+
+    async function runPendingGuestActions() {
+      try {
+        await restoreGuestSessionAndDownload();
+      } catch (error) {
+        console.error("Failed to restore guest session state:", error);
+
+        if (!isCancelled) {
+          setDownloadMessage(
+            "Could not restore guest chat/download. Please try again."
+          );
+        }
+      }
+    }
+
+    void runPendingGuestActions();
+
+    return () => {
+      isCancelled = true;
+    };
+  }, [router]);
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -59,6 +141,9 @@ export default function ChatHome() {
         <p className="text-sm text-neutral-500">
           Describe your website and AI will generate it for you.
         </p>
+        {downloadMessage ? (
+          <p className="text-sm text-emerald-400">{downloadMessage}</p>
+        ) : null}
 
         <form onSubmit={handleSubmit} className="mt-6">
           <div className="flex items-center gap-3 rounded-2xl border border-white/[0.08] bg-[#0f0f0f] px-4 py-3 transition focus-within:border-white/[0.16] focus-within:ring-1 focus-within:ring-white/[0.06]">
