@@ -7,7 +7,9 @@ import {
   ChevronUp,
   Github,
   LogOut,
+  Moon,
   Settings,
+  Sun,
   Upload,
   UserCircle2,
   X,
@@ -18,6 +20,9 @@ import { isMissingSessionError } from "@/shared/utils/auth-errors";
 
 const GITHUB_REPO_URL = "https://github.com/muhamedmjw/Final-Project";
 const MAX_AVATAR_FILE_SIZE = 2 * 1024 * 1024;
+const THEME_STORAGE_KEY = "app-theme";
+
+type Theme = "dark" | "light";
 
 type SidebarFooterProps = {
   userName: string | null;
@@ -50,6 +55,7 @@ export default function SidebarFooter({
   const [isSigningOut, setIsSigningOut] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
+  const [theme, setTheme] = useState<Theme>("dark");
 
   const [nameInput, setNameInput] = useState(userName ?? "");
   const [emailInput, setEmailInput] = useState(userEmail ?? "");
@@ -62,6 +68,27 @@ export default function SidebarFooter({
     setEmailInput(userEmail ?? "");
     setAvatarPreview(userAvatarUrl);
   }, [userName, userEmail, userAvatarUrl]);
+
+  useEffect(() => {
+    const root = document.documentElement;
+    const rootTheme = root.getAttribute("data-theme");
+    const savedTheme = window.localStorage.getItem(THEME_STORAGE_KEY);
+    const prefersLight = window.matchMedia(
+      "(prefers-color-scheme: light)"
+    ).matches;
+
+    const nextTheme: Theme =
+      savedTheme === "light" || savedTheme === "dark"
+        ? savedTheme
+        : rootTheme === "light" || rootTheme === "dark"
+          ? rootTheme
+          : prefersLight
+            ? "light"
+            : "dark";
+
+    root.setAttribute("data-theme", nextTheme);
+    setTheme(nextTheme);
+  }, []);
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
@@ -215,6 +242,53 @@ export default function SidebarFooter({
   const accountLabel = userName?.trim() || userEmail?.trim() || "Account";
   const initials =
     accountLabel.length > 0 ? accountLabel.charAt(0).toUpperCase() : "A";
+  const isLightTheme = theme === "light";
+
+  function handleThemeToggle() {
+    const nextTheme: Theme = theme === "light" ? "dark" : "light";
+    setTheme(nextTheme);
+    document.documentElement.setAttribute("data-theme", nextTheme);
+    window.localStorage.setItem(THEME_STORAGE_KEY, nextTheme);
+  }
+
+  const accountButtonClass =
+    "flex h-12 w-full items-center gap-3 rounded-xl bg-[var(--app-hover-bg)] px-3 text-left transition hover:bg-[var(--app-hover-bg-strong)] disabled:cursor-not-allowed disabled:opacity-50";
+  const avatarFallbackClass =
+    "flex h-8 w-8 items-center justify-center rounded-full bg-[var(--app-hover-bg-strong)] text-sm font-semibold text-[var(--app-text-heading)]";
+  const accountNameClass =
+    "truncate text-sm font-semibold text-[var(--app-text-heading)]";
+  const accountMetaClass =
+    "truncate text-xs text-[var(--app-text-tertiary)]";
+  const chevronClass =
+    `text-[var(--app-text-tertiary)] transition ${menuOpen ? "rotate-180" : ""}`;
+  const menuPanelClass =
+    "absolute bottom-full left-4 right-4 z-30 mb-2 overflow-hidden rounded-xl border border-[var(--app-card-border)] bg-[var(--app-dropdown-bg)] shadow-[var(--app-shadow-lg)]";
+  const menuItemClass =
+    "cursor-pointer flex w-full items-center gap-2.5 px-3.5 py-3 text-sm text-[var(--app-text-secondary)] transition hover:bg-[var(--app-hover-bg)] hover:text-[var(--app-text-heading)]";
+  const signOutItemClass =
+    "cursor-pointer flex w-full items-center gap-2.5 px-3.5 py-3 text-sm text-rose-400 transition hover:bg-[var(--app-hover-bg)] hover:text-rose-300";
+  const settingsOverlayClass =
+    "fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm";
+  const settingsModalClass =
+    "w-full max-w-xl rounded-2xl border border-[var(--app-card-border)] bg-[var(--app-panel)] shadow-[var(--app-shadow-lg)]";
+  const settingsTitleClass =
+    "text-lg font-semibold text-[var(--app-text-heading)]";
+  const settingsSubtitleClass =
+    "text-sm text-[var(--app-text-tertiary)]";
+  const closeButtonClass =
+    "rounded-lg p-2 text-[var(--app-text-tertiary)] transition hover:bg-[var(--app-hover-bg-strong)] hover:text-[var(--app-text-heading)]";
+  const avatarPlaceholderClass =
+    "flex h-16 w-16 items-center justify-center rounded-full border border-[var(--app-card-border)] bg-[var(--app-input-bg)] text-[var(--app-text-tertiary)]";
+  const secondaryActionButtonClass =
+    "inline-flex items-center gap-2 rounded-lg bg-[var(--app-hover-bg)] px-3 py-2 text-sm text-[var(--app-text-secondary)] transition hover:bg-[var(--app-hover-bg-strong)]";
+  const removeActionButtonClass =
+    "rounded-lg bg-[var(--app-hover-bg)] px-3 py-2 text-sm text-[var(--app-text-tertiary)] transition hover:bg-[var(--app-hover-bg-strong)]";
+  const inputLabelClass =
+    "text-sm font-medium text-[var(--app-text-secondary)]";
+  const inputClass =
+    "w-full rounded-lg border border-[var(--app-input-border)] bg-[var(--app-input-bg)] px-3.5 py-2.5 text-base text-[var(--app-input-text)] focus:outline-none focus:border-[var(--app-input-focus-border)]";
+  const cancelButtonClass =
+    "rounded-lg bg-[var(--app-hover-bg)] px-4 py-2.5 text-sm text-[var(--app-text-secondary)] transition hover:bg-[var(--app-hover-bg-strong)]";
 
   return (
     <>
@@ -223,7 +297,7 @@ export default function SidebarFooter({
           type="button"
           onClick={() => setMenuOpen((prev) => !prev)}
           disabled={isSigningOut}
-          className="flex h-12 w-full items-center gap-3 rounded-xl bg-white/[0.05] px-3 text-left transition hover:bg-white/[0.12] disabled:cursor-not-allowed disabled:opacity-50"
+          className={accountButtonClass}
           aria-expanded={menuOpen}
           aria-haspopup="menu"
           title="Account"
@@ -232,31 +306,31 @@ export default function SidebarFooter({
             <img
               src={avatarPreview}
               alt="Account avatar"
-              className="h-8 w-8 rounded-full border border-white/10 object-cover"
+              className="h-8 w-8 rounded-full object-cover border border-[var(--app-card-border)]"
             />
           ) : (
-            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-white/[0.08] text-sm font-semibold text-neutral-300">
+            <div className={avatarFallbackClass}>
               {initials}
             </div>
           )}
 
           <div className="min-w-0 flex-1">
-            <p className="truncate text-sm font-semibold text-neutral-100">
+            <p className={accountNameClass}>
               {accountLabel}
             </p>
-            <p className="truncate text-xs text-neutral-500">Account</p>
+            <p className={accountMetaClass}>Account</p>
           </div>
 
           <ChevronUp
             size={16}
-            className={`text-neutral-500 transition ${menuOpen ? "rotate-180" : ""}`}
+            className={chevronClass}
           />
         </button>
 
         {menuOpen && (
           <div
             role="menu"
-            className="absolute bottom-full left-4 right-4 z-30 mb-2 overflow-hidden rounded-xl border border-white/[0.06] bg-[#181818] shadow-[0_12px_28px_rgba(0,0,0,0.5)]"
+            className={menuPanelClass}
           >
             <button
               type="button"
@@ -266,7 +340,7 @@ export default function SidebarFooter({
                 setSettingsOpen(true);
               }}
               role="menuitem"
-              className="cursor-pointer flex w-full items-center gap-2.5 px-3.5 py-3 text-sm text-neutral-300 transition hover:bg-white/[0.1] hover:text-white"
+              className={menuItemClass}
             >
               <Settings size={15} />
               Settings
@@ -277,7 +351,7 @@ export default function SidebarFooter({
               target="_blank"
               rel="noreferrer"
               role="menuitem"
-              className="cursor-pointer flex w-full items-center gap-2.5 px-3.5 py-3 text-sm text-neutral-300 transition hover:bg-white/[0.1] hover:text-white"
+              className={menuItemClass}
             >
               <Github size={15} />
               GitHub Repo
@@ -285,9 +359,19 @@ export default function SidebarFooter({
 
             <button
               type="button"
+              onClick={handleThemeToggle}
+              role="menuitem"
+              className={menuItemClass}
+            >
+              {isLightTheme ? <Moon size={15} /> : <Sun size={15} />}
+              {isLightTheme ? "Dark Mode" : "Light Mode"}
+            </button>
+
+            <button
+              type="button"
               onClick={handleSignOut}
               role="menuitem"
-              className="cursor-pointer flex w-full items-center gap-2.5 px-3.5 py-3 text-sm text-rose-300 transition hover:bg-white/[0.1] hover:text-rose-200"
+              className={signOutItemClass}
             >
               <LogOut size={15} />
               {isSigningOut ? "Signing out..." : "Log out"}
@@ -298,25 +382,25 @@ export default function SidebarFooter({
 
       {settingsOpen && createPortal(
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 p-4 backdrop-blur-sm"
+          className={settingsOverlayClass}
           onClick={(event) => {
             if (event.target === event.currentTarget) {
               setSettingsOpen(false);
             }
           }}
         >
-          <div className="w-full max-w-xl rounded-2xl bg-[#151515] shadow-[0_24px_48px_rgba(0,0,0,0.65)]">
+          <div className={settingsModalClass}>
             <div className="flex items-center justify-between px-6 py-4">
               <div>
-                <h3 className="text-lg font-semibold text-neutral-100">Settings</h3>
-                <p className="text-sm text-neutral-500">
+                <h3 className={settingsTitleClass}>Settings</h3>
+                <p className={settingsSubtitleClass}>
                   Update your account picture, name, and email.
                 </p>
               </div>
               <button
                 type="button"
                 onClick={() => setSettingsOpen(false)}
-                className="rounded-lg p-2 text-neutral-500 transition hover:bg-white/10 hover:text-neutral-200"
+                className={closeButtonClass}
                 title="Close settings"
               >
                 <X size={16} />
@@ -329,10 +413,10 @@ export default function SidebarFooter({
                   <img
                     src={avatarPreview}
                     alt="Profile preview"
-                    className="h-16 w-16 rounded-full border border-white/[0.08] object-cover"
+                    className="h-16 w-16 rounded-full object-cover border border-[var(--app-card-border)]"
                   />
                 ) : (
-                  <div className="flex h-16 w-16 items-center justify-center rounded-full border border-white/[0.08] bg-[#1a1a1a] text-neutral-500">
+                  <div className={avatarPlaceholderClass}>
                     <UserCircle2 size={30} />
                   </div>
                 )}
@@ -341,7 +425,7 @@ export default function SidebarFooter({
                   <button
                     type="button"
                     onClick={() => fileInputRef.current?.click()}
-                    className="inline-flex items-center gap-2 rounded-lg bg-white/[0.04] px-3 py-2 text-sm text-neutral-300 transition hover:bg-white/10"
+                    className={secondaryActionButtonClass}
                   >
                     <Upload size={14} />
                     Upload Picture
@@ -349,7 +433,7 @@ export default function SidebarFooter({
                   <button
                     type="button"
                     onClick={handleRemoveAvatar}
-                    className="rounded-lg bg-white/[0.04] px-3 py-2 text-sm text-neutral-400 transition hover:bg-white/10"
+                    className={removeActionButtonClass}
                   >
                     Remove
                   </button>
@@ -365,22 +449,22 @@ export default function SidebarFooter({
               />
 
               <label className="block space-y-2">
-                <span className="text-sm font-medium text-neutral-400">Name</span>
+                <span className={inputLabelClass}>Name</span>
                 <input
                   type="text"
                   value={nameInput}
                   onChange={(event) => setNameInput(event.target.value)}
-                  className="w-full rounded-lg bg-[#0e0e0e] px-3.5 py-2.5 text-base text-neutral-100 focus:outline-none"
+                  className={inputClass}
                 />
               </label>
 
               <label className="block space-y-2">
-                <span className="text-sm font-medium text-neutral-400">Email</span>
+                <span className={inputLabelClass}>Email</span>
                 <input
                   type="email"
                   value={emailInput}
                   onChange={(event) => setEmailInput(event.target.value)}
-                  className="w-full rounded-lg bg-[#0e0e0e] px-3.5 py-2.5 text-base text-neutral-100 focus:outline-none"
+                  className={inputClass}
                 />
               </label>
 
@@ -392,14 +476,14 @@ export default function SidebarFooter({
                 <button
                   type="button"
                   onClick={() => setSettingsOpen(false)}
-                  className="rounded-lg bg-white/[0.04] px-4 py-2.5 text-sm text-neutral-400 transition hover:bg-white/10"
+                  className={cancelButtonClass}
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={isSaving}
-                  className="rainbow-hover rounded-lg bg-white px-4 py-2.5 text-sm font-semibold text-neutral-900 transition hover:bg-neutral-100 disabled:cursor-not-allowed disabled:opacity-60"
+                  className="rounded-lg bg-[var(--app-btn-primary-bg)] px-4 py-2.5 text-sm font-semibold text-[var(--app-btn-primary-text)] shadow-[var(--app-shadow-sm)] transition hover:bg-[var(--app-btn-primary-hover)] hover:shadow-[var(--app-shadow-md)] hover:-translate-y-px active:translate-y-0 disabled:cursor-not-allowed disabled:opacity-60"
                 >
                   {isSaving ? "Saving..." : "Save Changes"}
                 </button>

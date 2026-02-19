@@ -254,7 +254,7 @@ export default function BuilderView({
           {/* Right: Preview panel */}
           {previewOpen ? (
             <div
-              className="relative shrink-0 bg-[#101010]/90 shadow-[-12px_0_32px_rgba(0,0,0,0.4)]"
+              className="relative shrink-0 bg-[var(--app-bg-soft)]/90 shadow-[-12px_0_32px_rgba(0,0,0,0.15)]"
               style={{
                 width: previewWidth ?? "55%",
                 pointerEvents: isResizing ? "none" : "auto",
@@ -264,7 +264,7 @@ export default function BuilderView({
               <button
                 type="button"
                 onClick={() => setPreviewOpen(false)}
-                className="rainbow-hover absolute right-3 top-3 z-10 flex h-9 w-9 items-center justify-center rounded-xl bg-[#161616]/80 text-neutral-400 backdrop-blur-sm transition hover:bg-[#222222] hover:text-white"
+                className="absolute right-3 top-3 z-10 flex h-9 w-9 items-center justify-center rounded-xl bg-[var(--app-card-bg)]/80 text-[var(--app-text-tertiary)] shadow-[var(--app-shadow-sm)] backdrop-blur-sm transition hover:bg-[var(--app-hover-bg-strong)] hover:text-[var(--app-text-heading)]"
                 title="Close preview"
               >
                 <X size={16} />
@@ -277,7 +277,7 @@ export default function BuilderView({
               <button
                 type="button"
                 onClick={() => setPreviewOpen(true)}
-                className="rainbow-hover flex h-10 w-10 items-center justify-center rounded-xl bg-[#161616] text-neutral-400 transition hover:bg-[#222222] hover:text-neutral-200"
+                className="flex h-10 w-10 items-center justify-center rounded-xl bg-[var(--app-card-bg)] text-[var(--app-text-tertiary)] shadow-[var(--app-shadow-sm)] transition hover:bg-[var(--app-hover-bg-strong)] hover:text-[var(--app-text-heading)]"
                 title="Open preview"
               >
                 <PanelRightOpen size={18} />

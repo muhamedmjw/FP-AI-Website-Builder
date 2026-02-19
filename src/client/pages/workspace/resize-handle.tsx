@@ -49,10 +49,10 @@ export default function ResizeHandle({ onResize, onResizeEnd }: ResizeHandleProp
   return (
     <div
       onMouseDown={handleMouseDown}
-      className="group flex w-2 shrink-0 cursor-col-resize items-center justify-center hover:bg-white/[0.04]"
+      className="group flex w-2 shrink-0 cursor-col-resize items-center justify-center hover:bg-[var(--app-hover-bg)]"
       title="Drag to resize"
     >
-      <div className="h-8 w-0.5 rounded-full bg-white/10 transition group-hover:bg-white/25" />
+      <div className="h-8 w-0.5 rounded-full bg-[var(--app-border)] transition group-hover:bg-[var(--app-text-muted)]" />
     </div>
   );
 }

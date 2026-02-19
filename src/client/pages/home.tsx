@@ -135,10 +135,10 @@ export default function ChatHome() {
   return (
     <div className="flex h-full flex-col items-center justify-center px-6">
       <div className="w-full max-w-2xl space-y-4 text-center">
-        <h1 className="text-3xl font-semibold text-white">
+        <h1 className="text-3xl font-semibold text-[var(--app-text-heading)]">
           What website do you want to build?
         </h1>
-        <p className="text-sm text-neutral-500">
+        <p className="text-sm text-[var(--app-text-tertiary)]">
           Describe your website and AI will generate it for you.
         </p>
         {downloadMessage ? (
@@ -146,18 +146,18 @@ export default function ChatHome() {
         ) : null}
 
         <form onSubmit={handleSubmit} className="mt-6">
-          <div className="flex items-center gap-3 rounded-2xl border border-white/[0.08] bg-[#0f0f0f] px-4 py-3 transition focus-within:border-white/[0.16] focus-within:ring-1 focus-within:ring-white/[0.06]">
+          <div className="flex items-center gap-3 rounded-2xl border border-[var(--app-input-border)] bg-[var(--app-input-bg)] px-4 py-3 shadow-[var(--app-shadow-sm)] transition focus-within:border-[var(--app-input-focus-border)]">
             <input
               ref={inputRef}
               type="text"
               placeholder="e.g. A landing page for a coffee shop in Erbil..."
               disabled={isCreating}
-              className="flex-1 bg-transparent text-sm text-neutral-100 placeholder:text-neutral-500 focus:outline-none disabled:opacity-50"
+              className="flex-1 bg-transparent text-sm text-[var(--app-input-text)] placeholder:text-[var(--app-text-tertiary)] focus:outline-none disabled:opacity-50"
             />
             <button
               type="submit"
               disabled={isCreating}
-              className="rainbow-hover shrink-0 rounded-lg bg-white px-4 py-2 text-sm font-semibold text-neutral-900 transition hover:bg-neutral-100 disabled:opacity-50"
+              className="shrink-0 rounded-lg bg-[var(--app-btn-primary-bg)] px-4 py-2 text-sm font-semibold text-[var(--app-btn-primary-text)] transition hover:bg-[var(--app-btn-primary-hover)] disabled:opacity-50"
             >
               {isCreating ? "Creating..." : "Start"}
             </button>

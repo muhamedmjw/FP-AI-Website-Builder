@@ -20,10 +20,10 @@ export default function FormInput({
   maxLength,
 }: FormInputProps) {
   return (
-    <label className="grid gap-2 text-sm text-neutral-400">
-      <span className="font-medium text-neutral-300">{label}</span>
+    <label className="grid gap-2 text-sm text-[var(--app-text-secondary)]">
+      <span className="font-medium text-[var(--app-text-heading)]">{label}</span>
       <input
-        className="h-11 rounded-xl border border-white/[0.08] bg-[#0e0e0e] px-4 text-sm text-neutral-100 placeholder:text-neutral-600 transition focus:border-white/20 focus:outline-none"
+        className="h-11 rounded-xl border border-[var(--app-input-border)] bg-[var(--app-input-bg)] px-4 text-sm text-[var(--app-input-text)] placeholder:text-[var(--app-input-placeholder)] transition focus:border-[var(--app-input-focus-border)] focus:outline-none"
         name={name}
         type={type}
         placeholder={placeholder}

@@ -18,17 +18,23 @@ export default function SidebarHeader({
     <div className="px-5 pb-2 pt-6">
       <Link
         href="/"
-        className="group flex items-center gap-2.5 transition hover:opacity-90"
+        className="group flex items-center gap-3 transition hover:opacity-90"
       >
         <Sparkles
-          size={17}
-          className="prismatic-icon"
+          size={34}
+          strokeWidth={1.7}
+          className="prismatic-icon shrink-0"
         />
-        <p className="prismatic-text text-sm font-semibold uppercase tracking-[0.2em]">
-          AI Website Builder
-        </p>
+        <div className="flex flex-col leading-tight">
+          <span className="prismatic-text text-base font-bold uppercase tracking-[0.22em]">
+            AI Website
+          </span>
+          <span className="prismatic-text text-base font-bold uppercase tracking-[0.22em]">
+            Builder
+          </span>
+        </div>
       </Link>
-      <p className="mt-2 text-xs text-neutral-500">Welcome, {greetingName}</p>
+      <p className="mt-2 text-xs text-[var(--app-text-tertiary)]">Welcome, {greetingName}</p>
     </div>
   );
 }

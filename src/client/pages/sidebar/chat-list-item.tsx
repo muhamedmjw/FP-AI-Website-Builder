@@ -95,7 +95,7 @@ export default function ChatListItem({
   // Editing mode - show inline input
   if (isEditing) {
     return (
-      <div className="rounded-xl bg-white/[0.06] px-3 py-3 shadow-[0_10px_24px_rgba(0,0,0,0.3)]">
+      <div className="rounded-xl bg-[var(--app-hover-bg-strong)] px-3 py-3 shadow-[var(--app-shadow-md)]">
         <input
           ref={inputRef}
           type="text"
@@ -109,7 +109,7 @@ export default function ChatListItem({
               setIsEditing(false);
             }
           }}
-          className="w-full rounded-lg bg-[#0e0e0e] px-3 py-2 text-base text-neutral-100 focus:outline-none"
+          className="w-full rounded-lg bg-[var(--app-input-bg)] px-3 py-2 text-base text-[var(--app-input-text)] focus:outline-none"
         />
       </div>
     );
@@ -122,12 +122,12 @@ export default function ChatListItem({
         href={`/chat/${chat.id}`}
         className={`ui-fade-up block rounded-xl px-3.5 py-3 pr-9 text-base ${
           isActive
-            ? "bg-white/[0.08] text-white shadow-[0_8px_20px_rgba(0,0,0,0.25)]"
-            : "text-neutral-400 hover:bg-white/[0.09] hover:text-neutral-100"
+            ? "bg-[var(--app-hover-bg-strong)] text-[var(--app-text-heading)] shadow-[var(--app-shadow-sm)]"
+            : "text-[var(--app-text-secondary)] hover:bg-[var(--app-hover-bg)] hover:text-[var(--app-text-heading)]"
         }`}
       >
         <p className="truncate text-[15px] font-semibold">{chat.title}</p>
-        <p className="mt-0.5 truncate text-xs uppercase tracking-[0.08em] text-neutral-600">
+        <p className="mt-0.5 truncate text-xs uppercase tracking-[0.08em] text-[var(--app-text-muted)]">
           {new Date(chat.updated_at).toLocaleDateString()}
         </p>
       </Link>
@@ -144,7 +144,7 @@ export default function ChatListItem({
         aria-haspopup="menu"
         aria-expanded={menuOpen}
         aria-controls={menuId}
-        className={`absolute right-2 top-1/2 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-xl text-neutral-500 transition-[opacity,background-color,color] duration-75 ease-out hover:bg-white/10 hover:text-neutral-200 ${
+        className={`absolute right-2 top-1/2 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-xl text-[var(--app-text-tertiary)] transition-[opacity,background-color,color] duration-75 ease-out hover:bg-[var(--app-hover-bg-strong)] hover:text-[var(--app-text-heading)] ${
           menuOpen
             ? "pointer-events-auto opacity-100"
             : "pointer-events-none opacity-0 group-hover:pointer-events-auto group-hover:opacity-100 group-focus-within:pointer-events-auto group-focus-within:opacity-100"
@@ -160,7 +160,7 @@ export default function ChatListItem({
           id={menuId}
           ref={menuRef}
           role="menu"
-          className="absolute right-0 top-full z-50 mt-1.5 w-40 overflow-hidden rounded-xl bg-[#181818] shadow-2xl"
+          className="absolute right-0 top-full z-50 mt-1.5 w-40 overflow-hidden rounded-xl border border-[var(--app-card-border)] bg-[var(--app-dropdown-bg)] shadow-[var(--app-shadow-lg)]"
         >
           <button
             type="button"
@@ -170,7 +170,7 @@ export default function ChatListItem({
               setIsEditing(true);
             }}
             role="menuitem"
-            className="flex w-full items-center gap-2 px-3 py-2.5 text-left text-sm text-neutral-300 transition hover:bg-white/10 hover:text-white"
+            className="flex w-full items-center gap-2 px-3 py-2.5 text-left text-sm text-[var(--app-text-secondary)] transition hover:bg-[var(--app-hover-bg)] hover:text-[var(--app-text-heading)]"
           >
             <Pencil size={13} />
             Rename
@@ -179,7 +179,7 @@ export default function ChatListItem({
             type="button"
             onClick={handleDelete}
             role="menuitem"
-            className="flex w-full items-center gap-2 px-3 py-2.5 text-left text-sm text-rose-400 transition hover:bg-white/10 hover:text-rose-300"
+            className="flex w-full items-center gap-2 px-3 py-2.5 text-left text-sm text-rose-400 transition hover:bg-[var(--app-hover-bg)] hover:text-rose-300"
           >
             <Trash2 size={13} />
             Delete

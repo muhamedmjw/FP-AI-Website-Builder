@@ -7,12 +7,12 @@ import { Plus } from "lucide-react";
  */
 export default function NewChatButton() {
   return (
-    <div className="px-5 py-3.5">
+    <div className="px-5 pb-4 pt-8">
       <Link
         href="/"
-        className="rainbow-hover flex h-12 w-full items-center justify-center gap-2.5 rounded-xl bg-white px-4 text-base font-semibold text-neutral-900 shadow-[0_10px_24px_rgba(0,0,0,0.4)] transition hover:bg-neutral-100"
+        className="flex h-14 w-full items-center justify-center gap-2.5 rounded-xl bg-[var(--app-btn-primary-bg)] px-4 text-lg font-semibold text-[var(--app-btn-primary-text)] shadow-[var(--app-shadow-md)] transition hover:bg-[var(--app-btn-primary-hover)] hover:shadow-[var(--app-shadow-lg)] hover:-translate-y-px active:translate-y-0"
       >
-        <Plus size={18} strokeWidth={2.5} />
+        <Plus size={20} strokeWidth={2.5} />
         New Website
       </Link>
     </div>

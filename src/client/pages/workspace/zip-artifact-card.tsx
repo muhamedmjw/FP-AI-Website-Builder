@@ -16,13 +16,13 @@ export default function ZipArtifactCard({
   onDownload,
 }: ZipArtifactCardProps) {
   return (
-    <div className="ui-fade-up mr-auto flex w-full max-w-4xl items-center justify-between gap-3 rounded-2xl border border-white/[0.1] bg-[#141414] px-4 py-3">
+    <div className="ui-fade-up mr-auto flex w-full max-w-4xl items-center justify-between gap-3 rounded-2xl border border-[var(--app-card-border)] bg-[var(--app-card-bg)] px-4 py-3 shadow-[var(--app-shadow-sm)]">
       <div className="min-w-0">
-        <div className="flex items-center gap-2 text-neutral-100">
+        <div className="flex items-center gap-2 text-[var(--app-text-heading)]">
           <Package size={16} />
           <p className="truncate text-sm font-semibold">{zipName}</p>
         </div>
-        <p className="mt-1 text-xs text-neutral-400">
+        <p className="mt-1 text-xs text-[var(--app-text-secondary)]">
           {fileCount} files | {folderCount} folders |{" "}
           {new Date(createdAt).toLocaleString()}
         </p>
@@ -30,7 +30,7 @@ export default function ZipArtifactCard({
       <button
         type="button"
         onClick={onDownload}
-        className="rainbow-hover prismatic-shadow inline-flex shrink-0 items-center gap-2 rounded-lg bg-white px-3 py-2 text-sm font-semibold text-neutral-900 transition hover:bg-neutral-100"
+        className="inline-flex shrink-0 items-center gap-2 rounded-lg bg-[var(--app-btn-primary-bg)] px-3 py-2 text-sm font-semibold text-[var(--app-btn-primary-text)] shadow-[var(--app-shadow-sm)] transition hover:bg-[var(--app-btn-primary-hover)] hover:shadow-[var(--app-shadow-md)] hover:-translate-y-px active:translate-y-0"
       >
         <Download size={14} />
         Download ZIP

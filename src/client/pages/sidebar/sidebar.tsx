@@ -82,7 +82,7 @@ export default function Sidebar({
   }
 
   return (
-    <aside className="relative flex h-screen w-80 flex-col bg-[var(--app-panel)]/95 shadow-[12px_0_36px_rgba(0,0,0,0.45)] backdrop-blur-xl">
+    <aside className="relative flex h-screen w-80 flex-col bg-[var(--app-panel)]/95 shadow-[var(--app-sidebar-shadow)] backdrop-blur-xl">
       <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(380px_180px_at_20%_0%,rgba(167,139,250,0.06),transparent_70%)]" />
       {/* Top: brand + greeting */}
       <div className="relative z-10">

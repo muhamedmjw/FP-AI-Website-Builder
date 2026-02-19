@@ -15,7 +15,7 @@ export default function PrimaryButton({
     <button
       type={type}
       disabled={disabled}
-      className={`rainbow-hover inline-flex h-11 items-center justify-center rounded-xl bg-white px-5 text-sm font-semibold text-neutral-900 transition hover:bg-neutral-100 disabled:cursor-not-allowed disabled:opacity-60 ${
+      className={`inline-flex h-11 items-center justify-center rounded-xl bg-[var(--app-btn-primary-bg)] px-5 text-sm font-semibold text-[var(--app-btn-primary-text)] shadow-[var(--app-shadow-sm)] transition hover:bg-[var(--app-btn-primary-hover)] hover:shadow-[var(--app-shadow-md)] hover:-translate-y-px active:translate-y-0 disabled:cursor-not-allowed disabled:opacity-60 ${
         fullWidth ? "w-full" : ""
       }`}
     >

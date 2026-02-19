@@ -21,7 +21,7 @@ export default async function AppLayout({
 
   if (!user) {
     return (
-      <div className="flex h-screen bg-[var(--app-bg)] text-neutral-200">
+      <div className="flex h-screen bg-[var(--app-bg)] text-[var(--app-text-primary)]">
         <AuthSessionSync />
         <main className="flex-1 overflow-y-auto bg-[var(--app-bg)]">
           {children}
@@ -37,7 +37,7 @@ export default async function AppLayout({
   const chats = await getUserChats(supabase);
 
   return (
-    <div className="flex h-screen bg-[var(--app-bg)] text-neutral-200">
+    <div className="flex h-screen bg-[var(--app-bg)] text-[var(--app-text-primary)]">
       <AuthSessionSync />
       <Sidebar
         chats={chats}

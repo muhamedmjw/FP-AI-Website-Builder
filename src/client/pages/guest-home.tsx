@@ -122,7 +122,7 @@ export default function GuestHomePage() {
 
   return (
     <div className="flex h-full min-h-screen flex-col bg-[var(--app-bg)]">
-      <header className="border-b border-white/[0.08] bg-black/15 px-5 py-4 backdrop-blur">
+      <header className="border-b border-[var(--app-border)] bg-[var(--app-panel)]/60 px-5 py-4 backdrop-blur">
         <div className="mx-auto flex w-full max-w-5xl flex-wrap items-center justify-between gap-3">
           <div className="flex items-center gap-2.5">
             <Sparkles size={17} className="prismatic-icon" />
@@ -134,20 +134,20 @@ export default function GuestHomePage() {
             <Link
               href="/signin"
               onClick={queueChatSessionForAuth}
-              className="rounded-lg border border-white/[0.14] px-3 py-1.5 text-sm font-medium text-neutral-200 transition hover:border-white/[0.28] hover:text-white"
+              className="rounded-lg border border-[var(--app-card-border)] px-3 py-1.5 text-sm font-medium text-[var(--app-text-secondary)] transition hover:border-[var(--app-text-tertiary)] hover:text-[var(--app-text-heading)]"
             >
               Sign in
             </Link>
             <Link
               href="/signup"
               onClick={queueChatSessionForAuth}
-              className="rainbow-hover prismatic-shadow rounded-lg bg-white px-3 py-1.5 text-sm font-semibold text-neutral-900 transition hover:bg-neutral-100"
+              className="rounded-lg bg-[var(--app-btn-primary-bg)] px-3 py-1.5 text-sm font-semibold text-[var(--app-btn-primary-text)] shadow-[var(--app-shadow-sm)] transition hover:bg-[var(--app-btn-primary-hover)] hover:-translate-y-px active:translate-y-0"
             >
               Create account
             </Link>
           </div>
         </div>
-        <p className="mx-auto mt-2 w-full max-w-5xl text-xs text-neutral-500">
+        <p className="mx-auto mt-2 w-full max-w-5xl text-xs text-[var(--app-text-tertiary)]">
           Guest chats are temporary and not saved to history.
         </p>
       </header>
@@ -174,20 +174,20 @@ export default function GuestHomePage() {
             }
           }}
         >
-          <div className="w-full max-w-md rounded-2xl border border-white/[0.08] bg-[#151515] p-6 shadow-[0_24px_48px_rgba(0,0,0,0.65)]">
+          <div className="w-full max-w-md rounded-2xl border border-[var(--app-card-border)] bg-[var(--app-panel)] p-6 shadow-[var(--app-shadow-lg)]">
             <div className="flex items-start justify-between gap-4">
               <div>
-                <h3 className="text-lg font-semibold text-neutral-100">
+                <h3 className="text-lg font-semibold text-[var(--app-text-heading)]">
                   Sign in required
                 </h3>
-                <p className="mt-1 text-sm text-neutral-400">
+                <p className="mt-1 text-sm text-[var(--app-text-secondary)]">
                   Create an account or sign in to download this ZIP package.
                 </p>
               </div>
               <button
                 type="button"
                 onClick={closeAuthGate}
-                className="rounded-lg p-2 text-neutral-500 transition hover:bg-white/10 hover:text-neutral-200"
+                className="rounded-lg p-2 text-[var(--app-text-tertiary)] transition hover:bg-[var(--app-hover-bg-strong)] hover:text-[var(--app-text-heading)]"
                 title="Close dialog"
               >
                 <X size={16} />
@@ -198,14 +198,14 @@ export default function GuestHomePage() {
               <Link
                 href="/signin"
                 onClick={queueDownloadAndContinue}
-                className="rounded-lg border border-white/[0.14] px-3 py-2.5 text-center text-sm font-medium text-neutral-200 transition hover:border-white/[0.28] hover:text-white"
+                className="rounded-lg border border-[var(--app-card-border)] px-3 py-2.5 text-center text-sm font-medium text-[var(--app-text-secondary)] transition hover:border-[var(--app-text-tertiary)] hover:text-[var(--app-text-heading)]"
               >
                 Sign in
               </Link>
               <Link
                 href="/signup"
                 onClick={queueDownloadAndContinue}
-                className="rainbow-hover prismatic-shadow rounded-lg bg-white px-3 py-2.5 text-center text-sm font-semibold text-neutral-900 transition hover:bg-neutral-100"
+                className="rounded-lg bg-[var(--app-btn-primary-bg)] px-3 py-2.5 text-center text-sm font-semibold text-[var(--app-btn-primary-text)] shadow-[var(--app-shadow-sm)] transition hover:bg-[var(--app-btn-primary-hover)] hover:-translate-y-px active:translate-y-0"
               >
                 Create account
               </Link>

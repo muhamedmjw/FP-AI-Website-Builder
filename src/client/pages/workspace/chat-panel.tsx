@@ -60,7 +60,7 @@ export default function ChatPanel({
       {showHeader ? (
         <div className="sticky top-0 z-10 bg-transparent px-5 py-4">
           <div className="mx-auto flex w-full max-w-4xl items-center gap-2.5">
-            <h2 className="truncate text-base font-semibold text-neutral-100">
+            <h2 className="truncate text-base font-semibold text-[var(--app-text-heading)]">
               {chatTitle}
             </h2>
           </div>
@@ -71,10 +71,10 @@ export default function ChatPanel({
         <div className="flex flex-1 items-center justify-center px-5 py-8">
           <div className="w-full max-w-4xl">
             <div className="mx-auto max-w-lg text-center">
-              <p className="text-xl font-semibold text-neutral-200">
+              <p className="text-xl font-semibold text-[var(--app-text-heading)]">
                 Start your website with one prompt
               </p>
-              <p className="mt-2 text-base text-neutral-500">
+              <p className="mt-2 text-base text-[var(--app-text-tertiary)]">
                 Describe your business, style, and goals. I will turn it into a
                 complete website structure.
               </p>
@@ -106,10 +106,10 @@ export default function ChatPanel({
             {visibleMessages.length === 0 ? (
               <div className="flex h-full items-center justify-center">
                 <div className="max-w-lg text-center">
-                  <p className="text-xl font-semibold text-neutral-200">
+                  <p className="text-xl font-semibold text-[var(--app-text-heading)]">
                     Start your website with one prompt
                   </p>
-                  <p className="mt-2 text-base text-neutral-500">
+                  <p className="mt-2 text-base text-[var(--app-text-tertiary)]">
                     Describe your business, style, and goals. I will turn it into a
                     complete website structure.
                   </p>
@@ -136,10 +136,10 @@ export default function ChatPanel({
 
                 {isSending && (
                   <div className="ui-fade-up mr-auto flex max-w-[78%] items-start gap-2.5">
-                    <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-white/[0.08] text-neutral-300">
+                    <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[var(--app-avatar-bot-bg)] text-[var(--app-avatar-bot-text)]">
                       <MessageSquare size={15} />
                     </div>
-                    <div className="rounded-2xl bg-[#1a1a1a] px-4 py-3.5 text-base text-neutral-300 shadow-[0_10px_24px_rgba(0,0,0,0.3)]">
+                    <div className="rounded-2xl bg-[var(--app-bubble-bot-bg)] px-4 py-3.5 text-base text-[var(--app-bubble-bot-text)] shadow-[var(--app-shadow-md)]">
                       Generating...
                     </div>
                   </div>

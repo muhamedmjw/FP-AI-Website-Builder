@@ -28,8 +28,8 @@ export default function ChatBubble({
       <div
         className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full ${
           isUser && !userAvatarUrl
-            ? "bg-neutral-200 text-neutral-900"
-            : "bg-white/[0.08] text-neutral-300"
+            ? "bg-[var(--app-avatar-user-bg)] text-[var(--app-avatar-user-text)]"
+            : "bg-[var(--app-avatar-bot-bg)] text-[var(--app-avatar-bot-text)]"
         }`}
       >
         {isUser ? (
@@ -44,16 +44,16 @@ export default function ChatBubble({
             <User size={16} />
           )
         ) : (
-          <Bot size={16} className="text-neutral-100" />
+          <Bot size={16} />
         )}
       </div>
 
       {/* Message */}
       <div
-        className={`rounded-2xl px-4 py-3.5 text-base leading-relaxed shadow-[0_10px_24px_rgba(0,0,0,0.25)] ${
+        className={`rounded-2xl px-4 py-3.5 text-base leading-relaxed shadow-[var(--app-shadow-md)] ${
           isUser
-            ? "bg-white text-neutral-900"
-            : "bg-[#1a1a1a] text-neutral-200"
+            ? "bg-[var(--app-bubble-user-bg)] text-[var(--app-bubble-user-text)]"
+            : "bg-[var(--app-bubble-bot-bg)] text-[var(--app-bubble-bot-text)]"
         }`}
       >
         {content}

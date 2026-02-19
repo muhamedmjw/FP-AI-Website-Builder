@@ -8,28 +8,28 @@ import GradientMesh from "@/client/components/ui/gradient-mesh";
  */
 export default function AccountPageView() {
   return (
-    <main className="relative min-h-screen overflow-hidden bg-[#0a0a0a] text-neutral-200">
+    <main className="relative min-h-screen overflow-hidden bg-[var(--app-bg)] text-[var(--app-text-primary)]">
       <GradientMesh />
       <div className="relative z-10 mx-auto flex min-h-screen w-full max-w-3xl flex-col items-start justify-center gap-6 px-6">
         <p className="prismatic-text text-xs font-semibold uppercase tracking-[0.3em]">
           AI Website Builder
         </p>
-        <h1 className="text-4xl font-semibold text-white">
+        <h1 className="text-4xl font-semibold text-[var(--app-text-heading)]">
           Build full websites from a short prompt.
         </h1>
-        <p className="text-base text-neutral-400">
+        <p className="text-base text-[var(--app-text-secondary)]">
           Sign in to start a new chat and generate a complete website structure
           with pages, sections, and ready-to-run code.
         </p>
         <div className="flex flex-wrap gap-3">
           <Link
-            className="rainbow-hover inline-flex h-11 items-center justify-center rounded-xl bg-white px-6 text-sm font-semibold text-neutral-900 transition hover:bg-neutral-100"
+            className="inline-flex h-11 items-center justify-center rounded-xl bg-[var(--app-btn-primary-bg)] px-6 text-sm font-semibold text-[var(--app-btn-primary-text)] shadow-[var(--app-shadow-sm)] transition hover:bg-[var(--app-btn-primary-hover)] hover:shadow-[var(--app-shadow-md)] hover:-translate-y-px active:translate-y-0"
             href="/signin"
           >
             Sign in
           </Link>
           <Link
-            className="inline-flex h-11 items-center justify-center rounded-xl border-2 border-white/25 px-6 text-sm font-semibold text-neutral-200 shadow-[0_4px_16px_rgba(255,255,255,0.1)] transition hover:translate-y-[-2px] hover:border-white/40 hover:text-white hover:shadow-[0_8px_24px_rgba(255,255,255,0.18)]"
+            className="inline-flex h-11 items-center justify-center rounded-xl border-2 border-[var(--app-card-border)] px-6 text-sm font-semibold text-[var(--app-text-secondary)] shadow-[var(--app-shadow-sm)] transition hover:-translate-y-px hover:border-[var(--app-text-tertiary)] hover:text-[var(--app-text-heading)] hover:shadow-[var(--app-shadow-md)]"
             href="/signup"
           >
             Create account

@@ -6,6 +6,45 @@
   --app-panel: #121212;
   --app-panel-soft: #1a1a1a;
   --app-border: rgba(255, 255, 255, 0.07);
+  --app-text-primary: #d4d4d4;
+  --app-scrollbar: rgba(255, 255, 255, 0.12);
+  --app-scrollbar-active: rgba(255, 255, 255, 0.18);
+  --app-text-heading: #ffffff;
+  --app-text-secondary: #a3a3a3;
+  --app-text-tertiary: #737373;
+  --app-text-muted: #525252;
+  --app-input-bg: #0e0e0e;
+  --app-input-border: rgba(255, 255, 255, 0.08);
+  --app-input-text: #e5e5e5;
+  --app-input-placeholder: #525252;
+  --app-input-focus-border: rgba(255, 255, 255, 0.20);
+  --app-card-bg: #161616;
+  --app-card-border: rgba(255, 255, 255, 0.08);
+  --app-dropdown-bg: #181818;
+  --app-hover-bg: rgba(255, 255, 255, 0.06);
+  --app-hover-bg-strong: rgba(255, 255, 255, 0.10);
+  --app-bubble-user-bg: #ffffff;
+  --app-bubble-user-text: #171717;
+  --app-bubble-bot-bg: #1a1a1a;
+  --app-bubble-bot-text: #e5e5e5;
+  --app-avatar-user-bg: #e5e5e5;
+  --app-avatar-user-text: #171717;
+  --app-avatar-bot-bg: rgba(255, 255, 255, 0.08);
+  --app-avatar-bot-text: #f5f5f5;
+  --app-sidebar-shadow: 4px 0 24px rgba(0, 0, 0, 0.35);
+  --app-shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.25);
+  --app-shadow-md: 0 4px 12px rgba(0, 0, 0, 0.25);
+  --app-shadow-lg: 0 10px 24px rgba(0, 0, 0, 0.35);
+  --app-btn-primary-bg: #ffffff;
+  --app-btn-primary-text: #171717;
+  --app-btn-primary-hover: #f5f5f5;
+  --app-body-bg:
+    radial-gradient(900px 500px at 12% 10%, rgba(167, 139, 250, 0.07), transparent 54%),
+    radial-gradient(760px 460px at 90% 14%, rgba(249, 168, 212, 0.06), transparent 56%),
+    radial-gradient(900px 520px at 30% 100%, rgba(110, 231, 183, 0.05), transparent 58%),
+    linear-gradient(170deg, #111111, #0a0a0a 70%);
+  --button-hover-border: rgba(255, 255, 255, 0.24);
+  --button-hover-shadow: 0 10px 24px rgba(0, 0, 0, 0.35);
 
   /* Prismatic palette */
   --prism-1: #a78bfa;
@@ -16,19 +55,67 @@
   --prism-6: #c4b5fd;
 }
 
+[data-theme="light"] {
+  --app-bg: #f8fafc;
+  --app-bg-soft: #f1f5f9;
+  --app-panel: #ffffff;
+  --app-panel-soft: #f8fafc;
+  --app-border: rgba(15, 23, 42, 0.08);
+  --app-text-primary: #334155;
+  --app-text-heading: #0f172a;
+  --app-text-secondary: #64748b;
+  --app-text-tertiary: #94a3b8;
+  --app-text-muted: #cbd5e1;
+  --app-scrollbar: rgba(15, 23, 42, 0.10);
+  --app-scrollbar-active: rgba(15, 23, 42, 0.18);
+  --app-body-bg:
+    radial-gradient(1000px 560px at 8% 8%, rgba(99, 102, 241, 0.04), transparent 58%),
+    radial-gradient(860px 520px at 92% 14%, rgba(16, 185, 129, 0.03), transparent 60%),
+    radial-gradient(900px 520px at 28% 100%, rgba(139, 92, 246, 0.03), transparent 62%),
+    linear-gradient(170deg, #ffffff, #f8fafc 72%);
+  --button-hover-border: rgba(15, 23, 42, 0.10);
+  --button-hover-shadow: 0 4px 16px rgba(15, 23, 42, 0.08);
+  color-scheme: light;
+  --app-input-bg: #f1f5f9;
+  --app-input-border: rgba(15, 23, 42, 0.10);
+  --app-input-text: #0f172a;
+  --app-input-placeholder: #94a3b8;
+  --app-input-focus-border: rgba(99, 102, 241, 0.4);
+  --app-card-bg: #ffffff;
+  --app-card-border: rgba(15, 23, 42, 0.08);
+  --app-dropdown-bg: #ffffff;
+  --app-hover-bg: rgba(15, 23, 42, 0.03);
+  --app-hover-bg-strong: rgba(15, 23, 42, 0.06);
+  --app-bubble-user-bg: #4f46e5;
+  --app-bubble-user-text: #ffffff;
+  --app-bubble-bot-bg: #f1f5f9;
+  --app-bubble-bot-text: #1e293b;
+  --app-avatar-user-bg: #4f46e5;
+  --app-avatar-user-text: #ffffff;
+  --app-avatar-bot-bg: #e2e8f0;
+  --app-avatar-bot-text: #475569;
+  --app-sidebar-shadow: 1px 0 12px rgba(15, 23, 42, 0.06);
+  --app-shadow-sm: 0 1px 3px rgba(15, 23, 42, 0.06);
+  --app-shadow-md: 0 4px 12px rgba(15, 23, 42, 0.08);
+  --app-shadow-lg: 0 8px 20px rgba(15, 23, 42, 0.10);
+  --app-btn-primary-bg: #4f46e5;
+  --app-btn-primary-text: #ffffff;
+  --app-btn-primary-hover: #4338ca;
+}
+
 body {
   font-family: var(--font-ui), "Segoe UI", sans-serif;
-  color: #d4d4d4;
-  background:
-    radial-gradient(900px 500px at 12% 10%, rgba(167, 139, 250, 0.07), transparent 54%),
-    radial-gradient(760px 460px at 90% 14%, rgba(249, 168, 212, 0.06), transparent 56%),
-    radial-gradient(900px 520px at 30% 100%, rgba(110, 231, 183, 0.05), transparent 58%),
-    linear-gradient(170deg, #111111, #0a0a0a 70%);
+  color: var(--app-text-primary);
+  background: var(--app-body-bg);
+}
+
+button, [role="button"], a, summary, [type="submit"], [type="reset"], [type="button"] {
+  cursor: pointer;
 }
 
 * {
   scrollbar-width: thin;
-  scrollbar-color: rgba(255, 255, 255, 0.15) transparent;
+  scrollbar-color: var(--app-scrollbar-active) transparent;
 }
 
 *::-webkit-scrollbar {
@@ -37,10 +124,14 @@ body {
 }
 
 *::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.12);
+  background: var(--app-scrollbar);
   border-radius: 999px;
   border: 2px solid transparent;
   background-clip: content-box;
+}
+
+*::-webkit-scrollbar-thumb:hover {
+  background: var(--app-scrollbar-active);
 }
 
 *::-webkit-scrollbar-track {
@@ -91,61 +182,30 @@ body {
 .rainbow-hover {
   position: relative;
   z-index: 0;
-  transition: transform 200ms cubic-bezier(0.22, 1, 0.36, 1), box-shadow 250ms ease;
-}
-
-.rainbow-hover::after {
-  content: "";
-  position: absolute;
-  inset: -2px;
-  border-radius: inherit;
-  z-index: -1;
-  opacity: 0;
-  filter: blur(12px) saturate(160%);
-  transition: opacity 250ms ease;
-  background: conic-gradient(
-    from 140deg,
-    var(--prism-4),
-    var(--prism-1),
-    var(--prism-3),
-    var(--prism-2),
-    var(--prism-5),
-    var(--prism-4)
-  );
-  animation: prismatic-rotate 4s linear infinite;
-}
-
-@keyframes prismatic-rotate {
-  to { filter: blur(12px) saturate(160%) hue-rotate(360deg); }
-}
-
-.rainbow-hover:hover::after,
-.rainbow-hover:focus-visible::after {
-  opacity: 0.85;
+  transition:
+    transform 160ms cubic-bezier(0.22, 1, 0.36, 1),
+    box-shadow 200ms ease;
 }
 
 .rainbow-hover:hover,
 .rainbow-hover:focus-visible {
   transform: translateY(-1px);
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+  box-shadow: var(--app-shadow-md);
 }
 
-/* ─── Prismatic shadow for primary buttons ─── */
+.rainbow-hover:active {
+  transform: translateY(0);
+}
+
+/* Clean shadow for elevated buttons */
 .prismatic-shadow {
-  box-shadow:
-    0 4px 12px rgba(167, 139, 250, 0.25),
-    0 6px 20px rgba(103, 232, 249, 0.15),
-    0 2px 8px rgba(249, 168, 212, 0.15);
-  transition: box-shadow 250ms ease, transform 200ms cubic-bezier(0.22, 1, 0.36, 1);
+  box-shadow: var(--app-shadow-sm);
+  transition: box-shadow 200ms ease, transform 160ms cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 .prismatic-shadow:hover {
-  box-shadow:
-    0 6px 18px rgba(167, 139, 250, 0.35),
-    0 8px 28px rgba(103, 232, 249, 0.2),
-    0 4px 14px rgba(249, 168, 212, 0.2);
+  box-shadow: var(--app-shadow-md);
 }
-
 /* ─── Prismatic border (always visible, subtle) ─── */
 .prismatic-border {
   position: relative;
@@ -437,4 +497,43 @@ body {
 
 .gradient-mesh-bold .mesh-orb {
   opacity: 1;
+}
+
+/* ─── Light mode gradient mesh ─── */
+[data-theme="light"] .gradient-mesh::before {
+  background:
+    radial-gradient(circle at 12% 14%, rgba(99, 102, 241, 0.06), transparent 50%),
+    radial-gradient(circle at 88% 24%, rgba(236, 72, 153, 0.05), transparent 48%),
+    radial-gradient(circle at 24% 86%, rgba(16, 185, 129, 0.05), transparent 46%),
+    linear-gradient(160deg, rgba(255, 255, 255, 0.97), rgba(248, 250, 252, 0.98));
+}
+
+[data-theme="light"] .gradient-mesh::after {
+  background-image: radial-gradient(rgba(15, 23, 42, 0.025) 0.9px, transparent 1.1px);
+}
+
+[data-theme="light"] .mesh-orb-cyan {
+  background: radial-gradient(circle at 35% 35%, rgba(99, 102, 241, 0.12), rgba(99, 102, 241, 0));
+}
+
+[data-theme="light"] .mesh-orb-violet {
+  background: radial-gradient(circle at 44% 45%, rgba(139, 92, 246, 0.10), rgba(139, 92, 246, 0));
+}
+
+[data-theme="light"] .mesh-orb-emerald {
+  background: radial-gradient(circle at 50% 40%, rgba(16, 185, 129, 0.10), rgba(16, 185, 129, 0));
+}
+
+[data-theme="light"] .mesh-orb-indigo {
+  background: radial-gradient(circle at 45% 42%, rgba(236, 72, 153, 0.08), rgba(236, 72, 153, 0));
+}
+
+[data-theme="light"] .mesh-orb-yellow {
+  background: radial-gradient(circle at 45% 45%, rgba(245, 158, 11, 0.10), rgba(245, 158, 11, 0));
+}
+
+[data-theme="light"] .mesh-vignette {
+  background:
+    radial-gradient(circle at 50% 40%, transparent 0%, rgba(248, 250, 252, 0.25) 56%, rgba(248, 250, 252, 0.65) 100%),
+    linear-gradient(to bottom, rgba(255, 255, 255, 0.08), rgba(248, 250, 252, 0.4));
 }
