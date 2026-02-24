@@ -1,5 +1,6 @@
--- AI Website Builder - simplified schema
--- Tables: users, chats, history, websites, pages, sections, files, guest_usage
+-- AI Website Builder - database schema
+-- Tables: users, user_preferences, chats, history, websites, pages, sections,
+--         files, zip_downloads, guest_usage, ai_generations
 -- Run this in Supabase SQL Editor.
 
 create extension if not exists pgcrypto;
@@ -17,6 +18,10 @@ begin
 
   if not exists (select 1 from pg_type where typname = 'section_type') then
     create type public.section_type as enum ('hero', 'about', 'services', 'pricing', 'contact', 'custom');
+  end if;
+
+  if not exists (select 1 from pg_type where typname = 'generation_status') then
+    create type public.generation_status as enum ('pending', 'success', 'error');
   end if;
 end
 $$;
@@ -60,7 +65,21 @@ create trigger on_auth_user_created
 after insert on auth.users
 for each row execute procedure public.handle_new_auth_user();
 
--- 2) Chats
+-- 2) User Preferences
+create table if not exists public.user_preferences (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references public.users(id) on delete cascade,
+  language public.app_language not null default 'en',
+  theme text not null default 'dark',
+  default_model text,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+create unique index if not exists user_preferences_user_id_unique_idx
+  on public.user_preferences(user_id);
+
+-- 3) Chats
 create table if not exists public.chats (
   id uuid primary key default gen_random_uuid(),
   user_id uuid not null references public.users(id) on delete cascade,
@@ -73,32 +92,44 @@ create table if not exists public.chats (
 create index if not exists chats_user_id_idx on public.chats(user_id);
 create index if not exists chats_updated_at_idx on public.chats(updated_at desc);
 
--- 3) History (chat messages)
+-- 4) History (chat messages)
 create table if not exists public.history (
   id uuid primary key default gen_random_uuid(),
   chat_id uuid not null references public.chats(id) on delete cascade,
   role public.history_role not null,
-  content text not null,
+  content text,
+  tokens_used int,
   created_at timestamptz not null default now()
 );
+
+alter table public.history
+add column if not exists tokens_used int;
 
 create index if not exists history_chat_id_idx on public.history(chat_id);
 create index if not exists history_created_at_idx on public.history(created_at);
 
--- 4) Websites (1 chat -> 1 generated website)
+-- 5) Websites (1 chat -> 1 generated website)
 create table if not exists public.websites (
   id uuid primary key default gen_random_uuid(),
   chat_id uuid not null unique references public.chats(id) on delete cascade,
   business_prompt text not null,
   language public.app_language not null default 'en',
+  generated_html text,
+  page_count int not null default 0,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
 
+alter table public.websites
+add column if not exists generated_html text;
+
+alter table public.websites
+add column if not exists page_count int not null default 0;
+
 create index if not exists websites_chat_id_idx on public.websites(chat_id);
 create index if not exists websites_updated_at_idx on public.websites(updated_at desc);
 
--- 5) Pages
+-- 6) Pages
 create table if not exists public.pages (
   id uuid primary key default gen_random_uuid(),
   website_id uuid not null references public.websites(id) on delete cascade,
@@ -112,45 +143,87 @@ create unique index if not exists pages_website_slug_unique_idx
   on public.pages(website_id, slug);
 create index if not exists pages_website_id_idx on public.pages(website_id);
 
--- 6) Sections
+-- 7) Sections
 create table if not exists public.sections (
   id uuid primary key default gen_random_uuid(),
   page_id uuid not null references public.pages(id) on delete cascade,
   type public.section_type not null default 'custom',
   heading text,
   body text,
+  html_override text,
   section_order int not null default 0,
   created_at timestamptz not null default now()
 );
 
+alter table public.sections
+add column if not exists html_override text;
+
 create index if not exists sections_page_id_idx on public.sections(page_id);
 create index if not exists sections_page_order_idx on public.sections(page_id, section_order);
 
--- 7) Files (final generated code files)
+-- 8) Files (final generated code files)
 create table if not exists public.files (
   id uuid primary key default gen_random_uuid(),
   website_id uuid not null references public.websites(id) on delete cascade,
   file_name text not null,
   content text not null,
+  file_size int,
   created_at timestamptz not null default now()
 );
+
+alter table public.files
+add column if not exists file_size int;
 
 create unique index if not exists files_website_file_name_unique_idx
   on public.files(website_id, file_name);
 create index if not exists files_website_id_idx on public.files(website_id);
 
--- 8) Guest prompt limit tracking (no saved history for guests)
+-- 9) ZIP Downloads
+create table if not exists public.zip_downloads (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references public.users(id) on delete cascade,
+  website_id uuid not null references public.websites(id) on delete cascade,
+  file_count int,
+  downloaded_at timestamptz not null default now()
+);
+
+create index if not exists zip_downloads_user_id_idx on public.zip_downloads(user_id);
+create index if not exists zip_downloads_website_id_idx on public.zip_downloads(website_id);
+
+-- 10) Guest prompt limit tracking (no saved history for guests)
 create table if not exists public.guest_usage (
   id uuid primary key default gen_random_uuid(),
   guest_token text not null unique,
   prompts_used_today int not null default 0,
   usage_date date not null default current_date,
   last_prompt_at timestamptz,
+  session_data text,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
 
+alter table public.guest_usage
+add column if not exists session_data text;
+
 create index if not exists guest_usage_date_idx on public.guest_usage(usage_date);
+
+-- 11) AI Generations (logs every AI API call)
+create table if not exists public.ai_generations (
+  id uuid primary key default gen_random_uuid(),
+  chat_id uuid not null references public.chats(id) on delete cascade,
+  history_id uuid references public.history(id) on delete set null,
+  model_name text not null,
+  prompt_tokens int,
+  completion_tokens int,
+  total_tokens int,
+  status public.generation_status not null default 'pending',
+  error_message text,
+  duration_ms int,
+  created_at timestamptz not null default now()
+);
+
+create index if not exists ai_generations_chat_id_idx on public.ai_generations(chat_id);
+create index if not exists ai_generations_history_id_idx on public.ai_generations(history_id);
 
 -- Generic updated_at trigger function
 create or replace function public.set_updated_at()
@@ -178,6 +251,11 @@ create trigger websites_set_updated_at
 before update on public.websites
 for each row execute function public.set_updated_at();
 
+drop trigger if exists user_preferences_set_updated_at on public.user_preferences;
+create trigger user_preferences_set_updated_at
+before update on public.user_preferences
+for each row execute function public.set_updated_at();
+
 drop trigger if exists guest_usage_set_updated_at on public.guest_usage;
 create trigger guest_usage_set_updated_at
 before update on public.guest_usage
@@ -203,15 +281,37 @@ for each row execute function public.touch_chat_updated_at_from_history();
 
 -- Row Level Security
 alter table public.users enable row level security;
+alter table public.user_preferences enable row level security;
 alter table public.chats enable row level security;
 alter table public.history enable row level security;
 alter table public.websites enable row level security;
 alter table public.pages enable row level security;
 alter table public.sections enable row level security;
 alter table public.files enable row level security;
+alter table public.zip_downloads enable row level security;
 alter table public.guest_usage enable row level security;
+alter table public.ai_generations enable row level security;
 
 -- Drop and recreate policies so script can be re-run safely
+
+-- User Preferences policies
+drop policy if exists user_prefs_select_own on public.user_preferences;
+drop policy if exists user_prefs_insert_own on public.user_preferences;
+drop policy if exists user_prefs_update_own on public.user_preferences;
+
+create policy user_prefs_select_own
+on public.user_preferences for select
+using (auth.uid() = user_id);
+
+create policy user_prefs_insert_own
+on public.user_preferences for insert
+with check (auth.uid() = user_id);
+
+create policy user_prefs_update_own
+on public.user_preferences for update
+using (auth.uid() = user_id);
+
+-- Users policies
 drop policy if exists users_select_own on public.users;
 drop policy if exists users_insert_own on public.users;
 drop policy if exists users_update_own on public.users;
@@ -479,6 +579,40 @@ using (
     from public.websites w
     join public.chats c on c.id = w.chat_id
     where w.id = files.website_id and c.user_id = auth.uid()
+  )
+);
+
+-- ZIP Downloads policies
+drop policy if exists zip_downloads_select_own on public.zip_downloads;
+drop policy if exists zip_downloads_insert_own on public.zip_downloads;
+
+create policy zip_downloads_select_own
+on public.zip_downloads for select
+using (auth.uid() = user_id);
+
+create policy zip_downloads_insert_own
+on public.zip_downloads for insert
+with check (auth.uid() = user_id);
+
+-- AI Generations policies (access through chat ownership)
+drop policy if exists ai_generations_select_own on public.ai_generations;
+drop policy if exists ai_generations_insert_own on public.ai_generations;
+
+create policy ai_generations_select_own
+on public.ai_generations for select
+using (
+  exists (
+    select 1 from public.chats c
+    where c.id = ai_generations.chat_id and c.user_id = auth.uid()
+  )
+);
+
+create policy ai_generations_insert_own
+on public.ai_generations for insert
+with check (
+  exists (
+    select 1 from public.chats c
+    where c.id = ai_generations.chat_id and c.user_id = auth.uid()
   )
 );
 
