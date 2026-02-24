@@ -1,7 +1,8 @@
 "use client";
 
-import { ReactNode, useCallback, useState } from "react";
+import { ReactNode, useCallback, useEffect, useState } from "react";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { Menu, Sparkles } from "lucide-react";
 import { MobileHeaderTitleProvider, useMobileHeaderTitle } from "@/client/components/mobile-header-title-context";
 
@@ -38,6 +39,12 @@ function WorkspaceShellInner({
 }: WorkspaceShellProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const { title } = useMobileHeaderTitle();
+  const pathname = usePathname();
+
+  // Close mobile drawer whenever the route changes
+  useEffect(() => {
+    setSidebarOpen(false);
+  }, [pathname]);
 
   const openSidebar = useCallback(() => setSidebarOpen(true), []);
   const closeSidebar = useCallback(() => setSidebarOpen(false), []);
