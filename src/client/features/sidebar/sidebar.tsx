@@ -5,10 +5,10 @@ import { usePathname, useRouter } from "next/navigation";
 import { Chat } from "@/shared/types/database";
 import { getSupabaseBrowserClient } from "@/client/lib/supabase-browser";
 import { renameChat, deleteChat } from "@/shared/services/chat-service";
-import SidebarHeader from "@/client/pages/sidebar/sidebar-header";
-import SidebarFooter from "@/client/pages/sidebar/sidebar-footer";
-import NewChatButton from "@/client/pages/sidebar/new-chat-button";
-import ChatList from "@/client/pages/sidebar/chat-list";
+import SidebarHeader from "@/client/features/sidebar/sidebar-header";
+import SidebarFooter from "@/client/features/sidebar/sidebar-footer";
+import NewChatButton from "@/client/features/sidebar/new-chat-button";
+import ChatList from "@/client/features/sidebar/chat-list";
 
 type SidebarProps = {
   chats: Chat[];

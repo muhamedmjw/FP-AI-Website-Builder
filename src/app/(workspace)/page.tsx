@@ -1,5 +1,5 @@
-import HomePage from "@/client/pages/home";
-import GuestHomePage from "@/client/pages/guest-home";
+import HomePage from "@/client/views/home";
+import GuestHomePage from "@/client/views/guest-home";
 import { getSupabaseServerClient } from "@/server/supabase/server-client";
 import { getCurrentUser } from "@/shared/services/user-service";
 

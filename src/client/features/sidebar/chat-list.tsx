@@ -1,5 +1,5 @@
 import { Chat } from "@/shared/types/database";
-import ChatListItem from "@/client/pages/sidebar/chat-list-item";
+import ChatListItem from "@/client/features/sidebar/chat-list-item";
 
 /**
  * Displays the list of user's chat/projects in the sidebar.

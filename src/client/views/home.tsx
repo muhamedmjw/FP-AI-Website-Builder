@@ -4,7 +4,7 @@ import { FormEvent, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { getSupabaseBrowserClient } from "@/client/lib/supabase-browser";
 import { addMessage, createChat } from "@/shared/services/chat-service";
-import { sendChatMessage } from "@/client/lib/chat-api";
+import { sendChatMessage } from "@/client/lib/api/chat-api";
 import { getCurrentUser } from "@/shared/services/user-service";
 import {
   consumePendingGuestZipPrompt,

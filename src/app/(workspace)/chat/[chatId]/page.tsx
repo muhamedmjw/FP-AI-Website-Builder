@@ -6,7 +6,7 @@ import {
   getGeneratedHtml,
 } from "@/server/services/website-service";
 import { getCurrentUser, getUserProfile } from "@/shared/services/user-service";
-import BuilderView from "@/client/pages/workspace/builder-view";
+import BuilderView from "@/client/features/builder/builder-view";
 
 type ChatPageProps = {
   params: Promise<{ chatId: string }>;

@@ -17,9 +17,9 @@ import {
 import { useRouter } from "next/navigation";
 import { getSupabaseBrowserClient } from "@/client/lib/supabase-browser";
 import { isMissingSessionError } from "@/shared/utils/auth-errors";
+import { MAX_AVATAR_FILE_SIZE } from "@/shared/constants/limits";
 
 const GITHUB_REPO_URL = "https://github.com/muhamedmjw/Final-Project";
-const MAX_AVATAR_FILE_SIZE = 2 * 1024 * 1024;
 const THEME_STORAGE_KEY = "app-theme";
 
 type Theme = "dark" | "light";

@@ -3,8 +3,8 @@
 import { Fragment, ReactNode, useEffect, useRef } from "react";
 import { MessageSquare } from "lucide-react";
 import { HistoryMessage } from "@/shared/types/database";
-import ChatBubble from "@/client/pages/workspace/chat-bubble";
-import ChatInput from "@/client/pages/workspace/chat-input";
+import ChatBubble from "@/client/features/chat/chat-bubble";
+import ChatInput from "@/client/features/chat/chat-input";
 
 /**
  * Chat panel — displays conversation history and input bar.

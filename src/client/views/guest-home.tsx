@@ -3,11 +3,12 @@
 import Link from "next/link";
 import { useState } from "react";
 import { Sparkles, X } from "lucide-react";
+import { MAX_GUEST_PROMPTS } from "@/shared/constants/limits";
 import { HistoryMessage } from "@/shared/types/database";
-import ChatPanel from "@/client/pages/workspace/chat-panel";
+import ChatPanel from "@/client/features/chat/chat-panel";
 import { savePendingGuestZipPrompt } from "@/client/lib/zip-download";
 import { savePendingGuestChatSession } from "@/client/lib/guest-chat-handoff";
-import ZipArtifactCard from "@/client/pages/workspace/zip-artifact-card";
+import ZipArtifactCard from "@/client/features/builder/zip-artifact-card";
 
 type GuestZipArtifact = {
   id: string;

@@ -1,7 +1,7 @@
 import { getSupabaseServerClient } from "@/server/supabase/server-client";
 import { getUserChats } from "@/shared/services/chat-service";
 import { getCurrentUser, getUserProfile } from "@/shared/services/user-service";
-import Sidebar from "@/client/pages/sidebar/sidebar";
+import Sidebar from "@/client/features/sidebar/sidebar";
 import AuthSessionSync from "@/client/components/auth-session-sync";
 
 /**

@@ -2,13 +2,13 @@ import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
 /**
- * Proxy that runs on every matched route.
+ * Middleware that runs on every matched route.
  * 1. Refreshes the Supabase auth session (keeps cookies alive).
  * 2. Redirects unauthenticated users away from protected routes
  *    (except the guest-friendly "/").
  * 3. Redirects authenticated users away from auth pages.
  */
-export async function proxy(request: NextRequest) {
+export async function middleware(request: NextRequest) {
   const supabaseResponse = NextResponse.next({ request });
 
   const supabase = createServerClient(
@@ -63,7 +63,7 @@ export async function proxy(request: NextRequest) {
   return supabaseResponse;
 }
 
-// Only run proxy on these paths (skip static files, images, etc.)
+// Only run middleware on these paths (skip static files, images, etc.)
 export const config = {
   matcher: [
     "/",

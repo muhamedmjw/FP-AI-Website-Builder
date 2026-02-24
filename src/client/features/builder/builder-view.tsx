@@ -3,12 +3,12 @@
 import { useCallback, useMemo, useState } from "react";
 import { PanelRightOpen, X } from "lucide-react";
 import { HistoryMessage } from "@/shared/types/database";
-import { sendChatMessage } from "@/client/lib/chat-api";
+import { sendChatMessage } from "@/client/lib/api/chat-api";
 import { downloadWebsiteZip } from "@/client/lib/zip-download";
-import ChatPanel from "@/client/pages/workspace/chat-panel";
-import PreviewPanel from "@/client/pages/workspace/preview-panel";
-import ResizeHandle from "@/client/pages/workspace/resize-handle";
-import ZipArtifactCard from "@/client/pages/workspace/zip-artifact-card";
+import ChatPanel from "@/client/features/chat/chat-panel";
+import PreviewPanel from "@/client/features/preview/preview-panel";
+import ResizeHandle from "@/client/features/builder/resize-handle";
+import ZipArtifactCard from "@/client/features/builder/zip-artifact-card";
 
 /**
  * Builder view - main split layout.

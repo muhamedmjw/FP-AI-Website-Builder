@@ -1,4 +1,4 @@
-import AccountPageView from "@/client/pages/account";
+import AccountPageView from "@/client/views/account";
 
 export default function AccountPage() {
   return <AccountPageView />;
