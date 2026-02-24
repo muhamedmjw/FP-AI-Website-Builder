@@ -1,7 +1,9 @@
 "use client";
 
 import { ReactNode, useCallback, useState } from "react";
-import { Menu } from "lucide-react";
+import Link from "next/link";
+import { Menu, Sparkles } from "lucide-react";
+import { MobileHeaderTitleProvider, useMobileHeaderTitle } from "@/client/components/mobile-header-title-context";
 
 type WorkspaceShellProps = {
   sidebar: ReactNode;
@@ -20,7 +22,22 @@ export default function WorkspaceShell({
   children,
   hasSidebar,
 }: WorkspaceShellProps) {
+  return (
+    <MobileHeaderTitleProvider>
+      <WorkspaceShellInner sidebar={sidebar} hasSidebar={hasSidebar}>
+        {children}
+      </WorkspaceShellInner>
+    </MobileHeaderTitleProvider>
+  );
+}
+
+function WorkspaceShellInner({
+  sidebar,
+  children,
+  hasSidebar,
+}: WorkspaceShellProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const { title } = useMobileHeaderTitle();
 
   const openSidebar = useCallback(() => setSidebarOpen(true), []);
   const closeSidebar = useCallback(() => setSidebarOpen(false), []);
@@ -30,18 +47,23 @@ export default function WorkspaceShell({
       {hasSidebar ? (
         <>
           {/* Mobile header bar */}
-          <div className="fixed inset-x-0 top-0 z-40 flex h-14 items-center gap-3 border-b border-[var(--app-border)] bg-[var(--app-panel)]/90 px-4 backdrop-blur md:hidden">
+          <div className="fixed inset-x-0 top-0 z-40 flex h-14 items-center justify-between border-b border-[var(--app-border)] bg-[var(--app-panel)]/90 px-4 backdrop-blur md:hidden">
             <button
               type="button"
               onClick={openSidebar}
-              className="flex h-9 w-9 items-center justify-center rounded-lg text-[var(--app-text-secondary)] transition hover:bg-[var(--app-hover-bg-strong)] hover:text-[var(--app-text-heading)]"
+              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-[var(--app-text-secondary)] transition hover:bg-[var(--app-hover-bg-strong)] hover:text-[var(--app-text-heading)]"
               aria-label="Open sidebar"
             >
               <Menu size={20} />
             </button>
-            <span className="prismatic-text text-sm font-bold uppercase tracking-[0.18em]">
-              AI Website Builder
-            </span>
+            {title ? (
+              <p className="truncate px-3 text-sm font-bold text-[var(--app-text-heading)]">
+                {title}
+              </p>
+            ) : null}
+            <Link href="/" className="flex shrink-0 items-center transition hover:opacity-80" aria-label="Home">
+              <Sparkles size={22} strokeWidth={1.7} className="prismatic-icon" />
+            </Link>
           </div>
 
           {/* Sidebar — always visible on md+, overlay drawer on mobile */}

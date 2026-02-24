@@ -1,10 +1,11 @@
 "use client";
 
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { Eye, MessageCircle, PanelRightOpen, X } from "lucide-react";
 import { HistoryMessage } from "@/shared/types/database";
 import { sendChatMessage } from "@/client/lib/api/chat-api";
 import { downloadWebsiteZip } from "@/client/lib/zip-download";
+import { useMobileHeaderTitle } from "@/client/components/mobile-header-title-context";
 import ChatPanel from "@/client/features/chat/chat-panel";
 import PreviewPanel from "@/client/features/preview/preview-panel";
 import ResizeHandle from "@/client/features/builder/resize-handle";
@@ -103,6 +104,14 @@ export default function BuilderView({
 }: BuilderViewProps) {
   const hasInitialPreview =
     typeof initialHtml === "string" && initialHtml.trim().length > 0;
+
+  const { setTitle } = useMobileHeaderTitle();
+
+  // Set mobile header title to chat title
+  useEffect(() => {
+    setTitle(chatTitle);
+    return () => setTitle("");
+  }, [chatTitle, setTitle]);
 
   const [messages, setMessages] = useState<HistoryMessage[]>(initialMessages);
   const [html, setHtml] = useState<string | null>(initialHtml);
@@ -262,6 +271,7 @@ export default function BuilderView({
             isSending={isSending}
             currentUserAvatarUrl={currentUserAvatarUrl}
             inputErrorMessage={inputErrorMessage}
+            showHeader={false}
             inlineAttachments={zipArtifacts.map((artifact) => ({
               id: artifact.id,
               anchorMessageId: artifact.anchorMessageId,
@@ -335,6 +345,7 @@ export default function BuilderView({
             isSending={isSending}
             currentUserAvatarUrl={currentUserAvatarUrl}
             inputErrorMessage={inputErrorMessage}
+            showHeader={false}
             inlineAttachments={zipArtifacts.map((artifact) => ({
               id: artifact.id,
               anchorMessageId: artifact.anchorMessageId,

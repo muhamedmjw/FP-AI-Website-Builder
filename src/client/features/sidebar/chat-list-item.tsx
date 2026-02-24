@@ -144,11 +144,7 @@ export default function ChatListItem({
         aria-haspopup="menu"
         aria-expanded={menuOpen}
         aria-controls={menuId}
-        className={`absolute right-2 top-1/2 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-xl text-[var(--app-text-tertiary)] transition-[opacity,background-color,color] duration-75 ease-out hover:bg-[var(--app-hover-bg-strong)] hover:text-[var(--app-text-heading)] ${
-          menuOpen
-            ? "pointer-events-auto opacity-100"
-            : "pointer-events-none opacity-0 group-hover:pointer-events-auto group-hover:opacity-100 group-focus-within:pointer-events-auto group-focus-within:opacity-100"
-        }`}
+        className={`absolute right-2 top-1/2 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-xl text-[var(--app-text-tertiary)] transition-[background-color,color] duration-75 ease-out hover:bg-[var(--app-hover-bg-strong)] hover:text-[var(--app-text-heading)]`}
         title="Actions"
       >
         <MoreHorizontal size={14} />
