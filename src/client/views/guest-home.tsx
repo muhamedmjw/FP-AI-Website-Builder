@@ -123,15 +123,15 @@ export default function GuestHomePage() {
 
   return (
     <div className="flex h-full min-h-screen flex-col bg-[var(--app-bg)]">
-      <header className="border-b border-[var(--app-border)] bg-[var(--app-panel)]/60 px-5 py-4 backdrop-blur">
-        <div className="mx-auto flex w-full max-w-5xl flex-wrap items-center justify-between gap-3">
-          <div className="flex items-center gap-2.5">
+      <header className="border-b border-[var(--app-border)] bg-[var(--app-panel)]/60 px-3 py-3 backdrop-blur sm:px-5 sm:py-4">
+        <div className="mx-auto flex w-full max-w-5xl flex-wrap items-center justify-between gap-2 sm:gap-3">
+          <div className="flex items-center gap-2 sm:gap-2.5">
             <Sparkles size={17} className="prismatic-icon" />
-            <p className="prismatic-text text-sm font-semibold uppercase tracking-[0.2em]">
+            <p className="prismatic-text text-xs font-semibold uppercase tracking-[0.15em] sm:text-sm sm:tracking-[0.2em]">
               AI Website Builder
             </p>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5 sm:gap-2">
             <Link
               href="/signin"
               onClick={queueChatSessionForAuth}
@@ -148,7 +148,7 @@ export default function GuestHomePage() {
             </Link>
           </div>
         </div>
-        <p className="mx-auto mt-2 w-full max-w-5xl text-xs text-[var(--app-text-tertiary)]">
+        <p className="mx-auto mt-1.5 w-full max-w-5xl text-xs text-[var(--app-text-tertiary)] sm:mt-2">
           Guest chats are temporary and not saved to history.
         </p>
       </header>

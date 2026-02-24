@@ -402,6 +402,20 @@ button, [role="button"], a, summary, [type="submit"], [type="reset"], [type="but
   }
 }
 
+/* ─── Mobile sidebar slide-in ─── */
+.animate-slide-in-left {
+  animation: slide-in-left 200ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+@keyframes slide-in-left {
+  from {
+    transform: translateX(-100%);
+  }
+  to {
+    transform: translateX(0);
+  }
+}
+
 /* ─── Gradient mesh background ─── */
 .gradient-mesh {
   position: absolute;

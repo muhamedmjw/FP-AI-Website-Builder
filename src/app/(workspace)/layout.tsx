@@ -3,6 +3,7 @@ import { getUserChats } from "@/shared/services/chat-service";
 import { getCurrentUser, getUserProfile } from "@/shared/services/user-service";
 import Sidebar from "@/client/features/sidebar/sidebar";
 import AuthSessionSync from "@/client/components/auth-session-sync";
+import WorkspaceShell from "@/client/components/workspace-shell";
 
 /**
  * Workspace layout for "/" and "/chat".
@@ -21,12 +22,10 @@ export default async function AppLayout({
 
   if (!user) {
     return (
-      <div className="flex h-screen bg-[var(--app-bg)] text-[var(--app-text-primary)]">
+      <WorkspaceShell sidebar={null} hasSidebar={false}>
         <AuthSessionSync />
-        <main className="flex-1 overflow-y-auto bg-[var(--app-bg)]">
-          {children}
-        </main>
-      </div>
+        {children}
+      </WorkspaceShell>
     );
   }
 
@@ -37,15 +36,19 @@ export default async function AppLayout({
   const chats = await getUserChats(supabase);
 
   return (
-    <div className="flex h-screen bg-[var(--app-bg)] text-[var(--app-text-primary)]">
+    <WorkspaceShell
+      hasSidebar
+      sidebar={
+        <Sidebar
+          chats={chats}
+          userName={profile?.name ?? null}
+          userEmail={profile?.email ?? user.email ?? null}
+          userAvatarUrl={profile?.avatarUrl ?? null}
+        />
+      }
+    >
       <AuthSessionSync />
-      <Sidebar
-        chats={chats}
-        userName={profile?.name ?? null}
-        userEmail={profile?.email ?? user.email ?? null}
-        userAvatarUrl={profile?.avatarUrl ?? null}
-      />
-      <main className="flex-1 overflow-y-auto bg-[var(--app-bg)]">{children}</main>
-    </div>
+      {children}
+    </WorkspaceShell>
   );
 }

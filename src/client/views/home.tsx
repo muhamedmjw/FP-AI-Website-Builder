@@ -1,6 +1,7 @@
 "use client";
 
 import { FormEvent, useEffect, useRef, useState } from "react";
+import { SendHorizontal } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { getSupabaseBrowserClient } from "@/client/lib/supabase-browser";
 import { addMessage, createChat } from "@/shared/services/chat-service";
@@ -133,33 +134,34 @@ export default function ChatHome() {
   }
 
   return (
-    <div className="flex h-full flex-col items-center justify-center px-6">
-      <div className="w-full max-w-2xl space-y-4 text-center">
-        <h1 className="text-3xl font-semibold text-[var(--app-text-heading)]">
+    <div className="flex h-full flex-col items-center justify-center px-6 sm:px-8">
+      <div className="w-full max-w-2xl space-y-5 text-center">
+        <h1 className="text-2xl font-semibold leading-snug text-[var(--app-text-heading)] sm:text-3xl">
           What website do you want to build?
         </h1>
-        <p className="text-sm text-[var(--app-text-tertiary)]">
+        <p className="text-sm text-[var(--app-text-tertiary)] sm:text-sm">
           Describe your website and AI will generate it for you.
         </p>
         {downloadMessage ? (
           <p className="text-sm text-emerald-400">{downloadMessage}</p>
         ) : null}
 
-        <form onSubmit={handleSubmit} className="mt-6">
-          <div className="flex items-center gap-3 rounded-2xl border border-[var(--app-input-border)] bg-[var(--app-input-bg)] px-4 py-3 shadow-[var(--app-shadow-sm)] transition focus-within:border-[var(--app-input-focus-border)]">
+        <form onSubmit={handleSubmit} className="mt-8">
+          <div className="flex items-center gap-2 rounded-2xl bg-[var(--app-card-bg)]/80 p-1.5 shadow-[var(--app-shadow-lg)] backdrop-blur-sm sm:p-2">
             <input
               ref={inputRef}
               type="text"
-              placeholder="e.g. A landing page for a coffee shop in Erbil..."
+              placeholder="Describe the website you want to build..."
               disabled={isCreating}
-              className="flex-1 bg-transparent text-sm text-[var(--app-input-text)] placeholder:text-[var(--app-text-tertiary)] focus:outline-none disabled:opacity-50"
+              className="flex-1 rounded-xl bg-transparent px-2.5 py-2 text-sm text-[var(--app-input-text)] placeholder:text-[var(--app-text-tertiary)] focus:outline-none disabled:opacity-50 sm:px-3 sm:py-2.5 sm:text-base"
             />
             <button
               type="submit"
               disabled={isCreating}
-              className="shrink-0 rounded-lg bg-[var(--app-btn-primary-bg)] px-4 py-2 text-sm font-semibold text-[var(--app-btn-primary-text)] transition hover:bg-[var(--app-btn-primary-hover)] disabled:opacity-50"
+              className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[var(--app-btn-primary-bg)] text-[var(--app-btn-primary-text)] shadow-[var(--app-shadow-sm)] transition hover:bg-[var(--app-btn-primary-hover)] hover:shadow-[var(--app-shadow-md)] hover:-translate-y-px active:translate-y-0 disabled:opacity-50 sm:h-11 sm:w-11"
+              title={isCreating ? "Creating..." : "Start"}
             >
-              {isCreating ? "Creating..." : "Start"}
+              <SendHorizontal size={17} />
             </button>
           </div>
           {errorMessage ? (

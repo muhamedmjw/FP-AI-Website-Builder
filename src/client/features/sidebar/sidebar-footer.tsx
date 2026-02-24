@@ -268,9 +268,9 @@ export default function SidebarFooter({
   const signOutItemClass =
     "cursor-pointer flex w-full items-center gap-2.5 px-3.5 py-3 text-sm text-rose-400 transition hover:bg-[var(--app-hover-bg)] hover:text-rose-300";
   const settingsOverlayClass =
-    "fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm";
+    "fixed inset-0 z-50 flex items-end justify-center bg-black/50 p-0 backdrop-blur-sm sm:items-center sm:p-4";
   const settingsModalClass =
-    "w-full max-w-xl rounded-2xl border border-[var(--app-card-border)] bg-[var(--app-panel)] shadow-[var(--app-shadow-lg)]";
+    "w-full max-h-[90vh] overflow-y-auto rounded-t-2xl border border-[var(--app-card-border)] bg-[var(--app-panel)] shadow-[var(--app-shadow-lg)] sm:max-w-xl sm:rounded-2xl";
   const settingsTitleClass =
     "text-lg font-semibold text-[var(--app-text-heading)]";
   const settingsSubtitleClass =

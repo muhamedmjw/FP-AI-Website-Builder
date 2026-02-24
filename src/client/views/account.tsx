@@ -10,14 +10,14 @@ export default function AccountPageView() {
   return (
     <main className="relative min-h-screen overflow-hidden bg-[var(--app-bg)] text-[var(--app-text-primary)]">
       <GradientMesh />
-      <div className="relative z-10 mx-auto flex min-h-screen w-full max-w-3xl flex-col items-start justify-center gap-6 px-6">
+      <div className="relative z-10 mx-auto flex min-h-screen w-full max-w-3xl flex-col items-start justify-center gap-5 px-4 sm:gap-6 sm:px-6">
         <p className="prismatic-text text-xs font-semibold uppercase tracking-[0.3em]">
           AI Website Builder
         </p>
-        <h1 className="text-4xl font-semibold text-[var(--app-text-heading)]">
+        <h1 className="text-2xl font-semibold text-[var(--app-text-heading)] sm:text-4xl">
           Build full websites from a short prompt.
         </h1>
-        <p className="text-base text-[var(--app-text-secondary)]">
+        <p className="text-sm text-[var(--app-text-secondary)] sm:text-base">
           Sign in to start a new chat and generate a complete website structure
           with pages, sections, and ready-to-run code.
         </p>

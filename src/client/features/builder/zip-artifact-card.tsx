@@ -16,7 +16,7 @@ export default function ZipArtifactCard({
   onDownload,
 }: ZipArtifactCardProps) {
   return (
-    <div className="ui-fade-up mr-auto flex w-full max-w-4xl items-center justify-between gap-3 rounded-2xl border border-[var(--app-card-border)] bg-[var(--app-card-bg)] px-4 py-3 shadow-[var(--app-shadow-sm)]">
+    <div className="ui-fade-up mr-auto flex w-full max-w-4xl flex-col gap-3 rounded-2xl border border-[var(--app-card-border)] bg-[var(--app-card-bg)] px-3 py-3 shadow-[var(--app-shadow-sm)] sm:flex-row sm:items-center sm:justify-between sm:px-4">
       <div className="min-w-0">
         <div className="flex items-center gap-2 text-[var(--app-text-heading)]">
           <Package size={16} />
@@ -30,7 +30,7 @@ export default function ZipArtifactCard({
       <button
         type="button"
         onClick={onDownload}
-        className="inline-flex shrink-0 items-center gap-2 rounded-lg bg-[var(--app-btn-primary-bg)] px-3 py-2 text-sm font-semibold text-[var(--app-btn-primary-text)] shadow-[var(--app-shadow-sm)] transition hover:bg-[var(--app-btn-primary-hover)] hover:shadow-[var(--app-shadow-md)] hover:-translate-y-px active:translate-y-0"
+        className="inline-flex w-full shrink-0 items-center justify-center gap-2 rounded-lg bg-[var(--app-btn-primary-bg)] px-3 py-2 text-sm font-semibold text-[var(--app-btn-primary-text)] shadow-[var(--app-shadow-sm)] transition hover:bg-[var(--app-btn-primary-hover)] hover:shadow-[var(--app-shadow-md)] hover:-translate-y-px active:translate-y-0 sm:w-auto"
       >
         <Download size={14} />
         Download ZIP

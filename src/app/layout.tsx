@@ -11,6 +11,7 @@ const sora = Sora({
 export const metadata: Metadata = {
   title: "AI Website Builder",
   description: "Build full websites from a short prompt using AI.",
+  viewport: "width=device-width, initial-scale=1, viewport-fit=cover",
 };
 
 const THEME_INIT_SCRIPT = `(() => {

@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useMemo, useState } from "react";
-import { PanelRightOpen, X } from "lucide-react";
+import { Eye, MessageCircle, PanelRightOpen, X } from "lucide-react";
 import { HistoryMessage } from "@/shared/types/database";
 import { sendChatMessage } from "@/client/lib/api/chat-api";
 import { downloadWebsiteZip } from "@/client/lib/zip-download";
@@ -13,6 +13,7 @@ import ZipArtifactCard from "@/client/features/builder/zip-artifact-card";
 /**
  * Builder view - main split layout.
  * Chat is always visible; preview appears only when generated HTML exists.
+ * On mobile, a tab bar switches between Chat and Preview.
  */
 
 type BuilderViewProps = {
@@ -115,6 +116,9 @@ export default function BuilderView({
   const hasPreview = typeof html === "string" && html.trim().length > 0;
   const zipArtifacts = useMemo(() => extractZipArtifacts(messages), [messages]);
 
+  // Mobile tab state: "chat" | "preview"
+  const [mobileTab, setMobileTab] = useState<"chat" | "preview">("chat");
+
   // Initialise preview width lazily from container width
   const getInitialWidth = useCallback((containerWidth: number) => {
     return Math.round(containerWidth * DEFAULT_PREVIEW_FRACTION);
@@ -215,77 +219,147 @@ export default function BuilderView({
   return (
     <div
       id="builder-container"
-      className="flex h-full bg-[radial-gradient(1000px_420px_at_50%_-140px,rgba(167,139,250,0.06),transparent_62%),var(--app-bg)]"
+      className="flex h-full flex-col bg-[radial-gradient(1000px_420px_at_50%_-140px,rgba(167,139,250,0.06),transparent_62%),var(--app-bg)]"
     >
-      {/* Left: Chat panel */}
-      <div className="flex min-w-0 flex-1 flex-col">
-        <ChatPanel
-          chatTitle={chatTitle}
-          messages={messages}
-          onSend={handleSend}
-          isSending={isSending}
-          currentUserAvatarUrl={currentUserAvatarUrl}
-          inputErrorMessage={inputErrorMessage}
-          inlineAttachments={zipArtifacts.map((artifact) => ({
-            id: artifact.id,
-            anchorMessageId: artifact.anchorMessageId,
-            node: (
-              <ZipArtifactCard
-                zipName={artifact.zipName}
-                fileCount={artifact.fileCount}
-                folderCount={artifact.folderCount}
-                createdAt={artifact.createdAt}
-                onDownload={() => {
-                  void handleDownloadZip(artifact.prompt);
+      {/* Mobile tab bar — only visible on small screens when preview exists */}
+      {hasPreview && (
+        <div className="flex shrink-0 border-b border-[var(--app-border)] md:hidden">
+          <button
+            type="button"
+            onClick={() => setMobileTab("chat")}
+            className={`flex flex-1 items-center justify-center gap-2 px-4 py-3 text-sm font-medium transition ${
+              mobileTab === "chat"
+                ? "border-b-2 border-[var(--app-btn-primary-bg)] text-[var(--app-text-heading)]"
+                : "text-[var(--app-text-tertiary)] hover:text-[var(--app-text-secondary)]"
+            }`}
+          >
+            <MessageCircle size={16} />
+            Chat
+          </button>
+          <button
+            type="button"
+            onClick={() => setMobileTab("preview")}
+            className={`flex flex-1 items-center justify-center gap-2 px-4 py-3 text-sm font-medium transition ${
+              mobileTab === "preview"
+                ? "border-b-2 border-[var(--app-btn-primary-bg)] text-[var(--app-text-heading)]"
+                : "text-[var(--app-text-tertiary)] hover:text-[var(--app-text-secondary)]"
+            }`}
+          >
+            <Eye size={16} />
+            Preview
+          </button>
+        </div>
+      )}
+
+      {/* Desktop: side-by-side split layout */}
+      <div className="hidden min-h-0 flex-1 md:flex">
+        {/* Left: Chat panel */}
+        <div className="flex min-w-0 flex-1 flex-col">
+          <ChatPanel
+            chatTitle={chatTitle}
+            messages={messages}
+            onSend={handleSend}
+            isSending={isSending}
+            currentUserAvatarUrl={currentUserAvatarUrl}
+            inputErrorMessage={inputErrorMessage}
+            inlineAttachments={zipArtifacts.map((artifact) => ({
+              id: artifact.id,
+              anchorMessageId: artifact.anchorMessageId,
+              node: (
+                <ZipArtifactCard
+                  zipName={artifact.zipName}
+                  fileCount={artifact.fileCount}
+                  folderCount={artifact.folderCount}
+                  createdAt={artifact.createdAt}
+                  onDownload={() => {
+                    void handleDownloadZip(artifact.prompt);
+                  }}
+                />
+              ),
+            }))}
+          />
+        </div>
+
+        {hasPreview ? (
+          <>
+            {/* Resize handle */}
+            {previewOpen && (
+              <ResizeHandle onResize={handleResize} onResizeEnd={handleResizeEnd} />
+            )}
+
+            {/* Right: Preview panel */}
+            {previewOpen ? (
+              <div
+                className="relative shrink-0 bg-[var(--app-bg-soft)]/90 shadow-[-12px_0_32px_rgba(0,0,0,0.15)]"
+                style={{
+                  width: previewWidth ?? "55%",
+                  pointerEvents: isResizing ? "none" : "auto",
                 }}
-              />
-            ),
-          }))}
-        />
+              >
+                {/* Close preview button */}
+                <button
+                  type="button"
+                  onClick={() => setPreviewOpen(false)}
+                  className="absolute right-3 top-3 z-10 flex h-9 w-9 items-center justify-center rounded-xl bg-[var(--app-card-bg)]/80 text-[var(--app-text-tertiary)] shadow-[var(--app-shadow-sm)] backdrop-blur-sm transition hover:bg-[var(--app-hover-bg-strong)] hover:text-[var(--app-text-heading)]"
+                  title="Close preview"
+                >
+                  <X size={16} />
+                </button>
+                <PreviewPanel html={html} />
+              </div>
+            ) : (
+              /* Open preview button when preview is collapsed */
+              <div className="flex shrink-0 items-center px-2">
+                <button
+                  type="button"
+                  onClick={() => setPreviewOpen(true)}
+                  className="flex h-10 w-10 items-center justify-center rounded-xl bg-[var(--app-card-bg)] text-[var(--app-text-tertiary)] shadow-[var(--app-shadow-sm)] transition hover:bg-[var(--app-hover-bg-strong)] hover:text-[var(--app-text-heading)]"
+                  title="Open preview"
+                >
+                  <PanelRightOpen size={18} />
+                </button>
+              </div>
+            )}
+          </>
+        ) : null}
       </div>
 
-      {hasPreview ? (
-        <>
-          {/* Resize handle */}
-          {previewOpen && (
-            <ResizeHandle onResize={handleResize} onResizeEnd={handleResizeEnd} />
-          )}
+      {/* Mobile: tab-switched views */}
+      <div className="flex min-h-0 flex-1 flex-col md:hidden">
+        {/* Show chat tab or full chat when no preview */}
+        <div className={`min-h-0 flex-1 flex-col ${!hasPreview || mobileTab === "chat" ? "flex" : "hidden"}`}>
+          <ChatPanel
+            chatTitle={chatTitle}
+            messages={messages}
+            onSend={handleSend}
+            isSending={isSending}
+            currentUserAvatarUrl={currentUserAvatarUrl}
+            inputErrorMessage={inputErrorMessage}
+            inlineAttachments={zipArtifacts.map((artifact) => ({
+              id: artifact.id,
+              anchorMessageId: artifact.anchorMessageId,
+              node: (
+                <ZipArtifactCard
+                  zipName={artifact.zipName}
+                  fileCount={artifact.fileCount}
+                  folderCount={artifact.folderCount}
+                  createdAt={artifact.createdAt}
+                  onDownload={() => {
+                    void handleDownloadZip(artifact.prompt);
+                  }}
+                />
+              ),
+            }))}
+          />
+        </div>
 
-          {/* Right: Preview panel */}
-          {previewOpen ? (
-            <div
-              className="relative shrink-0 bg-[var(--app-bg-soft)]/90 shadow-[-12px_0_32px_rgba(0,0,0,0.15)]"
-              style={{
-                width: previewWidth ?? "55%",
-                pointerEvents: isResizing ? "none" : "auto",
-              }}
-            >
-              {/* Close preview button */}
-              <button
-                type="button"
-                onClick={() => setPreviewOpen(false)}
-                className="absolute right-3 top-3 z-10 flex h-9 w-9 items-center justify-center rounded-xl bg-[var(--app-card-bg)]/80 text-[var(--app-text-tertiary)] shadow-[var(--app-shadow-sm)] backdrop-blur-sm transition hover:bg-[var(--app-hover-bg-strong)] hover:text-[var(--app-text-heading)]"
-                title="Close preview"
-              >
-                <X size={16} />
-              </button>
-              <PreviewPanel html={html} />
-            </div>
-          ) : (
-            /* Open preview button when preview is collapsed */
-            <div className="flex shrink-0 items-center px-2">
-              <button
-                type="button"
-                onClick={() => setPreviewOpen(true)}
-                className="flex h-10 w-10 items-center justify-center rounded-xl bg-[var(--app-card-bg)] text-[var(--app-text-tertiary)] shadow-[var(--app-shadow-sm)] transition hover:bg-[var(--app-hover-bg-strong)] hover:text-[var(--app-text-heading)]"
-                title="Open preview"
-              >
-                <PanelRightOpen size={18} />
-              </button>
-            </div>
-          )}
-        </>
-      ) : null}
+        {/* Mobile preview tab */}
+        {hasPreview && mobileTab === "preview" && (
+          <div className="min-h-0 flex-1">
+            <PreviewPanel html={html} />
+          </div>
+        )}
+      </div>
     </div>
   );
 }
