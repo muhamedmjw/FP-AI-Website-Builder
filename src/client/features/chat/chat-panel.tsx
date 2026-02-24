@@ -101,7 +101,7 @@ export default function ChatPanel({
           {/* Message list */}
           <div
             ref={scrollRef}
-            className="flex-1 overflow-y-auto px-3 py-4 sm:px-5 sm:py-8"
+            className="flex-1 overflow-x-hidden overflow-y-auto px-3 py-4 sm:px-5 sm:py-8"
           >
             {visibleMessages.length === 0 ? (
               <div className="flex h-full items-center justify-center">

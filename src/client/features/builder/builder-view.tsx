@@ -228,7 +228,7 @@ export default function BuilderView({
   return (
     <div
       id="builder-container"
-      className="flex h-full flex-col bg-[radial-gradient(1000px_420px_at_50%_-140px,rgba(167,139,250,0.06),transparent_62%),var(--app-bg)]"
+      className="flex h-full min-w-0 flex-col overflow-hidden bg-[radial-gradient(1000px_420px_at_50%_-140px,rgba(167,139,250,0.06),transparent_62%),var(--app-bg)]"
     >
       {/* Mobile tab bar — only visible on small screens when preview exists */}
       {hasPreview && (

@@ -20,7 +20,7 @@ export default function ChatBubble({
 
   return (
     <div
-      className={`ui-fade-up flex max-w-[92%] items-start gap-2 sm:max-w-[78%] sm:gap-2.5 ${
+      className={`ui-fade-up flex min-w-0 max-w-[92%] items-start gap-2 sm:max-w-[78%] sm:gap-2.5 ${
         isUser ? "ml-auto flex-row-reverse" : "mr-auto"
       }`}
     >
@@ -50,11 +50,12 @@ export default function ChatBubble({
 
       {/* Message */}
       <div
-        className={`rounded-2xl px-3 py-2.5 text-sm leading-relaxed shadow-[var(--app-shadow-md)] sm:px-4 sm:py-3.5 sm:text-base ${
+        className={`min-w-0 overflow-hidden break-words rounded-2xl px-3 py-2.5 text-sm leading-relaxed shadow-[var(--app-shadow-md)] sm:px-4 sm:py-3.5 sm:text-base ${
           isUser
             ? "bg-[var(--app-bubble-user-bg)] text-[var(--app-bubble-user-text)]"
             : "bg-[var(--app-bubble-bot-bg)] text-[var(--app-bubble-bot-text)]"
         }`}
+        style={{ overflowWrap: "anywhere" }}
       >
         {content}
       </div>
