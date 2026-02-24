@@ -29,11 +29,11 @@ export default async function AppLayout({
     );
   }
 
-  // Fetch user profile for sidebar account data
-  const profile = await getUserProfile(supabase, user.id);
-
-  // Fetch chat list for sidebar
-  const chats = await getUserChats(supabase);
+  // Fetch user profile and chat list in parallel
+  const [profile, chats] = await Promise.all([
+    getUserProfile(supabase, user.id),
+    getUserChats(supabase),
+  ]);
 
   return (
     <WorkspaceShell

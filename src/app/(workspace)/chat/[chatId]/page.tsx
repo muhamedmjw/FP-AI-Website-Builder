@@ -21,23 +21,20 @@ export default async function ChatPage({ params }: ChatPageProps) {
   const supabase = await getSupabaseServerClient();
   const user = await getCurrentUser(supabase);
 
-  // Verify the chat exists and belongs to the user (RLS handles this)
-  const { data: chat, error } = await supabase
-    .from("chats")
-    .select("id, title")
-    .eq("id", chatId)
-    .single();
+  // Run independent queries in parallel to avoid waterfall latency
+  const [chatResult, messages, website, profile] = await Promise.all([
+    supabase.from("chats").select("id, title").eq("id", chatId).single(),
+    getChatMessages(supabase, chatId),
+    getWebsiteByChatId(supabase, chatId),
+    user ? getUserProfile(supabase, user.id) : Promise.resolve(null),
+  ]);
 
-  if (error || !chat) {
+  if (chatResult.error || !chatResult.data) {
     redirect("/");
   }
 
-  // Fetch messages and current generated HTML
-  const messages = await getChatMessages(supabase, chatId);
-
-  const website = await getWebsiteByChatId(supabase, chatId);
+  const chat = chatResult.data;
   const html = website ? await getGeneratedHtml(supabase, website.id) : null;
-  const profile = user ? await getUserProfile(supabase, user.id) : null;
 
   return (
     <BuilderView

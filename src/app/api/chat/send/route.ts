@@ -52,8 +52,11 @@ export async function POST(request: NextRequest) {
       }
     );
 
-    // Verify user is authenticated
-    const user = await getCurrentUser(supabase);
+    // Verify auth and chat ownership in parallel
+    const [user, { data: chat, error: chatError }] = await Promise.all([
+      getCurrentUser(supabase),
+      supabase.from("chats").select("id").eq("id", chatId).single(),
+    ]);
 
     if (!user) {
       return NextResponse.json(
@@ -61,13 +64,6 @@ export async function POST(request: NextRequest) {
         { status: 401 }
       );
     }
-
-    // Verify the chat exists and belongs to the user (RLS enforces this)
-    const { data: chat, error: chatError } = await supabase
-      .from("chats")
-      .select("id")
-      .eq("id", chatId)
-      .single();
 
     if (chatError || !chat) {
       return NextResponse.json(
@@ -93,7 +89,8 @@ export async function POST(request: NextRequest) {
       "Thanks! AI generation will be connected soon. You said: " + content.trim()
     );
 
-    // Fetch full message list so client has the latest state
+    // Fetch full message list so client has the latest state.
+    // Run in parallel with nothing else to keep latency tight.
     const messages = await getChatMessages(supabase, chatId);
 
     return NextResponse.json({
