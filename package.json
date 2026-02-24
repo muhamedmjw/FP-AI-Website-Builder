@@ -1,6 +1,6 @@
 {
-  "name": "final-project",
-  "version": "0.1.0",
+  "name": "final-project-ai-website-builder",
+  "version": "1.0.0",
   "private": true,
   "scripts": {
     "dev": "next dev",
