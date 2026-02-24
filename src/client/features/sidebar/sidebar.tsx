@@ -84,9 +84,19 @@ export default function Sidebar({
   return (
     <aside className="relative flex h-screen w-80 flex-col bg-[var(--app-panel)]/95 shadow-[var(--app-sidebar-shadow)] backdrop-blur-xl">
       <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(380px_180px_at_20%_0%,rgba(167,139,250,0.06),transparent_70%)]" />
-      {/* Top: brand + greeting */}
-      <div className="relative z-10">
+      {/* Top: brand + greeting + account avatar */}
+      <div className="relative z-20 flex items-start justify-between px-5 pb-2 pt-6">
         <SidebarHeader userName={userName} />
+        <SidebarFooter
+          userName={userName}
+          userEmail={userEmail}
+          userAvatarUrl={userAvatarUrl}
+          onProfileUpdated={(nextProfile) => {
+            setUserName(nextProfile.name);
+            setUserEmail(nextProfile.email);
+            setUserAvatarUrl(nextProfile.avatarUrl);
+          }}
+        />
       </div>
 
       {/* New website button */}
@@ -107,20 +117,6 @@ export default function Sidebar({
             {actionErrorMessage}
           </p>
         ) : null}
-      </div>
-
-      {/* Bottom: account menu */}
-      <div className="relative z-10">
-        <SidebarFooter
-          userName={userName}
-          userEmail={userEmail}
-          userAvatarUrl={userAvatarUrl}
-          onProfileUpdated={(nextProfile) => {
-            setUserName(nextProfile.name);
-            setUserEmail(nextProfile.email);
-            setUserAvatarUrl(nextProfile.avatarUrl);
-          }}
-        />
       </div>
     </aside>
   );

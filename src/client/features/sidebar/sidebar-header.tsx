@@ -15,7 +15,7 @@ export default function SidebarHeader({
   const greetingName = userName?.trim() || "Builder";
 
   return (
-    <div className="px-5 pb-2 pt-6">
+    <div>
       <Link
         href="/"
         className="group flex items-center gap-3 transition hover:opacity-90"

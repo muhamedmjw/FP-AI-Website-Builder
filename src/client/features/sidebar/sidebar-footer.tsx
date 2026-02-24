@@ -4,7 +4,6 @@
 import { ChangeEvent, FormEvent, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import {
-  ChevronUp,
   Github,
   LogOut,
   Moon,
@@ -251,18 +250,10 @@ export default function SidebarFooter({
     window.localStorage.setItem(THEME_STORAGE_KEY, nextTheme);
   }
 
-  const accountButtonClass =
-    "flex h-12 w-full items-center gap-3 rounded-xl bg-[var(--app-hover-bg)] px-3 text-left transition hover:bg-[var(--app-hover-bg-strong)] disabled:cursor-not-allowed disabled:opacity-50";
   const avatarFallbackClass =
-    "flex h-8 w-8 items-center justify-center rounded-full bg-[var(--app-hover-bg-strong)] text-sm font-semibold text-[var(--app-text-heading)]";
-  const accountNameClass =
-    "truncate text-sm font-semibold text-[var(--app-text-heading)]";
-  const accountMetaClass =
-    "truncate text-xs text-[var(--app-text-tertiary)]";
-  const chevronClass =
-    `text-[var(--app-text-tertiary)] transition ${menuOpen ? "rotate-180" : ""}`;
+    "flex h-9 w-9 items-center justify-center rounded-full bg-[var(--app-hover-bg-strong)] text-sm font-semibold text-[var(--app-text-heading)]";
   const menuPanelClass =
-    "absolute bottom-full left-4 right-4 z-30 mb-2 overflow-hidden rounded-xl border border-[var(--app-card-border)] bg-[var(--app-dropdown-bg)] shadow-[var(--app-shadow-lg)]";
+    "absolute right-0 top-full z-50 mt-2 w-48 overflow-hidden rounded-xl border border-[var(--app-card-border)] bg-[var(--app-dropdown-bg)] shadow-[var(--app-shadow-lg)]";
   const menuItemClass =
     "cursor-pointer flex w-full items-center gap-2.5 px-3.5 py-3 text-sm text-[var(--app-text-secondary)] transition hover:bg-[var(--app-hover-bg)] hover:text-[var(--app-text-heading)]";
   const signOutItemClass =
@@ -292,12 +283,12 @@ export default function SidebarFooter({
 
   return (
     <>
-      <div className="relative px-4 py-4" ref={menuRef}>
+      <div className="relative" ref={menuRef}>
         <button
           type="button"
           onClick={() => setMenuOpen((prev) => !prev)}
           disabled={isSigningOut}
-          className={accountButtonClass}
+          className="flex h-9 w-9 items-center justify-center rounded-full transition hover:opacity-80 disabled:cursor-not-allowed disabled:opacity-50"
           aria-expanded={menuOpen}
           aria-haspopup="menu"
           title="Account"
@@ -306,25 +297,13 @@ export default function SidebarFooter({
             <img
               src={avatarPreview}
               alt="Account avatar"
-              className="h-8 w-8 rounded-full object-cover border border-[var(--app-card-border)]"
+              className="h-9 w-9 rounded-full object-cover border border-[var(--app-card-border)]"
             />
           ) : (
             <div className={avatarFallbackClass}>
               {initials}
             </div>
           )}
-
-          <div className="min-w-0 flex-1">
-            <p className={accountNameClass}>
-              {accountLabel}
-            </p>
-            <p className={accountMetaClass}>Account</p>
-          </div>
-
-          <ChevronUp
-            size={16}
-            className={chevronClass}
-          />
         </button>
 
         {menuOpen && (
