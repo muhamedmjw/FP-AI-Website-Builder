@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Sora } from "next/font/google";
 import "./globals.css"; // Global styles for the application
 
@@ -8,10 +8,19 @@ const sora = Sora({
   weight: ["400", "500", "600", "700"],
 });
 
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  viewportFit: "cover",
+  themeColor: [
+    { media: "(prefers-color-scheme: dark)", color: "#0a0a0a" },
+    { media: "(prefers-color-scheme: light)", color: "#f8fafc" },
+  ],
+};
+
 export const metadata: Metadata = {
   title: "AI Website Builder",
   description: "Build full websites from a short prompt using AI.",
-  viewport: "width=device-width, initial-scale=1, viewport-fit=cover",
 };
 
 const THEME_INIT_SCRIPT = `(() => {
