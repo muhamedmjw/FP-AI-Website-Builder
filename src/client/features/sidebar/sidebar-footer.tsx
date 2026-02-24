@@ -4,6 +4,7 @@
 import { ChangeEvent, FormEvent, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import {
+  ChevronUp,
   Github,
   LogOut,
   Moon,
@@ -27,6 +28,8 @@ type SidebarFooterProps = {
   userName: string | null;
   userEmail: string | null;
   userAvatarUrl: string | null;
+  /** "compact" renders just the avatar circle; "full" renders the original bar. */
+  variant?: "compact" | "full";
   onProfileUpdated: (nextProfile: {
     name: string | null;
     email: string | null;
@@ -42,6 +45,7 @@ export default function SidebarFooter({
   userName,
   userEmail,
   userAvatarUrl,
+  variant = "compact",
   onProfileUpdated,
 }: SidebarFooterProps) {
   const router = useRouter();
@@ -284,32 +288,63 @@ export default function SidebarFooter({
   return (
     <>
       <div className="relative" ref={menuRef}>
-        <button
-          type="button"
-          onClick={() => setMenuOpen((prev) => !prev)}
-          disabled={isSigningOut}
-          className="flex h-9 w-9 items-center justify-center rounded-full transition hover:opacity-80 disabled:cursor-not-allowed disabled:opacity-50"
-          aria-expanded={menuOpen}
-          aria-haspopup="menu"
-          title="Account"
-        >
-          {avatarPreview ? (
-            <img
-              src={avatarPreview}
-              alt="Account avatar"
-              className="h-9 w-9 rounded-full object-cover border border-[var(--app-card-border)]"
-            />
-          ) : (
-            <div className={avatarFallbackClass}>
-              {initials}
-            </div>
-          )}
-        </button>
+        {variant === "compact" ? (
+          <button
+            type="button"
+            onClick={() => setMenuOpen((prev) => !prev)}
+            disabled={isSigningOut}
+            className="flex h-9 w-9 items-center justify-center rounded-full transition hover:opacity-80 disabled:cursor-not-allowed disabled:opacity-50"
+            aria-expanded={menuOpen}
+            aria-haspopup="menu"
+            title="Account"
+          >
+            {avatarPreview ? (
+              <img
+                src={avatarPreview}
+                alt="Account avatar"
+                className="h-9 w-9 rounded-full object-cover border border-[var(--app-card-border)]"
+              />
+            ) : (
+              <div className={avatarFallbackClass}>
+                {initials}
+              </div>
+            )}
+          </button>
+        ) : (
+          <div className="px-4 py-4">
+            <button
+              type="button"
+              onClick={() => setMenuOpen((prev) => !prev)}
+              disabled={isSigningOut}
+              className="flex h-12 w-full items-center gap-3 rounded-xl bg-[var(--app-hover-bg)] px-3 text-left transition hover:bg-[var(--app-hover-bg-strong)] disabled:cursor-not-allowed disabled:opacity-50"
+              aria-expanded={menuOpen}
+              aria-haspopup="menu"
+              title="Account"
+            >
+              {avatarPreview ? (
+                <img
+                  src={avatarPreview}
+                  alt="Account avatar"
+                  className="h-8 w-8 rounded-full object-cover border border-[var(--app-card-border)]"
+                />
+              ) : (
+                <div className="flex h-8 w-8 items-center justify-center rounded-full bg-[var(--app-hover-bg-strong)] text-sm font-semibold text-[var(--app-text-heading)]">
+                  {initials}
+                </div>
+              )}
+              <div className="min-w-0 flex-1">
+                <p className="truncate text-sm font-semibold text-[var(--app-text-heading)]">{accountLabel}</p>
+                <p className="truncate text-xs text-[var(--app-text-tertiary)]">Account</p>
+              </div>
+              <ChevronUp size={16} className={`text-[var(--app-text-tertiary)] transition ${menuOpen ? "rotate-180" : ""}`} />
+            </button>
+          </div>
+        )}
 
         {menuOpen && (
           <div
             role="menu"
-            className={menuPanelClass}
+            className={variant === "compact" ? menuPanelClass : "absolute bottom-full left-4 right-4 z-50 mb-2 overflow-hidden rounded-xl border border-[var(--app-card-border)] bg-[var(--app-dropdown-bg)] shadow-[var(--app-shadow-lg)]"}
           >
             <button
               type="button"
