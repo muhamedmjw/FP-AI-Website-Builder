@@ -134,7 +134,7 @@ export default function ChatHome() {
   }
 
   return (
-    <div className="flex h-full flex-col items-center justify-center px-6 sm:px-8">
+    <div className="flex min-h-0 flex-1 flex-col items-center justify-center px-6 sm:px-8">
       <div className="w-full max-w-2xl space-y-5 text-center">
         <h1 className="text-2xl font-semibold leading-snug text-[var(--app-text-heading)] sm:text-3xl">
           What website do you want to build?

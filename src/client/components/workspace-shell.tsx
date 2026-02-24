@@ -68,13 +68,13 @@ export default function WorkspaceShell({
           )}
 
           {/* Main content — add top padding on mobile for the header bar */}
-          <main className="flex-1 overflow-y-auto bg-[var(--app-bg)] pt-14 md:pt-0">
+          <main className="flex min-h-0 flex-1 flex-col bg-[var(--app-bg)] pt-14 md:pt-0">
             {children}
           </main>
         </>
       ) : (
         /* Guest mode — no sidebar, no mobile header */
-        <main className="flex-1 overflow-y-auto bg-[var(--app-bg)]">
+        <main className="flex min-h-0 flex-1 flex-col bg-[var(--app-bg)]">
           {children}
         </main>
       )}
