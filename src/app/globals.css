@@ -426,6 +426,16 @@ button, [role="button"], a, summary, [type="submit"], [type="reset"], [type="but
   }
 }
 
+/* ─── Download button shimmer ─── */
+@keyframes shimmer {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(100%);
+  }
+}
+
 /* ─── Gradient mesh background ─── */
 .gradient-mesh {
   position: absolute;

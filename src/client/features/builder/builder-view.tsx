@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Download, Eye, MessageCircle, PanelRightOpen, X } from "lucide-react";
+import { Eye, MessageCircle, PanelRightOpen } from "lucide-react";
 import { HistoryMessage } from "@/shared/types/database";
 import { sendChatMessage } from "@/client/lib/api/chat-api";
 import { downloadWebsiteZip } from "@/client/lib/zip-download";
@@ -93,13 +93,18 @@ export default function BuilderView({
   }, []);
 
   const [isDownloading, setIsDownloading] = useState(false);
+  const [downloadSuccess, setDownloadSuccess] = useState(false);
 
   async function handleDownloadZip() {
     setInputErrorMessage("");
     setIsDownloading(true);
+    setDownloadSuccess(false);
 
     try {
       await downloadWebsiteZip(chatId);
+      setIsDownloading(false);
+      setDownloadSuccess(true);
+      setTimeout(() => setDownloadSuccess(false), 2000);
     } catch (error) {
       console.error("Failed to download ZIP:", error);
       setInputErrorMessage(
@@ -107,7 +112,6 @@ export default function BuilderView({
           ? error.message
           : "Failed to download ZIP. Please try again."
       );
-    } finally {
       setIsDownloading(false);
     }
   }
@@ -144,17 +148,21 @@ export default function BuilderView({
         }
       }
     } catch (error) {
-      console.error("Failed to send message:", error);
-      setInputErrorMessage(
-        error instanceof Error
-          ? error.message
-          : "Failed to send message. Please try again."
-      );
+      const raw = error instanceof Error ? error.message : "";
 
-      // Remove the optimistic message on failure
-      setMessages((prev) =>
-        prev.filter((msg) => msg.id !== tempUserMessage.id)
-      );
+      let friendly = "Failed to send message. Please try again.";
+      if (raw.includes("429") || raw.includes("rate limit") || raw.includes("Rate limit")) {
+        friendly = "\u23f3 Too many requests. Please wait a moment and try again.";
+      } else if (raw.includes("token budget") || raw.includes("Daily token") || raw.includes("500,000")) {
+        friendly = "\ud83d\udcc5 You've used your 500,000 daily token budget. Come back tomorrow!";
+      } else if (raw.includes("401") || raw.includes("Unauthorized")) {
+        friendly = "\ud83d\udd12 Session expired. Please sign in again.";
+      } else if (raw.includes("500") || raw.includes("Internal")) {
+        friendly = "\u26a0\ufe0f Something went wrong on our end. Please try again.";
+      }
+
+      setInputErrorMessage(friendly);
+      setMessages((prev) => prev.filter((msg) => msg.id !== tempUserMessage.id));
     } finally {
       setIsSending(false);
     }
@@ -220,37 +228,19 @@ export default function BuilderView({
             {/* Right: Preview panel */}
             {previewOpen ? (
               <div
-                className="relative shrink-0 bg-[var(--app-bg-soft)]/90 shadow-[-12px_0_32px_rgba(0,0,0,0.15)]"
+                className="shrink-0 bg-[var(--app-bg-soft)]/90 shadow-[-12px_0_32px_rgba(0,0,0,0.15)]"
                 style={{
                   width: previewWidth ?? "55%",
                   pointerEvents: isResizing ? "none" : "auto",
                 }}
               >
-                {/* Preview toolbar */}
-                <div className="absolute right-3 top-3 z-10 flex items-center gap-2">
-                  {/* Download ZIP button */}
-                  <button
-                    type="button"
-                    onClick={() => void handleDownloadZip()}
-                    disabled={isDownloading}
-                    className="flex h-9 items-center gap-1.5 rounded-xl bg-[var(--app-btn-primary-bg)] px-3 text-xs font-semibold text-[var(--app-btn-primary-text)] shadow-[var(--app-shadow-sm)] transition hover:bg-[var(--app-btn-primary-hover)] hover:shadow-[var(--app-shadow-md)] hover:-translate-y-px active:translate-y-0 disabled:opacity-50 disabled:pointer-events-none"
-                    title="Download as ZIP"
-                  >
-                    <Download size={14} />
-                    {isDownloading ? "Downloading..." : "Download ZIP"}
-                  </button>
-
-                  {/* Close preview button */}
-                  <button
-                    type="button"
-                    onClick={() => setPreviewOpen(false)}
-                    className="flex h-9 w-9 items-center justify-center rounded-xl bg-[var(--app-card-bg)]/80 text-[var(--app-text-tertiary)] shadow-[var(--app-shadow-sm)] backdrop-blur-sm transition hover:bg-[var(--app-hover-bg-strong)] hover:text-[var(--app-text-heading)]"
-                    title="Close preview"
-                  >
-                    <X size={16} />
-                  </button>
-                </div>
-                <PreviewPanel html={html} />
+                <PreviewPanel
+                  html={html}
+                  onDownload={() => void handleDownloadZip()}
+                  isDownloading={isDownloading}
+                  downloadSuccess={downloadSuccess}
+                  onClose={() => setPreviewOpen(false)}
+                />
               </div>
             ) : (
               /* Open preview button when preview is collapsed */
@@ -286,21 +276,13 @@ export default function BuilderView({
 
         {/* Mobile preview tab */}
         {hasPreview && mobileTab === "preview" && (
-          <div className="relative min-h-0 flex-1">
-            {/* Mobile download button */}
-            <div className="absolute right-3 top-3 z-10">
-              <button
-                type="button"
-                onClick={() => void handleDownloadZip()}
-                disabled={isDownloading}
-                className="flex h-9 items-center gap-1.5 rounded-xl bg-[var(--app-btn-primary-bg)] px-3 text-xs font-semibold text-[var(--app-btn-primary-text)] shadow-[var(--app-shadow-sm)] transition hover:bg-[var(--app-btn-primary-hover)] disabled:opacity-50 disabled:pointer-events-none"
-                title="Download as ZIP"
-              >
-                <Download size={14} />
-                {isDownloading ? "..." : "Download ZIP"}
-              </button>
-            </div>
-            <PreviewPanel html={html} />
+          <div className="min-h-0 flex-1">
+            <PreviewPanel
+              html={html}
+              onDownload={() => void handleDownloadZip()}
+              isDownloading={isDownloading}
+              downloadSuccess={downloadSuccess}
+            />
           </div>
         )}
       </div>

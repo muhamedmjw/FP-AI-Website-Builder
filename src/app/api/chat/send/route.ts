@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createServerClient } from "@supabase/ssr";
+import { createServerClient, SupabaseClient } from "@supabase/ssr";
 import { addMessage, getChatMessages } from "@/shared/services/chat-service";
 import { getCurrentUser } from "@/shared/services/user-service";
 import { generateAIResponse, generateChatTitle } from "@/server/services/ai-service";
@@ -9,6 +9,49 @@ import {
   createWebsite,
   saveGeneratedHtml,
 } from "@/server/services/website-service";
+import { AI_CONFIG } from "@/shared/constants/ai";
+
+async function checkUserTokenBudget(
+  supabase: SupabaseClient,
+  userId: string
+): Promise<{ allowed: boolean; reason?: string }> {
+  const today = new Date().toISOString().split("T")[0];
+
+  const { data: userChats, error: chatsError } = await supabase
+    .from("chats")
+    .select("id")
+    .eq("user_id", userId);
+
+  if (chatsError || !userChats || userChats.length === 0) {
+    return { allowed: true };
+  }
+
+  const chatIds = userChats.map((c) => c.id);
+
+  const { data: generations, error: genError } = await supabase
+    .from("ai_generations")
+    .select("total_tokens")
+    .in("chat_id", chatIds)
+    .eq("status", "success")
+    .gte("created_at", `${today}T00:00:00.000Z`)
+    .lte("created_at", `${today}T23:59:59.999Z`);
+
+  if (genError) return { allowed: true };
+
+  const tokensUsedToday = (generations ?? []).reduce(
+    (sum, row) => sum + (row.total_tokens ?? 0),
+    0
+  );
+
+  if (tokensUsedToday >= AI_CONFIG.DAILY_TOKEN_LIMIT) {
+    return {
+      allowed: false,
+      reason: `You've used your daily 500,000 token budget. Resets at midnight UTC. (Used: ${tokensUsedToday.toLocaleString()} / 500,000)`,
+    };
+  }
+
+  return { allowed: true };
+}
 
 /**
  * POST /api/chat/send
@@ -76,6 +119,14 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(
         { error: "Chat not found." },
         { status: 404 }
+      );
+    }
+
+    const budget = await checkUserTokenBudget(supabase, user.id);
+    if (!budget.allowed) {
+      return NextResponse.json(
+        { error: budget.reason ?? "Daily token limit reached. Try again tomorrow." },
+        { status: 429 }
       );
     }
 

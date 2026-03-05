@@ -124,10 +124,20 @@ export default function HomePage() {
       router.push(`/chat/${chat.id}`);
       router.refresh();
     } catch (error) {
-      console.error("Failed to create chat:", error);
-      setErrorMessage(
-        error instanceof Error ? error.message : "Something went wrong."
-      );
+      const raw = error instanceof Error ? error.message : "";
+
+      let friendly = "Failed to send message. Please try again.";
+      if (raw.includes("429") || raw.includes("rate limit") || raw.includes("Rate limit")) {
+        friendly = "\u23f3 Too many requests. Please wait a moment and try again.";
+      } else if (raw.includes("token budget") || raw.includes("Daily token") || raw.includes("500,000")) {
+        friendly = "\ud83d\udcc5 You've used your 500,000 daily token budget. Come back tomorrow!";
+      } else if (raw.includes("401") || raw.includes("Unauthorized")) {
+        friendly = "\ud83d\udd12 Session expired. Please sign in again.";
+      } else if (raw.includes("500") || raw.includes("Internal")) {
+        friendly = "\u26a0\ufe0f Something went wrong on our end. Please try again.";
+      }
+
+      setErrorMessage(friendly);
     } finally {
       setIsCreating(false);
     }

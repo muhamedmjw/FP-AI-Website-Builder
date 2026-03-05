@@ -41,5 +41,26 @@ export function buildMessages(
     content: msg.content,
   }));
 
+  // Detect whether a website was previously generated
+  const hasExistingHtml = trimmed.some(
+    (msg) => msg.role === "assistant" && msg.content.includes("<!DOCTYPE html>")
+  );
+
+  const modeSignal: ChatMessage = {
+    role: "system",
+    content: hasExistingHtml
+      ? "CURRENT WEBSITE STATE: The website HTML from your last response is already loaded in the user's preview. You are now in EDIT MODE. Make ONLY the specific change the user is requesting. Preserve all existing CSS, layout, structure, and design. Return the complete updated HTML file with surgical edits only."
+      : "GENERATION MODE: No website exists yet. Generate a complete, beautiful website from scratch based on the user's description.",
+  };
+
+  // Insert the mode signal right before the last user message
+  const lastUserIdx = conversationMessages.findLastIndex(
+    (m) => m.role === "user"
+  );
+
+  if (lastUserIdx >= 0) {
+    conversationMessages.splice(lastUserIdx, 0, modeSignal);
+  }
+
   return [systemMessage, ...conversationMessages];
 }
