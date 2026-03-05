@@ -7,14 +7,6 @@ export type SendChatMessageResponse = {
   html?: string | null;
 };
 
-async function tryReadJson(response: Response): Promise<unknown> {
-  try {
-    return await response.json();
-  } catch {
-    return null;
-  }
-}
-
 /** Sends a chat message through the API and returns the latest conversation state. */
 export async function sendChatMessage(
   chatId: string,
@@ -26,19 +18,18 @@ export async function sendChatMessage(
     body: JSON.stringify({ chatId, content }),
   });
 
-  const data = await tryReadJson(response);
-
-  if (!response.ok) {
-    const errorMessage =
-      data &&
-      typeof data === "object" &&
-      "error" in data &&
-      typeof data.error === "string"
-        ? data.error
-        : "Failed to send message.";
-
-    throw new Error(errorMessage);
+  let data: Record<string, unknown> | null = null;
+  try {
+    data = await response.json();
+  } catch {
+    // Response body is not JSON — handled below.
   }
 
-  return data as SendChatMessageResponse;
+  if (!response.ok) {
+    const message =
+      typeof data?.error === "string" ? data.error : "Failed to send message.";
+    throw new Error(message);
+  }
+
+  return data as unknown as SendChatMessageResponse;
 }

@@ -3,7 +3,6 @@
 import Link from "next/link";
 import { useState } from "react";
 import { Sparkles, X } from "lucide-react";
-import { MAX_GUEST_PROMPTS } from "@/shared/constants/limits";
 import { HistoryMessage } from "@/shared/types/database";
 import ChatPanel from "@/client/features/chat/chat-panel";
 import { savePendingGuestZipPrompt } from "@/client/lib/zip-download";

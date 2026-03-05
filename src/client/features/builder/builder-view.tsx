@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Eye, MessageCircle, PanelRightOpen, X } from "lucide-react";
 import { HistoryMessage } from "@/shared/types/database";
 import { sendChatMessage } from "@/client/lib/api/chat-api";
@@ -106,6 +106,7 @@ export default function BuilderView({
     typeof initialHtml === "string" && initialHtml.trim().length > 0;
 
   const { setTitle } = useMobileHeaderTitle();
+  const containerRef = useRef<HTMLDivElement>(null);
 
   // Set mobile header title to chat title
   useEffect(() => {
@@ -137,7 +138,7 @@ export default function BuilderView({
     (deltaX: number) => {
       setIsResizing(true);
       setPreviewWidth((prev) => {
-        const container = document.getElementById("builder-container");
+        const container = containerRef.current;
         if (!container) return prev;
 
         const containerWidth = container.offsetWidth;
@@ -225,9 +226,26 @@ export default function BuilderView({
     }
   }
 
+  // Build the inline attachment cards once — used by both desktop and mobile ChatPanels
+  const inlineAttachments = zipArtifacts.map((artifact) => ({
+    id: artifact.id,
+    anchorMessageId: artifact.anchorMessageId,
+    node: (
+      <ZipArtifactCard
+        zipName={artifact.zipName}
+        fileCount={artifact.fileCount}
+        folderCount={artifact.folderCount}
+        createdAt={artifact.createdAt}
+        onDownload={() => {
+          void handleDownloadZip(artifact.prompt);
+        }}
+      />
+    ),
+  }));
+
   return (
     <div
-      id="builder-container"
+      ref={containerRef}
       className="flex h-full min-w-0 flex-col overflow-hidden bg-[radial-gradient(1000px_420px_at_50%_-140px,rgba(167,139,250,0.06),transparent_62%),var(--app-bg)]"
     >
       {/* Mobile tab bar — only visible on small screens when preview exists */}
@@ -272,21 +290,7 @@ export default function BuilderView({
             currentUserAvatarUrl={currentUserAvatarUrl}
             inputErrorMessage={inputErrorMessage}
             showHeader={false}
-            inlineAttachments={zipArtifacts.map((artifact) => ({
-              id: artifact.id,
-              anchorMessageId: artifact.anchorMessageId,
-              node: (
-                <ZipArtifactCard
-                  zipName={artifact.zipName}
-                  fileCount={artifact.fileCount}
-                  folderCount={artifact.folderCount}
-                  createdAt={artifact.createdAt}
-                  onDownload={() => {
-                    void handleDownloadZip(artifact.prompt);
-                  }}
-                />
-              ),
-            }))}
+            inlineAttachments={inlineAttachments}
           />
         </div>
 
@@ -346,21 +350,7 @@ export default function BuilderView({
             currentUserAvatarUrl={currentUserAvatarUrl}
             inputErrorMessage={inputErrorMessage}
             showHeader={false}
-            inlineAttachments={zipArtifacts.map((artifact) => ({
-              id: artifact.id,
-              anchorMessageId: artifact.anchorMessageId,
-              node: (
-                <ZipArtifactCard
-                  zipName={artifact.zipName}
-                  fileCount={artifact.fileCount}
-                  folderCount={artifact.folderCount}
-                  createdAt={artifact.createdAt}
-                  onDownload={() => {
-                    void handleDownloadZip(artifact.prompt);
-                  }}
-                />
-              ),
-            }))}
+            inlineAttachments={inlineAttachments}
           />
         </div>
 

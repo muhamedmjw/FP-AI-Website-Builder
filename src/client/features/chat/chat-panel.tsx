@@ -6,6 +6,10 @@ import { HistoryMessage } from "@/shared/types/database";
 import ChatBubble from "@/client/features/chat/chat-bubble";
 import ChatInput from "@/client/features/chat/chat-input";
 
+const EMPTY_STATE_TITLE = "Start your website with one prompt";
+const EMPTY_STATE_DESCRIPTION =
+  "Describe your business, style, and goals. I will turn it into a complete website structure.";
+
 /**
  * Chat panel — displays conversation history and input bar.
  * Takes up the left side of the builder split view.
@@ -72,11 +76,10 @@ export default function ChatPanel({
           <div className="w-full max-w-4xl">
             <div className="mx-auto max-w-lg text-center">
               <p className="text-lg font-semibold text-[var(--app-text-heading)] sm:text-xl">
-                Start your website with one prompt
+                {EMPTY_STATE_TITLE}
               </p>
               <p className="mt-2 text-sm text-[var(--app-text-tertiary)] sm:text-base">
-                Describe your business, style, and goals. I will turn it into a
-                complete website structure.
+                {EMPTY_STATE_DESCRIPTION}
               </p>
             </div>
             <ChatInput
@@ -107,11 +110,10 @@ export default function ChatPanel({
               <div className="flex h-full items-center justify-center">
                 <div className="max-w-lg px-4 text-center">
                   <p className="text-lg font-semibold text-[var(--app-text-heading)] sm:text-xl">
-                    Start your website with one prompt
+                    {EMPTY_STATE_TITLE}
                   </p>
                   <p className="mt-2 text-sm text-[var(--app-text-tertiary)] sm:text-base">
-                    Describe your business, style, and goals. I will turn it into a
-                    complete website structure.
+                    {EMPTY_STATE_DESCRIPTION}
                   </p>
                 </div>
               </div>

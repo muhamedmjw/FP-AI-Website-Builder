@@ -32,19 +32,16 @@ export default function ChatBubble({
             : "bg-[var(--app-avatar-bot-bg)] text-[var(--app-avatar-bot-text)]"
         }`}
       >
-        {isUser ? (
-          userAvatarUrl ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
-              src={userAvatarUrl}
-              alt="Your profile picture"
-              className="h-7 w-7 rounded-full object-cover sm:h-9 sm:w-9"
-            />
-          ) : (
-            <User size={16} />
-          )
-        ) : (
-          <Bot size={16} />
+        {/* Avatar icon */}
+        {!isUser && <Bot size={16} />}
+        {isUser && !userAvatarUrl && <User size={16} />}
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        {isUser && userAvatarUrl && (
+          <img
+            src={userAvatarUrl}
+            alt="Your profile picture"
+            className="h-7 w-7 rounded-full object-cover sm:h-9 sm:w-9"
+          />
         )}
       </div>
 

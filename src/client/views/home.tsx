@@ -20,7 +20,7 @@ import {
  * Typing a message creates a new chat, sends the first message,
  * and navigates to the chat page.
  */
-export default function ChatHome() {
+export default function HomePage() {
   const router = useRouter();
   const inputRef = useRef<HTMLInputElement>(null);
   const [isCreating, setIsCreating] = useState(false);

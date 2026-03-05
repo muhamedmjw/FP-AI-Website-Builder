@@ -1,4 +1,4 @@
-export type AppLanguage = 'en' | 'ar' | 'ku';
+import type { AppLanguage } from "@/shared/types/database";
 
 export const SUPPORTED_LANGUAGES = [
   { code: 'en' as AppLanguage, label: 'English', dir: 'ltr' },
