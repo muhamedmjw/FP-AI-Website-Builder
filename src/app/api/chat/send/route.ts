@@ -6,26 +6,11 @@ import { generateAIResponse, generateChatTitle } from "@/server/services/ai-serv
 import { renameChat } from "@/shared/services/chat-service";
 import {
   getWebsiteByChatId,
+  getGeneratedHtml,
   createWebsite,
   saveGeneratedHtml,
 } from "@/server/services/website-service";
 import { AI_CONFIG } from "@/shared/constants/ai";
-
-/** Safety check: if assistantContent looks like HTML or raw JSON, replace it */
-function sanitizeAssistantMessage(content: string): string {
-  const trimmed = content.trim();
-
-  if (
-    trimmed.startsWith("<!DOCTYPE") ||
-    trimmed.startsWith("<html") ||
-    trimmed.startsWith('{"type":') ||
-    trimmed.length > 500
-  ) {
-    return "\u2705 Website updated! Check the preview on the right. Let me know what to change next! \ud83c\udfa8";
-  }
-
-  return content;
-}
 
 async function checkUserTokenBudget(
   supabase: SupabaseClient,
@@ -157,16 +142,20 @@ export async function POST(request: NextRequest) {
     // Fetch history including the just-saved user message
     const historyForAI = await getChatMessages(supabase, chatId);
 
-    // Get website language (default to 'en')
+    // Get website language and existing HTML for edit mode detection
     const existingWebsite = await getWebsiteByChatId(supabase, chatId);
     const language = existingWebsite?.language ?? "en";
+    const existingHtml = existingWebsite
+      ? await getGeneratedHtml(supabase, existingWebsite.id)
+      : null;
 
-    // Call Gemini AI
+    // Call Groq AI — pass existingHtml so edit mode activates correctly
     const aiResponse = await generateAIResponse(
       supabase,
       chatId,
       historyForAI,
-      language
+      language,
+      existingHtml
     );
 
     // If AI generated a website, save the HTML
@@ -184,13 +173,11 @@ export async function POST(request: NextRequest) {
     }
 
     // Save the assistant message (the text part)
-    const assistantContent = sanitizeAssistantMessage(aiResponse.message);
-
     const assistantMessage = await addMessage(
       supabase,
       chatId,
       "assistant",
-      assistantContent
+      aiResponse.message
     );
 
     // If this is the first user message, generate a short title

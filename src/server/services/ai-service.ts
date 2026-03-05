@@ -48,13 +48,14 @@ export async function generateAIResponse(
   supabase: SupabaseClient,
   chatId: string,
   history: HistoryMessage[],
-  language: "en" | "ar" | "ku" = "en"
+  language: "en" | "ar" | "ku" = "en",
+  existingHtml: string | null = null
 ): Promise<AIResponse> {
   const startTime = Date.now();
   const modelName = AI_MODELS.PRIMARY;
 
   // Build the conversation
-  const messages = buildMessages(history, language);
+  const messages = buildMessages(history, language, existingHtml);
 
   try {
     // Call Groq
