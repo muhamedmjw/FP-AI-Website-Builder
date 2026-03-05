@@ -11,6 +11,22 @@ import {
 } from "@/server/services/website-service";
 import { AI_CONFIG } from "@/shared/constants/ai";
 
+/** Safety check: if assistantContent looks like HTML or raw JSON, replace it */
+function sanitizeAssistantMessage(content: string): string {
+  const trimmed = content.trim();
+
+  if (
+    trimmed.startsWith("<!DOCTYPE") ||
+    trimmed.startsWith("<html") ||
+    trimmed.startsWith('{"type":') ||
+    trimmed.length > 500
+  ) {
+    return "\u2705 Website updated! Check the preview on the right. Let me know what to change next! \ud83c\udfa8";
+  }
+
+  return content;
+}
+
 async function checkUserTokenBudget(
   supabase: SupabaseClient,
   userId: string
@@ -168,10 +184,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Save the assistant message (the text part)
-    const assistantContent =
-      aiResponse.type === "website"
-        ? aiResponse.message
-        : aiResponse.message;
+    const assistantContent = sanitizeAssistantMessage(aiResponse.message);
 
     const assistantMessage = await addMessage(
       supabase,
