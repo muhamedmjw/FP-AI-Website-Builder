@@ -2,6 +2,13 @@ import { NextRequest, NextResponse } from "next/server";
 import { createServerClient } from "@supabase/ssr";
 import { addMessage, getChatMessages } from "@/shared/services/chat-service";
 import { getCurrentUser } from "@/shared/services/user-service";
+import { generateAIResponse, generateChatTitle } from "@/server/services/ai-service";
+import { renameChat } from "@/shared/services/chat-service";
+import {
+  getWebsiteByChatId,
+  createWebsite,
+  saveGeneratedHtml,
+} from "@/server/services/website-service";
 
 /**
  * POST /api/chat/send
@@ -80,28 +87,73 @@ export async function POST(request: NextRequest) {
       content.trim()
     );
 
-    // TODO (Week 2): Send conversation to AI, get response, save assistant
-    // message and generated HTML. For now, save a placeholder assistant reply.
+    // Fetch history including the just-saved user message
+    const historyForAI = await getChatMessages(supabase, chatId);
+
+    // Get website language (default to 'en')
+    const existingWebsite = await getWebsiteByChatId(supabase, chatId);
+    const language = existingWebsite?.language ?? "en";
+
+    // Call Gemini AI
+    const aiResponse = await generateAIResponse(
+      supabase,
+      chatId,
+      historyForAI,
+      language
+    );
+
+    // If AI generated a website, save the HTML
+    if (aiResponse.type === "website") {
+      let website = existingWebsite;
+      if (!website) {
+        website = await createWebsite(
+          supabase,
+          chatId,
+          content.trim(),
+          language
+        );
+      }
+      await saveGeneratedHtml(supabase, website.id, aiResponse.html);
+    }
+
+    // Save the assistant message (the text part)
+    const assistantContent =
+      aiResponse.type === "website"
+        ? aiResponse.message
+        : aiResponse.message;
+
     const assistantMessage = await addMessage(
       supabase,
       chatId,
       "assistant",
-      "Thanks! AI generation will be connected soon. You said: " + content.trim()
+      assistantContent
     );
 
+    // If this is the first user message, generate a short title
+    const userMessages = historyForAI.filter((m) => m.role === "user");
+    if (userMessages.length === 1) {
+      const title = await generateChatTitle(content.trim());
+      await renameChat(supabase, chatId, title);
+    }
+
     // Fetch full message list so client has the latest state.
-    // Run in parallel with nothing else to keep latency tight.
     const messages = await getChatMessages(supabase, chatId);
 
     return NextResponse.json({
       userMessage,
       assistantMessage,
       messages,
+      aiResponseType: aiResponse.type,
+      html: aiResponse.type === "website" ? aiResponse.html : undefined,
     });
   } catch (error) {
     console.error("POST /api/chat/send error:", error);
+
+    const message =
+      error instanceof Error ? error.message : "Internal server error.";
+
     return NextResponse.json(
-      { error: "Internal server error." },
+      { error: message },
       { status: 500 }
     );
   }

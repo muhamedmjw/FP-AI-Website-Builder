@@ -49,7 +49,7 @@ export function clearPendingGuestZipPrompt() {
   localStorage.removeItem(PENDING_GUEST_ZIP_PROMPT_KEY);
 }
 
-export async function requestWebsiteZip(prompt: string): Promise<{
+export async function requestWebsiteZip(chatId: string): Promise<{
   blob: Blob;
   filename: string;
 }> {
@@ -58,7 +58,7 @@ export async function requestWebsiteZip(prompt: string): Promise<{
     headers: {
       "Content-Type": "application/json",
     },
-    body: JSON.stringify({ prompt }),
+    body: JSON.stringify({ chatId }),
   });
 
   if (!response.ok) {
@@ -98,7 +98,7 @@ export function triggerBrowserDownload(blob: Blob, filename: string) {
   }, 1000);
 }
 
-export async function downloadWebsiteZip(prompt: string) {
-  const { blob, filename } = await requestWebsiteZip(prompt);
+export async function downloadWebsiteZip(chatId: string) {
+  const { blob, filename } = await requestWebsiteZip(chatId);
   triggerBrowserDownload(blob, filename);
 }

@@ -1,7 +1,7 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Eye, MessageCircle, PanelRightOpen, X } from "lucide-react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { Download, Eye, MessageCircle, PanelRightOpen, X } from "lucide-react";
 import { HistoryMessage } from "@/shared/types/database";
 import { sendChatMessage } from "@/client/lib/api/chat-api";
 import { downloadWebsiteZip } from "@/client/lib/zip-download";
@@ -9,7 +9,6 @@ import { useMobileHeaderTitle } from "@/client/components/mobile-header-title-co
 import ChatPanel from "@/client/features/chat/chat-panel";
 import PreviewPanel from "@/client/features/preview/preview-panel";
 import ResizeHandle from "@/client/features/builder/resize-handle";
-import ZipArtifactCard from "@/client/features/builder/zip-artifact-card";
 
 /**
  * Builder view - main split layout.
@@ -29,71 +28,6 @@ type BuilderViewProps = {
 const MIN_PREVIEW_WIDTH = 200;
 /** Default preview width as a fraction of the container (0-1) */
 const DEFAULT_PREVIEW_FRACTION = 0.55;
-const ZIP_READY_PREFIX = 'Starter package ready for "';
-const ZIP_READY_SUFFIX = '". Use Download ZIP to continue.';
-
-type ZipArtifact = {
-  id: string;
-  anchorMessageId: string;
-  prompt: string;
-  createdAt: string;
-  zipName: string;
-  fileCount: number;
-  folderCount: number;
-};
-
-function extractPromptFromZipReadyMessage(content: string): string | null {
-  if (
-    !content.startsWith(ZIP_READY_PREFIX) ||
-    !content.endsWith(ZIP_READY_SUFFIX)
-  ) {
-    return null;
-  }
-
-  return content.slice(ZIP_READY_PREFIX.length, -ZIP_READY_SUFFIX.length);
-}
-
-function extractZipArtifacts(messages: HistoryMessage[]): ZipArtifact[] {
-  const artifacts: ZipArtifact[] = [];
-
-  messages.forEach((message, index) => {
-    if (message.role !== "assistant") {
-      return;
-    }
-
-    const parsedPrompt = extractPromptFromZipReadyMessage(message.content);
-    if (!parsedPrompt) {
-      return;
-    }
-
-    let prompt = parsedPrompt.trim();
-    if (!prompt) {
-      for (let cursor = index - 1; cursor >= 0; cursor -= 1) {
-        const previousMessage = messages[cursor];
-        if (previousMessage.role === "user") {
-          prompt = previousMessage.content.trim();
-          break;
-        }
-      }
-    }
-
-    if (!prompt) {
-      return;
-    }
-
-    artifacts.push({
-      id: `zip-${message.id}`,
-      anchorMessageId: message.id,
-      prompt,
-      createdAt: message.created_at,
-      zipName: "website-files.zip",
-      fileCount: 1,
-      folderCount: 0,
-    });
-  });
-
-  return artifacts;
-}
 
 export default function BuilderView({
   chatId,
@@ -124,7 +58,6 @@ export default function BuilderView({
   const [previewWidth, setPreviewWidth] = useState<number | null>(null);
   const [isResizing, setIsResizing] = useState(false);
   const hasPreview = typeof html === "string" && html.trim().length > 0;
-  const zipArtifacts = useMemo(() => extractZipArtifacts(messages), [messages]);
 
   // Mobile tab state: "chat" | "preview"
   const [mobileTab, setMobileTab] = useState<"chat" | "preview">("chat");
@@ -159,15 +92,14 @@ export default function BuilderView({
     setIsResizing(false);
   }, []);
 
-  async function handleDownloadZip(prompt: string) {
-    if (!prompt.trim()) {
-      return;
-    }
+  const [isDownloading, setIsDownloading] = useState(false);
 
+  async function handleDownloadZip() {
     setInputErrorMessage("");
+    setIsDownloading(true);
 
     try {
-      await downloadWebsiteZip(prompt);
+      await downloadWebsiteZip(chatId);
     } catch (error) {
       console.error("Failed to download ZIP:", error);
       setInputErrorMessage(
@@ -175,6 +107,8 @@ export default function BuilderView({
           ? error.message
           : "Failed to download ZIP. Please try again."
       );
+    } finally {
+      setIsDownloading(false);
     }
   }
 
@@ -226,23 +160,6 @@ export default function BuilderView({
     }
   }
 
-  // Build the inline attachment cards once — used by both desktop and mobile ChatPanels
-  const inlineAttachments = zipArtifacts.map((artifact) => ({
-    id: artifact.id,
-    anchorMessageId: artifact.anchorMessageId,
-    node: (
-      <ZipArtifactCard
-        zipName={artifact.zipName}
-        fileCount={artifact.fileCount}
-        folderCount={artifact.folderCount}
-        createdAt={artifact.createdAt}
-        onDownload={() => {
-          void handleDownloadZip(artifact.prompt);
-        }}
-      />
-    ),
-  }));
-
   return (
     <div
       ref={containerRef}
@@ -290,7 +207,6 @@ export default function BuilderView({
             currentUserAvatarUrl={currentUserAvatarUrl}
             inputErrorMessage={inputErrorMessage}
             showHeader={false}
-            inlineAttachments={inlineAttachments}
           />
         </div>
 
@@ -310,15 +226,30 @@ export default function BuilderView({
                   pointerEvents: isResizing ? "none" : "auto",
                 }}
               >
-                {/* Close preview button */}
-                <button
-                  type="button"
-                  onClick={() => setPreviewOpen(false)}
-                  className="absolute right-3 top-3 z-10 flex h-9 w-9 items-center justify-center rounded-xl bg-[var(--app-card-bg)]/80 text-[var(--app-text-tertiary)] shadow-[var(--app-shadow-sm)] backdrop-blur-sm transition hover:bg-[var(--app-hover-bg-strong)] hover:text-[var(--app-text-heading)]"
-                  title="Close preview"
-                >
-                  <X size={16} />
-                </button>
+                {/* Preview toolbar */}
+                <div className="absolute right-3 top-3 z-10 flex items-center gap-2">
+                  {/* Download ZIP button */}
+                  <button
+                    type="button"
+                    onClick={() => void handleDownloadZip()}
+                    disabled={isDownloading}
+                    className="flex h-9 items-center gap-1.5 rounded-xl bg-[var(--app-btn-primary-bg)] px-3 text-xs font-semibold text-[var(--app-btn-primary-text)] shadow-[var(--app-shadow-sm)] transition hover:bg-[var(--app-btn-primary-hover)] hover:shadow-[var(--app-shadow-md)] hover:-translate-y-px active:translate-y-0 disabled:opacity-50 disabled:pointer-events-none"
+                    title="Download as ZIP"
+                  >
+                    <Download size={14} />
+                    {isDownloading ? "Downloading..." : "Download ZIP"}
+                  </button>
+
+                  {/* Close preview button */}
+                  <button
+                    type="button"
+                    onClick={() => setPreviewOpen(false)}
+                    className="flex h-9 w-9 items-center justify-center rounded-xl bg-[var(--app-card-bg)]/80 text-[var(--app-text-tertiary)] shadow-[var(--app-shadow-sm)] backdrop-blur-sm transition hover:bg-[var(--app-hover-bg-strong)] hover:text-[var(--app-text-heading)]"
+                    title="Close preview"
+                  >
+                    <X size={16} />
+                  </button>
+                </div>
                 <PreviewPanel html={html} />
               </div>
             ) : (
@@ -350,13 +281,25 @@ export default function BuilderView({
             currentUserAvatarUrl={currentUserAvatarUrl}
             inputErrorMessage={inputErrorMessage}
             showHeader={false}
-            inlineAttachments={inlineAttachments}
           />
         </div>
 
         {/* Mobile preview tab */}
         {hasPreview && mobileTab === "preview" && (
-          <div className="min-h-0 flex-1">
+          <div className="relative min-h-0 flex-1">
+            {/* Mobile download button */}
+            <div className="absolute right-3 top-3 z-10">
+              <button
+                type="button"
+                onClick={() => void handleDownloadZip()}
+                disabled={isDownloading}
+                className="flex h-9 items-center gap-1.5 rounded-xl bg-[var(--app-btn-primary-bg)] px-3 text-xs font-semibold text-[var(--app-btn-primary-text)] shadow-[var(--app-shadow-sm)] transition hover:bg-[var(--app-btn-primary-hover)] disabled:opacity-50 disabled:pointer-events-none"
+                title="Download as ZIP"
+              >
+                <Download size={14} />
+                {isDownloading ? "..." : "Download ZIP"}
+              </button>
+            </div>
             <PreviewPanel html={html} />
           </div>
         )}
