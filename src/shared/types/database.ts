@@ -11,14 +11,6 @@ export type AppLanguage = "en" | "ar" | "ku";
 
 export type HistoryRole = "user" | "assistant" | "system";
 
-export type SectionType =
-  | "hero"
-  | "about"
-  | "services"
-  | "pricing"
-  | "contact"
-  | "custom";
-
 // --- Table row types ---
 
 export type User = {
@@ -54,25 +46,6 @@ export type Website = {
   language: AppLanguage;
   created_at: string;
   updated_at: string;
-};
-
-export type Page = {
-  id: string;
-  website_id: string;
-  title: string;
-  slug: string;
-  page_order: number;
-  created_at: string;
-};
-
-export type Section = {
-  id: string;
-  page_id: string;
-  type: SectionType;
-  heading: string | null;
-  body: string | null;
-  section_order: number;
-  created_at: string;
 };
 
 export type FileRecord = {

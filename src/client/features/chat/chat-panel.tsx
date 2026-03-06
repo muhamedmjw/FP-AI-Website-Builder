@@ -1,6 +1,6 @@
 "use client";
 
-import { Fragment, ReactNode, useEffect, useRef } from "react";
+import { Fragment, ReactNode, useEffect, useRef, useState } from "react";
 import { MessageSquare } from "lucide-react";
 import { HistoryMessage } from "@/shared/types/database";
 import ChatBubble from "@/client/features/chat/chat-bubble";
@@ -9,6 +9,19 @@ import ChatInput from "@/client/features/chat/chat-input";
 const EMPTY_STATE_TITLE = "Start your website with one prompt";
 const EMPTY_STATE_DESCRIPTION =
   "Describe your business, style, and goals. I will turn it into a complete website structure.";
+
+function ElapsedTimer() {
+  const [seconds, setSeconds] = useState(0);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setSeconds((s) => s + 1);
+    }, 1000);
+    return () => clearInterval(interval);
+  }, []);
+
+  return <>{seconds}s</>;
+}
 
 /**
  * Chat panel — displays conversation history and input bar.
@@ -142,7 +155,7 @@ export default function ChatPanel({
                       <MessageSquare size={15} />
                     </div>
                     <div className="rounded-2xl bg-[var(--app-bubble-bot-bg)] px-3 py-2.5 text-sm text-[var(--app-bubble-bot-text)] shadow-[var(--app-shadow-md)] sm:px-4 sm:py-3.5 sm:text-base">
-                      Generating...
+                      Generating... <ElapsedTimer />
                     </div>
                   </div>
                 )}

@@ -43,6 +43,20 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Explicit ownership check (defense-in-depth on top of RLS)
+    const { data: chat } = await supabase
+      .from("chats")
+      .select("user_id")
+      .eq("id", website.chat_id)
+      .single();
+
+    if (!chat || chat.user_id !== user.id) {
+      return NextResponse.json(
+        { error: "Forbidden." },
+        { status: 403 }
+      );
+    }
+
     const html = await getGeneratedHtml(supabase, website.id);
     if (!html) {
       return NextResponse.json(
@@ -131,6 +145,18 @@ export async function POST(request: NextRequest) {
     );
 
     const zipBuffer = await zip.generateAsync({ type: "arraybuffer" });
+
+    // Count the files in the zip (excluding folders)
+    const fileCount = Object.keys(folder.files).filter(
+      (name) => !folder.files[name].dir
+    ).length;
+
+    // Log the download to the zip_downloads table
+    await supabase.from("zip_downloads").insert({
+      user_id: user.id,
+      website_id: website.id,
+      file_count: fileCount,
+    });
 
     return new NextResponse(zipBuffer, {
       status: 200,

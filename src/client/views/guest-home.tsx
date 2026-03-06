@@ -2,22 +2,13 @@
 
 import Link from "next/link";
 import { useState } from "react";
-import { Sparkles, X } from "lucide-react";
+import { Eye, MessageCircle, Sparkles, X } from "lucide-react";
 import { HistoryMessage } from "@/shared/types/database";
 import ChatPanel from "@/client/features/chat/chat-panel";
+import PreviewPanel from "@/client/features/preview/preview-panel";
+import PreviewErrorBoundary from "@/client/features/preview/preview-error-boundary";
 import { savePendingGuestZipPrompt } from "@/client/lib/zip-download";
 import { savePendingGuestChatSession } from "@/client/lib/guest-chat-handoff";
-import ZipArtifactCard from "@/client/features/builder/zip-artifact-card";
-
-type GuestZipArtifact = {
-  id: string;
-  anchorMessageId: string;
-  zipName: string;
-  fileCount: number;
-  folderCount: number;
-  createdAt: string;
-  prompt: string;
-};
 
 function createGuestMessage(
   role: "user" | "assistant",
@@ -32,65 +23,99 @@ function createGuestMessage(
   };
 }
 
-function buildGuestAssistantReply(content: string): string {
-  return `Starter package ready for "${content}". Use Download ZIP to continue.`;
+type GuestAIResponse = {
+  type: "website" | "questions";
+  message: string;
+  html?: string;
+  error?: string;
+};
+
+async function sendGuestChat(
+  content: string,
+  history: HistoryMessage[]
+): Promise<GuestAIResponse> {
+  const response = await fetch("/api/guest/chat", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      content,
+      history: history
+        .filter((m) => m.role === "user" || m.role === "assistant")
+        .map((m) => ({ role: m.role, content: m.content })),
+    }),
+  });
+
+  const data = await response.json();
+
+  if (!response.ok) {
+    throw new Error(
+      typeof data?.error === "string" ? data.error : "Something went wrong."
+    );
+  }
+
+  return data as GuestAIResponse;
 }
 
 export default function GuestHomePage() {
   const [messages, setMessages] = useState<HistoryMessage[]>([]);
   const [isSending, setIsSending] = useState(false);
-  const [artifacts, setArtifacts] = useState<GuestZipArtifact[]>([]);
+  const [html, setHtml] = useState<string | null>(null);
+  const [inputErrorMessage, setInputErrorMessage] = useState("");
   const [authGateOpen, setAuthGateOpen] = useState(false);
   const [pendingDownloadPrompt, setPendingDownloadPrompt] = useState("");
+  const [mobileTab, setMobileTab] = useState<"chat" | "preview">("chat");
+
+  const hasPreview = typeof html === "string" && html.trim().length > 0;
 
   async function handleSend(content: string) {
-    if (isSending) {
-      return;
-    }
+    if (isSending) return;
+    const trimmed = content.trim();
+    if (!trimmed) return;
 
-    const trimmedContent = content.trim();
-    if (!trimmedContent) {
-      return;
-    }
-
+    const userMessage = createGuestMessage("user", trimmed);
+    setMessages((prev) => [...prev, userMessage]);
     setIsSending(true);
+    setInputErrorMessage("");
 
-    const userMessage = createGuestMessage("user", trimmedContent);
-    const assistantMessage = createGuestMessage(
-      "assistant",
-      buildGuestAssistantReply(trimmedContent)
-    );
+    try {
+      const aiResponse = await sendGuestChat(trimmed, messages);
 
-    setMessages((prev) => [...prev, userMessage, assistantMessage]);
-    setArtifacts((prev) => [
-      ...prev,
-      {
-        id: crypto.randomUUID(),
-        anchorMessageId: assistantMessage.id,
-        zipName: "website-files.zip",
-        fileCount: 1,
-        folderCount: 0,
-        createdAt: new Date().toISOString(),
-        prompt: trimmedContent,
-      },
-    ]);
-    setIsSending(false);
+      const assistantMessage = createGuestMessage(
+        "assistant",
+        aiResponse.message
+      );
+      setMessages((prev) => [...prev, assistantMessage]);
+
+      if (aiResponse.type === "website" && aiResponse.html) {
+        const nextHtml = aiResponse.html.trim();
+        if (nextHtml.length > 0) {
+          setHtml(aiResponse.html);
+        }
+      }
+    } catch (error) {
+      const raw = error instanceof Error ? error.message : "";
+
+      if (raw.includes("Guest limit reached")) {
+        setInputErrorMessage(raw);
+      } else {
+        setInputErrorMessage("Failed to get a response. Please try again.");
+      }
+
+      // Remove the optimistic user message on error
+      setMessages((prev) => prev.filter((m) => m.id !== userMessage.id));
+    } finally {
+      setIsSending(false);
+    }
   }
 
   function openAuthGate(prompt: string) {
-    if (!prompt.trim()) {
-      return;
-    }
-
+    if (!prompt.trim()) return;
     setPendingDownloadPrompt(prompt);
     setAuthGateOpen(true);
   }
 
   function queueDownloadAndContinue() {
-    if (!pendingDownloadPrompt) {
-      return;
-    }
-
+    if (!pendingDownloadPrompt) return;
     savePendingGuestChatSession(messages);
     savePendingGuestZipPrompt(pendingDownloadPrompt);
     setAuthGateOpen(false);
@@ -106,19 +131,9 @@ export default function GuestHomePage() {
     savePendingGuestChatSession(messages);
   }
 
-  const inlineAttachments = artifacts.map((artifact) => ({
-    id: artifact.id,
-    anchorMessageId: artifact.anchorMessageId,
-    node: (
-      <ZipArtifactCard
-        zipName={artifact.zipName}
-        fileCount={artifact.fileCount}
-        folderCount={artifact.folderCount}
-        createdAt={artifact.createdAt}
-        onDownload={() => openAuthGate(artifact.prompt)}
-      />
-    ),
-  }));
+  // Get the first user message content for the download prompt
+  const firstUserMessage = messages.find((m) => m.role === "user");
+  const downloadPrompt = firstUserMessage?.content ?? "";
 
   return (
     <div className="flex min-h-0 flex-1 flex-col bg-[var(--app-bg)]">
@@ -152,17 +167,91 @@ export default function GuestHomePage() {
         </p>
       </header>
 
-      <div className="min-h-0 flex-1">
-        <ChatPanel
-          messages={messages}
-          onSend={handleSend}
-          isSending={isSending}
-          currentUserAvatarUrl={null}
-          showHeader={false}
-          centerInputWhenEmpty
-          inputPlaceholder="Describe the website you want to build..."
-          inlineAttachments={inlineAttachments}
-        />
+      {/* Mobile tab bar — visible only on small screens when preview exists */}
+      {hasPreview && (
+        <div className="flex shrink-0 border-b border-[var(--app-border)] md:hidden">
+          <button
+            type="button"
+            onClick={() => setMobileTab("chat")}
+            className={`flex flex-1 items-center justify-center gap-2 px-4 py-3 text-sm font-medium transition ${
+              mobileTab === "chat"
+                ? "border-b-2 border-[var(--app-btn-primary-bg)] text-[var(--app-text-heading)]"
+                : "text-[var(--app-text-tertiary)] hover:text-[var(--app-text-secondary)]"
+            }`}
+          >
+            <MessageCircle size={16} />
+            Chat
+          </button>
+          <button
+            type="button"
+            onClick={() => setMobileTab("preview")}
+            className={`flex flex-1 items-center justify-center gap-2 px-4 py-3 text-sm font-medium transition ${
+              mobileTab === "preview"
+                ? "border-b-2 border-[var(--app-btn-primary-bg)] text-[var(--app-text-heading)]"
+                : "text-[var(--app-text-tertiary)] hover:text-[var(--app-text-secondary)]"
+            }`}
+          >
+            <Eye size={16} />
+            Preview
+          </button>
+        </div>
+      )}
+
+      {/* Desktop: side-by-side layout */}
+      <div className="hidden min-h-0 flex-1 md:flex">
+        <div className="flex min-w-0 flex-1 flex-col">
+          <ChatPanel
+            messages={messages}
+            onSend={handleSend}
+            isSending={isSending}
+            currentUserAvatarUrl={null}
+            showHeader={false}
+            centerInputWhenEmpty={!hasPreview}
+            inputPlaceholder="Describe the website you want to build..."
+            inputErrorMessage={inputErrorMessage}
+          />
+        </div>
+
+        {hasPreview && (
+          <div
+            className="shrink-0 bg-[var(--app-bg-soft)]/90 shadow-[-12px_0_32px_rgba(0,0,0,0.15)]"
+            style={{ width: "55%" }}
+          >
+            <PreviewErrorBoundary>
+              <PreviewPanel
+                html={html}
+                onDownload={() => openAuthGate(downloadPrompt)}
+              />
+            </PreviewErrorBoundary>
+          </div>
+        )}
+      </div>
+
+      {/* Mobile: tab-switched views */}
+      <div className="flex min-h-0 flex-1 flex-col md:hidden">
+        <div className={`min-h-0 flex-1 flex-col ${!hasPreview || mobileTab === "chat" ? "flex" : "hidden"}`}>
+          <ChatPanel
+            messages={messages}
+            onSend={handleSend}
+            isSending={isSending}
+            currentUserAvatarUrl={null}
+            showHeader={false}
+            centerInputWhenEmpty={!hasPreview}
+            inputPlaceholder="Describe the website you want to build..."
+            inputErrorMessage={inputErrorMessage}
+          />
+        </div>
+
+        {hasPreview && mobileTab === "preview" && (
+          <div className="min-h-0 flex-1">
+            <PreviewErrorBoundary>
+              <PreviewPanel
+                html={html}
+                onDownload={() => openAuthGate(downloadPrompt)}
+              />
+            </PreviewErrorBoundary>
+          </div>
+        )}
       </div>
 
       {authGateOpen ? (

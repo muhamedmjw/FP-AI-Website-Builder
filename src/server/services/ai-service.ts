@@ -44,6 +44,67 @@ const groq = new Groq({ apiKey: process.env.GROQ_API_KEY! });
  * @param language  - Website language preference
  * @returns Parsed AI response with type, message, and optionally html
  */
+const MAX_RETRIES = 2;
+const RETRY_DELAYS = [1000, 2000];
+
+/**
+ * Call Groq with retry logic. Retries up to MAX_RETRIES times with
+ * exponential backoff if JSON parsing fails or the response is empty.
+ */
+async function callGroqWithRetry(
+  messages: { role: "system" | "user" | "assistant"; content: string }[],
+  modelName: string
+): Promise<{ parsed: AIResponse; promptTokens: number | null; completionTokens: number | null; totalTokens: number | null }> {
+  let lastError: Error | null = null;
+
+  for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
+    const response = await groq.chat.completions.create({
+      model: modelName,
+      messages,
+      max_tokens: AI_CONFIG.MAX_TOKENS,
+      temperature: AI_CONFIG.TEMPERATURE,
+    });
+
+    const rawText = response.choices[0]?.message?.content ?? "";
+    const promptTokens = response.usage?.prompt_tokens ?? null;
+    const completionTokens = response.usage?.completion_tokens ?? null;
+    const totalTokens = response.usage?.total_tokens ?? null;
+
+    // If the response is empty, retry
+    if (!rawText.trim()) {
+      lastError = new Error("AI returned an empty response.");
+      if (attempt < MAX_RETRIES) {
+        await new Promise((resolve) => setTimeout(resolve, RETRY_DELAYS[attempt]));
+        continue;
+      }
+      break;
+    }
+
+    const parsed = parseAIResponse(rawText);
+
+    // If the response parsed as raw text fallback (JSON was malformed), retry
+    if (parsed.type === "questions" && parsed.message === rawText && looksLikeBadJson(rawText)) {
+      lastError = new Error("AI returned malformed JSON.");
+      if (attempt < MAX_RETRIES) {
+        await new Promise((resolve) => setTimeout(resolve, RETRY_DELAYS[attempt]));
+        continue;
+      }
+    }
+
+    return { parsed, promptTokens, completionTokens, totalTokens };
+  }
+
+  throw lastError ?? new Error("AI generation failed after retries.");
+}
+
+/**
+ * Check if raw text looks like it was supposed to be JSON but failed to parse.
+ */
+function looksLikeBadJson(raw: string): boolean {
+  const trimmed = raw.trim();
+  return trimmed.startsWith("{") || trimmed.startsWith("```");
+}
+
 export async function generateAIResponse(
   supabase: SupabaseClient,
   chatId: string,
@@ -58,24 +119,10 @@ export async function generateAIResponse(
   const messages = buildMessages(history, language, existingHtml);
 
   try {
-    // Call Groq
-    const response = await groq.chat.completions.create({
-      model: modelName,
-      messages,
-      max_tokens: AI_CONFIG.MAX_TOKENS,
-      temperature: AI_CONFIG.TEMPERATURE,
-    });
+    const { parsed, promptTokens, completionTokens, totalTokens } =
+      await callGroqWithRetry(messages, modelName);
 
-    const rawText = response.choices[0]?.message?.content ?? "";
     const durationMs = Date.now() - startTime;
-
-    // Parse token usage from response
-    const promptTokens = response.usage?.prompt_tokens ?? null;
-    const completionTokens = response.usage?.completion_tokens ?? null;
-    const totalTokens = response.usage?.total_tokens ?? null;
-
-    // Parse the JSON response
-    const parsed = parseAIResponse(rawText);
 
     // Log to ai_generations table
     await logGeneration(supabase, {
@@ -220,4 +267,27 @@ async function logGeneration(
     // Don't fail the request if logging fails
     console.error("Failed to log AI generation:", err);
   }
+}
+
+/**
+ * Generate an AI response for guest users (no Supabase auth, no logging).
+ * Accepts a simple conversation history array.
+ */
+export async function generateGuestAIResponse(
+  history: Array<{ role: "user" | "assistant"; content: string }>
+): Promise<AIResponse> {
+  const modelName = AI_MODELS.PRIMARY;
+
+  const historyMessages: HistoryMessage[] = history.map((msg, i) => ({
+    id: `guest-${i}`,
+    chat_id: "guest-session",
+    role: msg.role,
+    content: msg.content,
+    created_at: new Date().toISOString(),
+  }));
+
+  const messages = buildMessages(historyMessages, "en", null);
+
+  const { parsed } = await callGroqWithRetry(messages, modelName);
+  return parsed;
 }

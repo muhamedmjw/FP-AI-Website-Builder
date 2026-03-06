@@ -8,6 +8,7 @@ import { downloadWebsiteZip } from "@/client/lib/zip-download";
 import { useMobileHeaderTitle } from "@/client/components/mobile-header-title-context";
 import ChatPanel from "@/client/features/chat/chat-panel";
 import PreviewPanel from "@/client/features/preview/preview-panel";
+import PreviewErrorBoundary from "@/client/features/preview/preview-error-boundary";
 import ResizeHandle from "@/client/features/builder/resize-handle";
 
 /**
@@ -234,13 +235,15 @@ export default function BuilderView({
                   pointerEvents: isResizing ? "none" : "auto",
                 }}
               >
-                <PreviewPanel
-                  html={html}
-                  onDownload={() => void handleDownloadZip()}
-                  isDownloading={isDownloading}
-                  downloadSuccess={downloadSuccess}
-                  onClose={() => setPreviewOpen(false)}
-                />
+                <PreviewErrorBoundary>
+                  <PreviewPanel
+                    html={html}
+                    onDownload={() => void handleDownloadZip()}
+                    isDownloading={isDownloading}
+                    downloadSuccess={downloadSuccess}
+                    onClose={() => setPreviewOpen(false)}
+                  />
+                </PreviewErrorBoundary>
               </div>
             ) : (
               /* Open preview button when preview is collapsed */
@@ -277,12 +280,14 @@ export default function BuilderView({
         {/* Mobile preview tab */}
         {hasPreview && mobileTab === "preview" && (
           <div className="min-h-0 flex-1">
-            <PreviewPanel
-              html={html}
-              onDownload={() => void handleDownloadZip()}
-              isDownloading={isDownloading}
-              downloadSuccess={downloadSuccess}
-            />
+            <PreviewErrorBoundary>
+              <PreviewPanel
+                html={html}
+                onDownload={() => void handleDownloadZip()}
+                isDownloading={isDownloading}
+                downloadSuccess={downloadSuccess}
+              />
+            </PreviewErrorBoundary>
           </div>
         )}
       </div>
