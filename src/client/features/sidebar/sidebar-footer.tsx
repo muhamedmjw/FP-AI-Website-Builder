@@ -28,6 +28,12 @@ const THEME_STORAGE_KEY = "app-theme";
 
 type Theme = "dark" | "light";
 
+const LANGUAGE_OPTIONS: Array<{ code: AppLanguage; label: string }> = [
+  { code: "en", label: "English" },
+  { code: "ar", label: "العربية" },
+  { code: "ku", label: "کوردی" },
+];
+
 type SidebarFooterProps = {
   userName: string | null;
   userEmail: string | null;
@@ -56,6 +62,9 @@ export default function SidebarFooter({
   const { language, setLanguage } = useLanguage();
 
   const menuRef = useRef<HTMLDivElement>(null);
+  const languageMenuRef = useRef<HTMLDivElement>(null);
+  const languageMenuButtonRef = useRef<HTMLButtonElement>(null);
+  const languageMenuPanelRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [menuOpen, setMenuOpen] = useState(false);
@@ -64,6 +73,12 @@ export default function SidebarFooter({
   const [isSaving, setIsSaving] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
   const [theme, setTheme] = useState<Theme>("dark");
+  const [isLanguageMenuOpen, setIsLanguageMenuOpen] = useState(false);
+  const [languageMenuPosition, setLanguageMenuPosition] = useState({
+    top: 0,
+    left: 0,
+    width: 0,
+  });
 
   const [nameInput, setNameInput] = useState(userName ?? "");
   const [emailInput, setEmailInput] = useState(userEmail ?? "");
@@ -103,12 +118,22 @@ export default function SidebarFooter({
       if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
         setMenuOpen(false);
       }
+
+      if (
+        languageMenuRef.current &&
+        !languageMenuRef.current.contains(event.target as Node) &&
+        (!languageMenuPanelRef.current ||
+          !languageMenuPanelRef.current.contains(event.target as Node))
+      ) {
+        setIsLanguageMenuOpen(false);
+      }
     }
 
     function handleEscape(event: KeyboardEvent) {
       if (event.key === "Escape") {
         setMenuOpen(false);
         setSettingsOpen(false);
+        setIsLanguageMenuOpen(false);
       }
     }
 
@@ -119,6 +144,37 @@ export default function SidebarFooter({
       document.removeEventListener("keydown", handleEscape);
     };
   }, []);
+
+  useEffect(() => {
+    if (!settingsOpen) {
+      setIsLanguageMenuOpen(false);
+    }
+  }, [settingsOpen]);
+
+  useEffect(() => {
+    if (!isLanguageMenuOpen) return;
+
+    const updateLanguageMenuPosition = () => {
+      const trigger = languageMenuButtonRef.current;
+      if (!trigger) return;
+
+      const rect = trigger.getBoundingClientRect();
+      setLanguageMenuPosition({
+        top: rect.bottom + 6,
+        left: rect.left,
+        width: rect.width,
+      });
+    };
+
+    updateLanguageMenuPosition();
+    window.addEventListener("resize", updateLanguageMenuPosition);
+    window.addEventListener("scroll", updateLanguageMenuPosition, true);
+
+    return () => {
+      window.removeEventListener("resize", updateLanguageMenuPosition);
+      window.removeEventListener("scroll", updateLanguageMenuPosition, true);
+    };
+  }, [isLanguageMenuOpen]);
 
   function readFileAsDataUrl(file: File): Promise<string> {
     return new Promise((resolve, reject) => {
@@ -267,9 +323,8 @@ export default function SidebarFooter({
     window.localStorage.setItem(THEME_STORAGE_KEY, nextTheme);
   }
 
-  function isAppLanguage(value: string): value is AppLanguage {
-    return value === "en" || value === "ar" || value === "ku";
-  }
+  const currentLanguageOption =
+    LANGUAGE_OPTIONS.find((option) => option.code === language) ?? LANGUAGE_OPTIONS[0];
 
   const avatarFallbackClass =
     "flex h-9 w-9 items-center justify-center rounded-full bg-[var(--app-hover-bg-strong)] text-sm font-semibold text-[var(--app-text-heading)]";
@@ -502,26 +557,26 @@ export default function SidebarFooter({
 
               <label className="block space-y-2">
                 <span className={inputLabelClass}>{t("language", language)}</span>
-                <div className="relative">
-                  <select
-                    value={language}
-                    onChange={(event) => {
-                      const value = event.target.value;
-                      if (isAppLanguage(value)) {
-                        setLanguage(value);
-                      }
-                    }}
-                    className={selectInputClass}
+                <div ref={languageMenuRef} className="relative">
+                  <button
+                    ref={languageMenuButtonRef}
+                    type="button"
+                    className={`${selectInputClass} flex items-center justify-between text-left`}
+                    aria-haspopup="menu"
+                    aria-expanded={isLanguageMenuOpen}
+                    onClick={() => setIsLanguageMenuOpen((prev) => !prev)}
                   >
-                    <option value="en">English</option>
-                    <option value="ar">العربية</option>
-                    <option value="ku">کوردی</option>
-                  </select>
-                  <ChevronDown
-                    size={16}
-                    className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-[var(--app-text-tertiary)]"
-                    aria-hidden="true"
-                  />
+                    <span className={currentLanguageOption.code === "en" ? "font-medium" : "font-semibold"}>
+                      {currentLanguageOption.label}
+                    </span>
+                    <ChevronDown
+                      size={16}
+                      className={`shrink-0 text-[var(--app-text-tertiary)] transition ${
+                        isLanguageMenuOpen ? "rotate-180" : ""
+                      }`}
+                      aria-hidden="true"
+                    />
+                  </button>
                 </div>
               </label>
 
@@ -550,6 +605,50 @@ export default function SidebarFooter({
         </div>,
         document.body
       )}
+
+      {settingsOpen &&
+        isLanguageMenuOpen &&
+        createPortal(
+          <div
+            ref={languageMenuPanelRef}
+            role="menu"
+            style={{
+              position: "fixed",
+              top: `${languageMenuPosition.top}px`,
+              left: `${languageMenuPosition.left}px`,
+              width: `${languageMenuPosition.width}px`,
+            }}
+            className="z-[70] max-h-44 overflow-y-auto overscroll-contain rounded-lg border border-[var(--app-input-border)] bg-[var(--app-panel)] p-1 shadow-[var(--app-shadow-lg)]"
+            onWheel={(event) => event.stopPropagation()}
+          >
+            {LANGUAGE_OPTIONS.map((option) => {
+              const isActive = option.code === language;
+
+              return (
+                <button
+                  key={option.code}
+                  type="button"
+                  role="menuitemradio"
+                  aria-checked={isActive}
+                  onClick={() => {
+                    setLanguage(option.code);
+                    setIsLanguageMenuOpen(false);
+                  }}
+                  className={`flex w-full items-center rounded-md px-2.5 py-2 text-sm transition ${
+                    isActive
+                      ? "bg-[var(--app-btn-primary-bg)] text-[var(--app-btn-primary-text)]"
+                      : "text-[var(--app-text-secondary)] hover:bg-[var(--app-hover-bg)] hover:text-[var(--app-text-heading)]"
+                  }`}
+                >
+                  <span className={option.code === "en" ? "font-medium" : "font-semibold"}>
+                    {option.label}
+                  </span>
+                </button>
+              );
+            })}
+          </div>,
+          document.body
+        )}
     </>
   );
 }

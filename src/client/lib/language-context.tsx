@@ -17,7 +17,19 @@ const STORAGE_KEY = "app-language";
 const LANGUAGE_SYNC_EVENT = "app-language-change";
 const RTL_FONT_LINK_ID = "rtl-fonts";
 const RTL_FONT_LINK_HREF =
-	"https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800&family=Tajawal:wght@400;500;700&display=swap";
+	"https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800&family=Tajawal:wght@400;500;700&family=Noto+Sans+Arabic:wght@400;500;700&display=swap";
+
+function getUiFontStack(language: AppLanguage): string {
+	if (language === "ku") {
+		return '"KurdishUI", "Noto Sans Arabic", "Cairo", "Tajawal", sans-serif';
+	}
+
+	if (language === "ar") {
+		return '"Cairo", sans-serif';
+	}
+
+	return "";
+}
 
 type LanguageContextValue = {
 	language: AppLanguage;
@@ -45,12 +57,14 @@ function getInitialLanguage(): AppLanguage {
 	return "en";
 }
 
-function ensureRtlFontLink() {
+function ensureRtlFontLink(language: AppLanguage) {
+	const fontStack = getUiFontStack(language);
+	document.documentElement.style.setProperty("--font-ui", fontStack);
+	document.body.style.setProperty("--font-ui", fontStack);
+
 	const applyUiFontOverride = () => {
-		document.documentElement.style.setProperty(
-			"--font-ui",
-			'"Cairo", "Tajawal", sans-serif'
-		);
+		document.documentElement.style.setProperty("--font-ui", fontStack);
+		document.body.style.setProperty("--font-ui", fontStack);
 	};
 
 	const existing = document.getElementById(RTL_FONT_LINK_ID);
@@ -100,10 +114,11 @@ export function LanguageProvider({
 		document.documentElement.setAttribute("dir", isRtl ? "rtl" : "ltr");
 
 		if (isRtl) {
-			ensureRtlFontLink();
+			ensureRtlFontLink(nextLanguage);
 		} else {
 			removeRtlFontLink();
 			document.documentElement.style.removeProperty("--font-ui");
+			document.body.style.removeProperty("--font-ui");
 		}
 	}, []);
 

@@ -54,7 +54,11 @@ export default function LanguageSwitcher({ iconOnly = false }: LanguageSwitcherP
         title="Switch language"
       >
         {iconOnly ? <Languages size={14} /> : null}
-        {!iconOnly ? <span>{currentOption.label}</span> : null}
+        {!iconOnly ? (
+          <span className={currentOption.code === "en" ? "font-medium" : "font-semibold"}>
+            {currentOption.label}
+          </span>
+        ) : null}
         {!iconOnly ? <ChevronDown size={13} /> : null}
       </button>
 
@@ -82,7 +86,9 @@ export default function LanguageSwitcher({ iconOnly = false }: LanguageSwitcherP
                     : "text-[var(--app-text-secondary)] hover:bg-[var(--app-hover-bg)] hover:text-[var(--app-text-heading)]"
                 }`}
               >
-                <span className="font-semibold">{option.label}</span>
+                <span className={option.code === "en" ? "font-medium" : "font-semibold"}>
+                  {option.label}
+                </span>
               </button>
             );
           })}

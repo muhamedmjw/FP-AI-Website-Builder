@@ -1,5 +1,14 @@
 @import "tailwindcss";
 
+@font-face {
+  font-family: "KurdishUI";
+  src:
+    url("/fonts/kurdish/kurdish-ui.woff2") format("woff2"),
+    url("/fonts/kurdish/kurdish-ui.woff") format("woff"),
+    url("/fonts/kurdish/kurdish-ui.ttf") format("truetype");
+  font-display: swap;
+}
+
 :root {
   --app-bg: #0a0a0a;
   --app-bg-soft: #111111;
@@ -119,6 +128,15 @@ body {
   min-height: 100dvh;
 }
 
+html[lang="ku"] body {
+  --font-ui: "KurdishUI", "Noto Sans Arabic", "Cairo", "Tajawal", sans-serif;
+}
+
+html[lang="ar"] body {
+  --font-ui: "Cairo", sans-serif;
+  font-weight: 600;
+}
+
 button, [role="button"], a, summary, [type="submit"], [type="reset"], [type="button"] {
   cursor: pointer;
 }
@@ -224,7 +242,7 @@ button, [role="button"], a, summary, [type="submit"], [type="reset"], [type="but
 [dir="rtl"] .workspace-sidebar-slot { order: 1; }
 [dir="rtl"] .workspace-main-slot { order: 2; }
 [dir="rtl"] .sidebar { direction: ltr; }
-[dir="rtl"] .chat-bubble-user { margin-left: 0; margin-right: auto; flex-direction: row; }
+[dir="rtl"] .chat-bubble-user { margin-left: auto; margin-right: 0; flex-direction: row-reverse; }
 [dir="rtl"] .footer-links a:hover { transform: translateX(-4px); }
 
 /* ─── Prismatic border (always visible, subtle) ─── */
