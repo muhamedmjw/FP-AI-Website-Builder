@@ -208,7 +208,7 @@ export default function BuilderView({
       )}
 
       {/* Desktop: side-by-side split layout */}
-      <div className="hidden min-h-0 flex-1 md:flex">
+      <div className="builder-desktop-split hidden min-h-0 flex-1 md:flex">
         {/* Left: Chat panel */}
         <div className="flex min-w-0 flex-1 flex-col">
           <ChatPanel

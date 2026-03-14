@@ -1,5 +1,8 @@
 import { useState } from "react";
 import { Globe, Monitor, Tablet, Smartphone, Download, X, Check } from "lucide-react";
+import { useLanguage } from "@/client/lib/language-context";
+import { RTL_LANGUAGES } from "@/shared/constants/languages";
+import { t } from "@/shared/constants/translations";
 
 /**
  * Preview panel — renders the generated HTML inside a sandboxed iframe
@@ -29,6 +32,8 @@ export default function PreviewPanel({
   downloadSuccess = false,
   onClose,
 }: PreviewPanelProps) {
+  const { language } = useLanguage();
+  const shouldFixToolbarOrder = RTL_LANGUAGES.includes(language);
   const [device, setDevice] = useState<DeviceMode>("desktop");
   const [iframeKey, setIframeKey] = useState(0);
 
@@ -71,7 +76,10 @@ export default function PreviewPanel({
       }}
     >
       {/* Single unified toolbar */}
-      <div className="flex h-12 shrink-0 items-center gap-1.5 border-b border-[var(--app-border)] bg-[var(--app-panel)] px-3">
+      <div
+        dir={shouldFixToolbarOrder ? "ltr" : undefined}
+        className="flex h-12 shrink-0 items-center gap-1.5 border-b border-[var(--app-border)] bg-[var(--app-panel)] px-3"
+      >
         {/* Left: device toggles */}
         {(
           [
@@ -104,34 +112,21 @@ export default function PreviewPanel({
             type="button"
             onClick={onDownload}
             disabled={isDownloading}
-            className={`group relative flex h-8 items-center gap-1.5 overflow-hidden rounded-lg px-3 text-xs font-semibold text-white transition-all disabled:pointer-events-none ${
-              downloadSuccess
-                ? "bg-gradient-to-r from-emerald-500 to-green-400"
-                : "shadow-sm hover:-translate-y-0.5 hover:shadow-md"
-            }`}
-            style={
-              !downloadSuccess
-                ? { background: "linear-gradient(135deg, #6366f1, #ec4899)" }
-                : undefined
-            }
-            title="Download as ZIP"
+            className="flex h-8 items-center gap-1.5 rounded-lg bg-white px-3 text-xs font-semibold text-black shadow-sm transition-all hover:-translate-y-0.5 hover:bg-neutral-100 hover:shadow-md disabled:pointer-events-none disabled:opacity-70"
+            title={t("downloadZip", language)}
           >
-            {/* Shimmer overlay */}
-            {!downloadSuccess && !isDownloading && (
-              <span className="pointer-events-none absolute inset-0 -translate-x-full animate-[shimmer_2.5s_ease-in-out_infinite] bg-gradient-to-r from-transparent via-white/20 to-transparent" />
-            )}
             {isDownloading ? (
-              <span className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-white/30 border-t-white" />
+              <span className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-black/20 border-t-black" />
             ) : downloadSuccess ? (
               <Check size={14} />
             ) : (
               <Download size={14} />
             )}
             {isDownloading
-              ? "Preparing..."
+              ? t("downloadZipPreparing", language)
               : downloadSuccess
-                ? "Downloaded!"
-                : "Download ZIP"}
+                ? t("downloadZipDone", language)
+                : t("downloadZip", language)}
           </button>
         )}
         {onClose && (

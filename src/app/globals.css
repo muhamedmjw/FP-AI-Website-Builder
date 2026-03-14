@@ -242,6 +242,7 @@ button, [role="button"], a, summary, [type="submit"], [type="reset"], [type="but
 [dir="rtl"] .workspace-sidebar-slot { order: 1; }
 [dir="rtl"] .workspace-main-slot { order: 2; }
 [dir="rtl"] .sidebar { direction: ltr; }
+[dir="rtl"] .builder-desktop-split { flex-direction: row-reverse; }
 [dir="rtl"] .chat-bubble-user { margin-left: auto; margin-right: 0; flex-direction: row-reverse; }
 [dir="rtl"] .footer-links a:hover { transform: translateX(-4px); }
 
