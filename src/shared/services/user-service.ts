@@ -43,13 +43,53 @@ export async function getUserProfile(
 
   if (error) throw error;
 
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  const metadataName =
+    typeof user?.user_metadata?.display_name === "string"
+      ? user.user_metadata.display_name
+      : typeof user?.user_metadata?.full_name === "string"
+        ? user.user_metadata.full_name
+        : null;
+  const metadataAvatarUrl =
+    typeof user?.user_metadata?.avatar_url === "string"
+      ? user.user_metadata.avatar_url
+      : null;
+
   if (!data) {
+    // Self-heal legacy/missing profile rows so refreshes always show saved profile data.
+    if (user?.id === userId) {
+      const fallbackProfile = {
+        name: metadataName,
+        email: user.email ?? null,
+        avatarUrl: metadataAvatarUrl,
+      };
+
+      const { error: upsertError } = await supabase.from("users").upsert(
+        {
+          id: userId,
+          name: fallbackProfile.name,
+          email: fallbackProfile.email ?? "",
+          avatar_url: fallbackProfile.avatarUrl,
+        },
+        { onConflict: "id" }
+      );
+
+      if (upsertError) {
+        throw upsertError;
+      }
+
+      return fallbackProfile;
+    }
+
     return null;
   }
 
   return {
-    name: data.name ?? null,
-    email: data.email ?? null,
-    avatarUrl: data.avatar_url ?? null,
+    name: data.name ?? metadataName ?? null,
+    email: data.email ?? user?.email ?? null,
+    avatarUrl: data.avatar_url ?? metadataAvatarUrl ?? null,
   };
 }

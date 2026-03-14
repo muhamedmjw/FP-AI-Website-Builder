@@ -4,6 +4,7 @@
 import { ChangeEvent, FormEvent, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import {
+  ChevronDown,
   ChevronUp,
   Github,
   LogOut,
@@ -17,6 +18,7 @@ import {
 import { useRouter } from "next/navigation";
 import { getSupabaseBrowserClient } from "@/client/lib/supabase-browser";
 import { useLanguage } from "@/client/lib/language-context";
+import { RTL_LANGUAGES } from "@/shared/constants/languages";
 import { t } from "@/shared/constants/translations";
 import { isMissingSessionError } from "@/shared/utils/auth-errors";
 import { MAX_AVATAR_FILE_SIZE } from "@/shared/constants/limits";
@@ -53,6 +55,7 @@ export default function SidebarFooter({
 }: SidebarFooterProps) {
   const router = useRouter();
   const { language, setLanguage } = useLanguage();
+  const isRtlLanguage = RTL_LANGUAGES.includes(language);
 
   const menuRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -223,8 +226,15 @@ export default function SidebarFooter({
 
       const { error: profileError } = await supabase
         .from("users")
-        .update({ name: nextName, email: nextEmail, avatar_url: avatarPreview })
-        .eq("id", user.id);
+        .upsert(
+          {
+            id: user.id,
+            name: nextName,
+            email: nextEmail,
+            avatar_url: avatarPreview,
+          },
+          { onConflict: "id" }
+        );
 
       if (profileError) throw profileError;
 
@@ -236,6 +246,7 @@ export default function SidebarFooter({
 
       setSettingsOpen(false);
       setMenuOpen(false);
+      router.refresh();
     } catch (error) {
       console.error("Failed to update profile:", error);
       setErrorMessage(
@@ -290,6 +301,7 @@ export default function SidebarFooter({
     "text-sm font-medium text-[var(--app-text-secondary)]";
   const inputClass =
     "w-full rounded-lg border border-[var(--app-input-border)] bg-[var(--app-input-bg)] px-3.5 py-2.5 text-base text-[var(--app-input-text)] focus:outline-none focus:border-[var(--app-input-focus-border)]";
+  const selectInputClass = `${inputClass} appearance-none ${isRtlLanguage ? "pl-10" : "pr-10"}`;
   const cancelButtonClass =
     "rounded-lg bg-[var(--app-hover-bg)] px-4 py-2.5 text-sm text-[var(--app-text-secondary)] transition hover:bg-[var(--app-hover-bg-strong)]";
 
@@ -492,20 +504,27 @@ export default function SidebarFooter({
 
               <label className="block space-y-2">
                 <span className={inputLabelClass}>{t("language", language)}</span>
-                <select
-                  value={language}
-                  onChange={(event) => {
-                    const value = event.target.value;
-                    if (isAppLanguage(value)) {
-                      setLanguage(value);
-                    }
-                  }}
-                  className={inputClass}
-                >
-                  <option value="en">English</option>
-                  <option value="ar">العربية</option>
-                  <option value="ku">کوردی</option>
-                </select>
+                <div className="relative">
+                  <select
+                    value={language}
+                    onChange={(event) => {
+                      const value = event.target.value;
+                      if (isAppLanguage(value)) {
+                        setLanguage(value);
+                      }
+                    }}
+                    className={selectInputClass}
+                  >
+                    <option value="en">English</option>
+                    <option value="ar">العربية</option>
+                    <option value="ku">کوردی</option>
+                  </select>
+                  <ChevronDown
+                    size={16}
+                    className={`pointer-events-none absolute top-1/2 -translate-y-1/2 text-[var(--app-text-tertiary)] ${isRtlLanguage ? "left-3" : "right-3"}`}
+                    aria-hidden="true"
+                  />
+                </div>
               </label>
 
               {errorMessage ? (

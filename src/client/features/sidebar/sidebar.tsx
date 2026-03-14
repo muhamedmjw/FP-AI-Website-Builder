@@ -43,6 +43,14 @@ export default function Sidebar({
   useEffect(() => {
     setChats(initialChats);
   }, [initialChats]);
+
+  // Sync user profile state when the server re-fetches profile props.
+  useEffect(() => {
+    setUserName(initialUserName);
+    setUserEmail(initialUserEmail);
+    setUserAvatarUrl(initialUserAvatarUrl);
+  }, [initialUserName, initialUserEmail, initialUserAvatarUrl]);
+
   const pathActiveChatId = pathname.startsWith("/chat/")
     ? pathname.split("/")[2]
     : undefined;
