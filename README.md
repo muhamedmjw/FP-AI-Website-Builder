@@ -195,11 +195,11 @@ Set all environment variables in the **Vercel dashboard** under *Settings → En
 - [x] Chat interface and conversation history
 - [x] Sidebar with rename/delete and profile settings
 - [x] Guest mode with local session
-- [ ] AI integration and website code generation
-- [ ] Live preview panel with generated HTML
-- [ ] Multi-language support (AR/KU RTL)
-- [ ] ZIP download for registered users
-- [ ] Language selector persisted per user
+- [x] AI integration and website code generation
+- [x] Live preview panel with generated HTML
+- [x] Multi-language support (AR/KU RTL)
+- [x] ZIP download for registered users
+- [x] Language selector persisted per user
 
 ---
 
