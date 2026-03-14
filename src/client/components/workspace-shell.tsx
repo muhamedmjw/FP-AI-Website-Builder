@@ -1,6 +1,6 @@
 "use client";
 
-import { ReactNode, useCallback, useEffect, useState } from "react";
+import { ReactNode, useCallback, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Menu, Sparkles } from "lucide-react";
@@ -37,17 +37,16 @@ function WorkspaceShellInner({
   children,
   hasSidebar,
 }: WorkspaceShellProps) {
-  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [sidebarOpenPath, setSidebarOpenPath] = useState<string | null>(null);
   const { title } = useMobileHeaderTitle();
   const pathname = usePathname();
 
-  // Close mobile drawer whenever the route changes
-  useEffect(() => {
-    setSidebarOpen(false);
-  }, [pathname]);
+  const sidebarOpen = sidebarOpenPath === pathname;
 
-  const openSidebar = useCallback(() => setSidebarOpen(true), []);
-  const closeSidebar = useCallback(() => setSidebarOpen(false), []);
+  const openSidebar = useCallback(() => {
+    setSidebarOpenPath(pathname);
+  }, [pathname]);
+  const closeSidebar = useCallback(() => setSidebarOpenPath(null), []);
 
   return (
     <div className="flex h-screen bg-[var(--app-bg)] text-[var(--app-text-primary)]">

@@ -4,6 +4,8 @@ import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { MoreHorizontal, Pencil, Trash2 } from "lucide-react";
 import { Chat } from "@/shared/types/database";
+import { useLanguage } from "@/client/lib/language-context";
+import { t } from "@/shared/constants/translations";
 
 /**
  * A single chat item in the sidebar with an actions menu
@@ -23,6 +25,7 @@ export default function ChatListItem({
   onRename,
   onDelete,
 }: ChatListItemProps) {
+  const { language } = useLanguage();
   const [menuOpen, setMenuOpen] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [editValue, setEditValue] = useState(chat.title);
@@ -169,7 +172,7 @@ export default function ChatListItem({
             className="flex w-full items-center gap-2 px-3 py-2.5 text-left text-sm text-[var(--app-text-secondary)] transition hover:bg-[var(--app-hover-bg)] hover:text-[var(--app-text-heading)]"
           >
             <Pencil size={13} />
-            Rename
+            {t("rename", language)}
           </button>
           <button
             type="button"
@@ -178,7 +181,7 @@ export default function ChatListItem({
             className="flex w-full items-center gap-2 px-3 py-2.5 text-left text-sm text-rose-400 transition hover:bg-[var(--app-hover-bg)] hover:text-rose-300"
           >
             <Trash2 size={13} />
-            Delete
+            {t("delete", language)}
           </button>
         </div>
       )}

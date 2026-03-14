@@ -16,8 +16,11 @@ import {
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { getSupabaseBrowserClient } from "@/client/lib/supabase-browser";
+import { useLanguage } from "@/client/lib/language-context";
+import { t } from "@/shared/constants/translations";
 import { isMissingSessionError } from "@/shared/utils/auth-errors";
 import { MAX_AVATAR_FILE_SIZE } from "@/shared/constants/limits";
+import type { AppLanguage } from "@/shared/types/database";
 
 const GITHUB_REPO_URL = "https://github.com/muhamedmjw/Final-Project";
 const THEME_STORAGE_KEY = "app-theme";
@@ -49,6 +52,7 @@ export default function SidebarFooter({
   onProfileUpdated,
 }: SidebarFooterProps) {
   const router = useRouter();
+  const { language, setLanguage } = useLanguage();
 
   const menuRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -129,7 +133,7 @@ export default function SidebarFooter({
     if (!file) return;
 
     if (file.size > MAX_AVATAR_FILE_SIZE) {
-      setErrorMessage("Image must be smaller than 2MB.");
+      setErrorMessage(t("imageSmallerThan2MB", language));
       event.target.value = "";
       return;
     }
@@ -140,7 +144,7 @@ export default function SidebarFooter({
       setErrorMessage("");
     } catch (error) {
       console.error("Failed to read avatar file:", error);
-      setErrorMessage("Could not use that image. Try another one.");
+      setErrorMessage(t("couldNotUseImage", language));
     } finally {
       event.target.value = "";
     }
@@ -176,12 +180,12 @@ export default function SidebarFooter({
     const nextEmail = emailInput.trim();
 
     if (!nextName) {
-      setErrorMessage("Name is required.");
+      setErrorMessage(t("nameRequired", language));
       return;
     }
 
     if (!nextEmail) {
-      setErrorMessage("Email is required.");
+      setErrorMessage(t("emailRequired", language));
       return;
     }
 
@@ -195,7 +199,7 @@ export default function SidebarFooter({
       } = await supabase.auth.getUser();
 
       if (!user) {
-        throw new Error("Your session expired. Please sign in again.");
+        throw new Error(t("sessionExpiredPleaseSignInAgain", language));
       }
 
       const updatePayload: {
@@ -235,14 +239,14 @@ export default function SidebarFooter({
     } catch (error) {
       console.error("Failed to update profile:", error);
       setErrorMessage(
-        error instanceof Error ? error.message : "Could not save changes."
+        error instanceof Error ? error.message : t("couldNotSaveChanges", language)
       );
     } finally {
       setIsSaving(false);
     }
   }
 
-  const accountLabel = userName?.trim() || userEmail?.trim() || "Account";
+  const accountLabel = userName?.trim() || userEmail?.trim() || t("account", language);
   const initials =
     accountLabel.length > 0 ? accountLabel.charAt(0).toUpperCase() : "A";
   const isLightTheme = theme === "light";
@@ -252,6 +256,10 @@ export default function SidebarFooter({
     setTheme(nextTheme);
     document.documentElement.setAttribute("data-theme", nextTheme);
     window.localStorage.setItem(THEME_STORAGE_KEY, nextTheme);
+  }
+
+  function isAppLanguage(value: string): value is AppLanguage {
+    return value === "en" || value === "ar" || value === "ku";
   }
 
   const avatarFallbackClass =
@@ -296,7 +304,7 @@ export default function SidebarFooter({
             className="flex h-9 w-9 items-center justify-center rounded-full transition hover:opacity-80 disabled:cursor-not-allowed disabled:opacity-50"
             aria-expanded={menuOpen}
             aria-haspopup="menu"
-            title="Account"
+            title={t("account", language)}
           >
             {avatarPreview ? (
               <img
@@ -319,7 +327,7 @@ export default function SidebarFooter({
               className="flex h-12 w-full items-center gap-3 rounded-xl bg-[var(--app-hover-bg)] px-3 text-left transition hover:bg-[var(--app-hover-bg-strong)] disabled:cursor-not-allowed disabled:opacity-50"
               aria-expanded={menuOpen}
               aria-haspopup="menu"
-              title="Account"
+              title={t("account", language)}
             >
               {avatarPreview ? (
                 <img
@@ -334,7 +342,7 @@ export default function SidebarFooter({
               )}
               <div className="min-w-0 flex-1">
                 <p className="truncate text-sm font-semibold text-[var(--app-text-heading)]">{accountLabel}</p>
-                <p className="truncate text-xs text-[var(--app-text-tertiary)]">Account</p>
+                <p className="truncate text-xs text-[var(--app-text-tertiary)]">{t("account", language)}</p>
               </div>
               <ChevronUp size={16} className={`text-[var(--app-text-tertiary)] transition ${menuOpen ? "rotate-180" : ""}`} />
             </button>
@@ -357,7 +365,7 @@ export default function SidebarFooter({
               className={menuItemClass}
             >
               <Settings size={15} />
-              Settings
+              {t("settings", language)}
             </button>
 
             <a
@@ -368,7 +376,7 @@ export default function SidebarFooter({
               className={menuItemClass}
             >
               <Github size={15} />
-              GitHub Repo
+              {t("githubRepo", language)}
             </a>
 
             <button
@@ -378,7 +386,7 @@ export default function SidebarFooter({
               className={menuItemClass}
             >
               {isLightTheme ? <Moon size={15} /> : <Sun size={15} />}
-              {isLightTheme ? "Dark Mode" : "Light Mode"}
+              {isLightTheme ? t("darkMode", language) : t("lightMode", language)}
             </button>
 
             <button
@@ -388,7 +396,7 @@ export default function SidebarFooter({
               className={signOutItemClass}
             >
               <LogOut size={15} />
-              {isSigningOut ? "Signing out..." : "Log out"}
+              {isSigningOut ? `${t("signOut", language)}...` : t("signOut", language)}
             </button>
           </div>
         )}
@@ -406,9 +414,9 @@ export default function SidebarFooter({
           <div className={settingsModalClass}>
             <div className="flex items-center justify-between px-6 py-4">
               <div>
-                <h3 className={settingsTitleClass}>Settings</h3>
+                <h3 className={settingsTitleClass}>{t("settingsTitle", language)}</h3>
                 <p className={settingsSubtitleClass}>
-                  Update your account picture, name, and email.
+                  {t("settingsSubtitle", language)}
                 </p>
               </div>
               <button
@@ -442,14 +450,14 @@ export default function SidebarFooter({
                     className={secondaryActionButtonClass}
                   >
                     <Upload size={14} />
-                    Upload Picture
+                    {t("uploadPicture", language)}
                   </button>
                   <button
                     type="button"
                     onClick={handleRemoveAvatar}
                     className={removeActionButtonClass}
                   >
-                    Remove
+                    {t("removePicture", language)}
                   </button>
                 </div>
               </div>
@@ -463,7 +471,7 @@ export default function SidebarFooter({
               />
 
               <label className="block space-y-2">
-                <span className={inputLabelClass}>Name</span>
+                <span className={inputLabelClass}>{t("name", language)}</span>
                 <input
                   type="text"
                   value={nameInput}
@@ -473,13 +481,31 @@ export default function SidebarFooter({
               </label>
 
               <label className="block space-y-2">
-                <span className={inputLabelClass}>Email</span>
+                <span className={inputLabelClass}>{t("email", language)}</span>
                 <input
                   type="email"
                   value={emailInput}
                   onChange={(event) => setEmailInput(event.target.value)}
                   className={inputClass}
                 />
+              </label>
+
+              <label className="block space-y-2">
+                <span className={inputLabelClass}>{t("language", language)}</span>
+                <select
+                  value={language}
+                  onChange={(event) => {
+                    const value = event.target.value;
+                    if (isAppLanguage(value)) {
+                      setLanguage(value);
+                    }
+                  }}
+                  className={inputClass}
+                >
+                  <option value="en">English</option>
+                  <option value="ar">العربية</option>
+                  <option value="ku">کوردی</option>
+                </select>
               </label>
 
               {errorMessage ? (
@@ -492,14 +518,14 @@ export default function SidebarFooter({
                   onClick={() => setSettingsOpen(false)}
                   className={cancelButtonClass}
                 >
-                  Cancel
+                  {t("cancel", language)}
                 </button>
                 <button
                   type="submit"
                   disabled={isSaving}
                   className="rounded-lg bg-[var(--app-btn-primary-bg)] px-4 py-2.5 text-sm font-semibold text-[var(--app-btn-primary-text)] shadow-[var(--app-shadow-sm)] transition hover:bg-[var(--app-btn-primary-hover)] hover:shadow-[var(--app-shadow-md)] hover:-translate-y-px active:translate-y-0 disabled:cursor-not-allowed disabled:opacity-60"
                 >
-                  {isSaving ? "Saving..." : "Save Changes"}
+                  {isSaving ? `${t("saveChanges", language)}...` : t("saveChanges", language)}
                 </button>
               </div>
             </form>

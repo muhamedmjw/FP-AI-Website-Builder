@@ -12,6 +12,11 @@ import {
   saveGeneratedHtml,
 } from "@/server/services/website-service";
 import { AI_CONFIG } from "@/shared/constants/ai";
+import type { AppLanguage } from "@/shared/types/database";
+
+function isAppLanguage(value: unknown): value is AppLanguage {
+  return value === "en" || value === "ar" || value === "ku";
+}
 
 async function checkUserTokenBudget(
   supabase: SupabaseClient,
@@ -67,7 +72,7 @@ async function checkUserTokenBudget(
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { chatId, content } = body;
+    const { chatId, content, language } = body;
 
     // Validate input
     if (!chatId || typeof chatId !== "string") {
@@ -145,7 +150,9 @@ export async function POST(request: NextRequest) {
 
     // Get website language and existing HTML for edit mode detection
     const existingWebsite = await getWebsiteByChatId(supabase, chatId);
-    const language = existingWebsite?.language ?? "en";
+    const effectiveLanguage: AppLanguage = isAppLanguage(language)
+      ? language
+      : existingWebsite?.language ?? "en";
     const existingHtml = existingWebsite
       ? await getGeneratedHtml(supabase, existingWebsite.id)
       : null;
@@ -155,7 +162,7 @@ export async function POST(request: NextRequest) {
       supabase,
       chatId,
       historyForAI,
-      language,
+      effectiveLanguage,
       existingHtml
     );
 
@@ -167,8 +174,17 @@ export async function POST(request: NextRequest) {
           supabase,
           chatId,
           content.trim(),
-          language
+          effectiveLanguage
         );
+      } else if (website.language !== effectiveLanguage) {
+        const { error: updateLanguageError } = await supabase
+          .from("websites")
+          .update({ language: effectiveLanguage })
+          .eq("id", website.id);
+
+        if (updateLanguageError) {
+          throw updateLanguageError;
+        }
       }
       await saveGeneratedHtml(supabase, website.id, aiResponse.html);
     }

@@ -1,4 +1,8 @@
+"use client";
+
 import { Bot, User } from "lucide-react";
+import { useLanguage } from "@/client/lib/language-context";
+import { RTL_LANGUAGES } from "@/shared/constants/languages";
 
 /**
  * Chat message bubble — displays a single user or assistant message.
@@ -52,12 +56,16 @@ export default function ChatBubble({
   content,
   userAvatarUrl = null,
 }: ChatBubbleProps) {
+  const { language } = useLanguage();
   const isUser = role === "user";
+  const isRtl = RTL_LANGUAGES.includes(language);
 
   return (
     <div
       className={`ui-fade-up flex min-w-0 max-w-[92%] items-start gap-2 sm:max-w-[78%] sm:gap-2.5 ${
-        isUser ? "ml-auto flex-row-reverse" : "mr-auto"
+        isUser
+          ? `${isRtl ? "mr-auto ml-0 flex-row" : "ml-auto flex-row-reverse"} chat-bubble-user`
+          : "mr-auto"
       }`}
     >
       {/* Avatar */}
@@ -71,8 +79,8 @@ export default function ChatBubble({
         {/* Avatar icon */}
         {!isUser && <Bot size={16} />}
         {isUser && !userAvatarUrl && <User size={16} />}
-        {/* eslint-disable-next-line @next/next/no-img-element */}
         {isUser && userAvatarUrl && (
+          /* eslint-disable-next-line @next/next/no-img-element */
           <img
             src={userAvatarUrl}
             alt="Your profile picture"

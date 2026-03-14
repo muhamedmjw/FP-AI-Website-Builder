@@ -1,4 +1,5 @@
 import { HistoryMessage } from "@/shared/types/database";
+import type { AppLanguage } from "@/shared/types/database";
 
 export type SendChatMessageResponse = {
   userMessage: HistoryMessage;
@@ -10,12 +11,13 @@ export type SendChatMessageResponse = {
 /** Sends a chat message through the API and returns the latest conversation state. */
 export async function sendChatMessage(
   chatId: string,
-  content: string
+  content: string,
+  language: AppLanguage
 ): Promise<SendChatMessageResponse> {
   const response = await fetch("/api/chat/send", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ chatId, content }),
+    body: JSON.stringify({ chatId, content, language }),
   });
 
   let data: Record<string, unknown> | null = null;

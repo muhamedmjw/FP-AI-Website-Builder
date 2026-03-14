@@ -10,6 +10,8 @@ import ChatPanel from "@/client/features/chat/chat-panel";
 import PreviewPanel from "@/client/features/preview/preview-panel";
 import PreviewErrorBoundary from "@/client/features/preview/preview-error-boundary";
 import ResizeHandle from "@/client/features/builder/resize-handle";
+import { useLanguage } from "@/client/lib/language-context";
+import { t } from "@/shared/constants/translations";
 
 /**
  * Builder view - main split layout.
@@ -37,6 +39,7 @@ export default function BuilderView({
   initialHtml,
   currentUserAvatarUrl = null,
 }: BuilderViewProps) {
+  const { language } = useLanguage();
   const hasInitialPreview =
     typeof initialHtml === "string" && initialHtml.trim().length > 0;
 
@@ -132,7 +135,7 @@ export default function BuilderView({
     setInputErrorMessage("");
 
     try {
-      const data = await sendChatMessage(chatId, content);
+      const data = await sendChatMessage(chatId, content, language);
 
       // Replace optimistic messages with the real ones from DB
       setMessages(data.messages);
@@ -187,7 +190,7 @@ export default function BuilderView({
             }`}
           >
             <MessageCircle size={16} />
-            Chat
+            {t("chat", language)}
           </button>
           <button
             type="button"
@@ -199,7 +202,7 @@ export default function BuilderView({
             }`}
           >
             <Eye size={16} />
-            Preview
+            {t("preview", language)}
           </button>
         </div>
       )}

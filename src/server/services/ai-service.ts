@@ -10,7 +10,7 @@
 
 import Groq from "groq-sdk";
 import { SupabaseClient } from "@supabase/supabase-js";
-import { HistoryMessage } from "@/shared/types/database";
+import { AppLanguage, HistoryMessage } from "@/shared/types/database";
 import { AI_MODELS, AI_CONFIG } from "@/shared/constants/ai";
 import { buildMessages } from "@/server/prompts/prompt-builder";
 
@@ -274,7 +274,8 @@ async function logGeneration(
  * Accepts a simple conversation history array.
  */
 export async function generateGuestAIResponse(
-  history: Array<{ role: "user" | "assistant"; content: string }>
+  history: Array<{ role: "user" | "assistant"; content: string }>,
+  language: AppLanguage = "en"
 ): Promise<AIResponse> {
   const modelName = AI_MODELS.PRIMARY;
 
@@ -286,7 +287,7 @@ export async function generateGuestAIResponse(
     created_at: new Date().toISOString(),
   }));
 
-  const messages = buildMessages(historyMessages, "en", null);
+  const messages = buildMessages(historyMessages, language, null);
 
   const { parsed } = await callGroqWithRetry(messages, modelName);
   return parsed;

@@ -2,9 +2,14 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient, SupabaseClient } from "@supabase/supabase-js";
 import { generateGuestAIResponse } from "@/server/services/ai-service";
 import { MAX_GUEST_PROMPTS } from "@/shared/constants/limits";
+import type { AppLanguage } from "@/shared/types/database";
 
 const GUEST_TOKEN_COOKIE = "guest_token";
 const GUEST_TOKEN_MAX_AGE = 60 * 60 * 24 * 30; // 30 days
+
+function isAppLanguage(value: unknown): value is AppLanguage {
+  return value === "en" || value === "ar" || value === "ku";
+}
 
 function getServiceClient(): SupabaseClient {
   return createClient(
@@ -81,7 +86,10 @@ async function incrementGuestUsage(
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { content, history } = body;
+    const { content, history, language } = body;
+    const preferredLanguage: AppLanguage = isAppLanguage(language)
+      ? language
+      : "en";
 
     if (!content || typeof content !== "string" || content.trim().length === 0) {
       return NextResponse.json(
@@ -138,7 +146,10 @@ export async function POST(request: NextRequest) {
     conversationHistory.push({ role: "user", content: content.trim() });
 
     // Call the AI
-    const aiResponse = await generateGuestAIResponse(conversationHistory);
+    const aiResponse = await generateGuestAIResponse(
+      conversationHistory,
+      preferredLanguage
+    );
 
     // Increment usage after successful response
     await incrementGuestUsage(serviceClient, guestToken, today);

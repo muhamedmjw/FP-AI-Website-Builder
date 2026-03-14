@@ -4,8 +4,11 @@ import { FormEvent, useState } from "react";
 import FormInput from "@/client/components/forms/form-input";
 import PrimaryButton from "@/client/components/ui/primary-button";
 import { getSupabaseBrowserClient } from "@/client/lib/supabase-browser";
+import { useLanguage } from "@/client/lib/language-context";
+import { t } from "@/shared/constants/translations";
 
 export default function LoginForm() {
+  const { language } = useLanguage();
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
 
@@ -21,7 +24,7 @@ export default function LoginForm() {
 
     if (!email || !password) {
       setIsLoading(false);
-      setErrorMessage("Email and password are required.");
+      setErrorMessage(t("emailPasswordRequired", language));
       return;
     }
 
@@ -32,7 +35,7 @@ export default function LoginForm() {
 
     if (error) {
       if (error.message.toLowerCase().includes("email not confirmed")) {
-        setErrorMessage("Your email is not confirmed yet. Check your inbox and confirm your account first.");
+        setErrorMessage(t("emailNotConfirmed", language));
         return;
       }
 
@@ -46,7 +49,7 @@ export default function LoginForm() {
   return (
     <form className="space-y-4" onSubmit={handleSubmit}>
       <FormInput
-        label="Email"
+        label={t("email", language)}
         name="email"
         type="email"
         placeholder="you@example.com"
@@ -54,7 +57,7 @@ export default function LoginForm() {
         required
       />
       <FormInput
-        label="Password"
+        label={t("password", language)}
         name="password"
         type="password"
         placeholder="********"
@@ -63,7 +66,7 @@ export default function LoginForm() {
       />
       <PrimaryButton
         type="submit"
-        label={isLoading ? "Signing in..." : "Sign in"}
+        label={isLoading ? `${t("signIn", language)}...` : t("signIn", language)}
         fullWidth
         disabled={isLoading}
       />

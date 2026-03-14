@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Sora } from "next/font/google";
 import "./globals.css"; // Global styles for the application
+import Providers from "@/client/components/providers";
 
 const sora = Sora({
   subsets: ["latin"],
@@ -47,7 +48,7 @@ export default function RootLayout({
     <html lang="en" data-theme="dark" suppressHydrationWarning>
       <body className={`${sora.variable} antialiased`}>
         <script dangerouslySetInnerHTML={{ __html: THEME_INIT_SCRIPT }} />
-        {children}
+        <Providers>{children}</Providers>
       </body>
     </html>
   );

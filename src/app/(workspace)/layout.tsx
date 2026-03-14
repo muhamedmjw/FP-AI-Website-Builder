@@ -4,6 +4,12 @@ import { getCurrentUser, getUserProfile } from "@/shared/services/user-service";
 import Sidebar from "@/client/features/sidebar/sidebar";
 import AuthSessionSync from "@/client/components/auth-session-sync";
 import WorkspaceShell from "@/client/components/workspace-shell";
+import WorkspaceProviders from "@/client/components/workspace-providers";
+import type { AppLanguage } from "@/shared/types/database";
+
+function isAppLanguage(value: unknown): value is AppLanguage {
+  return value === "en" || value === "ar" || value === "ku";
+}
 
 /**
  * Workspace layout for "/" and "/chat".
@@ -35,20 +41,37 @@ export default async function AppLayout({
     getUserChats(supabase),
   ]);
 
+  const { data: preferences } = await supabase
+    .from("user_preferences")
+    .select("language")
+    .eq("user_id", user.id)
+    .maybeSingle();
+
+  const hasLanguagePreference = isAppLanguage(preferences?.language);
+
+  const preferredLanguage: AppLanguage = isAppLanguage(preferences?.language)
+    ? preferences.language
+    : "en";
+
   return (
-    <WorkspaceShell
-      hasSidebar
-      sidebar={
-        <Sidebar
-          chats={chats}
-          userName={profile?.name ?? null}
-          userEmail={profile?.email ?? user.email ?? null}
-          userAvatarUrl={profile?.avatarUrl ?? null}
-        />
-      }
+    <WorkspaceProviders
+      language={preferredLanguage}
+      hasLanguagePreference={hasLanguagePreference}
     >
-      <AuthSessionSync />
-      {children}
-    </WorkspaceShell>
+      <WorkspaceShell
+        hasSidebar
+        sidebar={
+          <Sidebar
+            chats={chats}
+            userName={profile?.name ?? null}
+            userEmail={profile?.email ?? user.email ?? null}
+            userAvatarUrl={profile?.avatarUrl ?? null}
+          />
+        }
+      >
+        <AuthSessionSync />
+        {children}
+      </WorkspaceShell>
+    </WorkspaceProviders>
   );
 }

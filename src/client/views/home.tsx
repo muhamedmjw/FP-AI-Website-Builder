@@ -14,6 +14,8 @@ import {
 import {
   consumePendingGuestChatSession,
 } from "@/client/lib/guest-chat-handoff";
+import { useLanguage } from "@/client/lib/language-context";
+import { t } from "@/shared/constants/translations";
 
 /**
  * Authenticated home screen - centered prompt input.
@@ -21,6 +23,7 @@ import {
  * and navigates to the chat page.
  */
 export default function HomePage() {
+  const { language } = useLanguage();
   const router = useRouter();
   const inputRef = useRef<HTMLInputElement>(null);
   const [isCreating, setIsCreating] = useState(false);
@@ -119,7 +122,7 @@ export default function HomePage() {
       }
 
       const chat = await createChat(supabase, user.id, "New Website");
-      await sendChatMessage(chat.id, message);
+      await sendChatMessage(chat.id, message, language);
 
       router.push(`/chat/${chat.id}`);
       router.refresh();
@@ -147,10 +150,10 @@ export default function HomePage() {
     <div className="flex min-h-0 flex-1 flex-col items-center justify-center px-6 sm:px-8">
       <div className="w-full max-w-2xl space-y-5 text-center">
         <h1 className="text-2xl font-semibold leading-snug text-[var(--app-text-heading)] sm:text-3xl">
-          What website do you want to build?
+          {t("heroTitle", language)}
         </h1>
         <p className="text-sm text-[var(--app-text-tertiary)] sm:text-sm">
-          Describe your website and AI will generate it for you.
+          {t("heroSubtitle", language)}
         </p>
         {downloadMessage ? (
           <p className="text-sm text-emerald-400">{downloadMessage}</p>
@@ -161,7 +164,7 @@ export default function HomePage() {
             <input
               ref={inputRef}
               type="text"
-              placeholder="Describe the website you want to build..."
+              placeholder={t("inputPlaceholder", language)}
               disabled={isCreating}
               className="flex-1 rounded-xl bg-transparent px-2.5 py-2 text-sm text-[var(--app-input-text)] placeholder:text-[var(--app-text-tertiary)] focus:outline-none disabled:opacity-50 sm:px-3 sm:py-2.5 sm:text-base"
             />

@@ -9,6 +9,10 @@ import PreviewPanel from "@/client/features/preview/preview-panel";
 import PreviewErrorBoundary from "@/client/features/preview/preview-error-boundary";
 import { savePendingGuestZipPrompt } from "@/client/lib/zip-download";
 import { savePendingGuestChatSession } from "@/client/lib/guest-chat-handoff";
+import LanguageSwitcher from "@/client/components/ui/language-switcher";
+import { useLanguage } from "@/client/lib/language-context";
+import { t } from "@/shared/constants/translations";
+import type { AppLanguage } from "@/shared/types/database";
 
 function createGuestMessage(
   role: "user" | "assistant",
@@ -32,13 +36,15 @@ type GuestAIResponse = {
 
 async function sendGuestChat(
   content: string,
-  history: HistoryMessage[]
+  history: HistoryMessage[],
+  language: AppLanguage
 ): Promise<GuestAIResponse> {
   const response = await fetch("/api/guest/chat", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
       content,
+      language,
       history: history
         .filter((m) => m.role === "user" || m.role === "assistant")
         .map((m) => ({ role: m.role, content: m.content })),
@@ -57,6 +63,7 @@ async function sendGuestChat(
 }
 
 export default function GuestHomePage() {
+  const { language } = useLanguage();
   const [messages, setMessages] = useState<HistoryMessage[]>([]);
   const [isSending, setIsSending] = useState(false);
   const [html, setHtml] = useState<string | null>(null);
@@ -78,7 +85,7 @@ export default function GuestHomePage() {
     setInputErrorMessage("");
 
     try {
-      const aiResponse = await sendGuestChat(trimmed, messages);
+      const aiResponse = await sendGuestChat(trimmed, messages, language);
 
       const assistantMessage = createGuestMessage(
         "assistant",
@@ -138,32 +145,35 @@ export default function GuestHomePage() {
   return (
     <div className="flex min-h-0 flex-1 flex-col bg-[var(--app-bg)]">
       <header className="border-b border-[var(--app-border)] bg-[var(--app-panel)]/60 px-3 py-3 backdrop-blur sm:px-5 sm:py-4">
-        <div className="mx-auto flex w-full max-w-5xl flex-wrap items-center justify-between gap-2 sm:gap-3">
-          <div className="flex items-center gap-2 sm:gap-2.5">
-            <Sparkles size={17} className="prismatic-icon" />
-            <p className="prismatic-text text-xs font-semibold uppercase tracking-[0.15em] sm:text-sm sm:tracking-[0.2em]">
-              AI Website Builder
-            </p>
-          </div>
-          <div className="flex items-center gap-1.5 sm:gap-2">
-            <Link
-              href="/signin"
-              onClick={queueChatSessionForAuth}
-              className="rounded-lg border border-[var(--app-card-border)] px-3 py-1.5 text-sm font-medium text-[var(--app-text-secondary)] transition hover:border-[var(--app-text-tertiary)] hover:text-[var(--app-text-heading)]"
-            >
-              Sign in
-            </Link>
-            <Link
-              href="/signup"
-              onClick={queueChatSessionForAuth}
-              className="rounded-lg bg-[var(--app-btn-primary-bg)] px-3 py-1.5 text-sm font-semibold text-[var(--app-btn-primary-text)] shadow-[var(--app-shadow-sm)] transition hover:bg-[var(--app-btn-primary-hover)] hover:-translate-y-px active:translate-y-0"
-            >
-              Create account
-            </Link>
+        <div className="mx-auto w-full max-w-5xl">
+          <div className="flex flex-wrap items-center justify-between gap-2 sm:gap-3">
+            <div className="flex items-center gap-2 sm:gap-2.5">
+              <Sparkles size={17} className="prismatic-icon" />
+              <p className="prismatic-text text-xs font-semibold uppercase tracking-[0.15em] sm:text-sm sm:tracking-[0.2em]">
+                AI Website Builder
+              </p>
+            </div>
+            <div className="flex items-center gap-1.5 sm:gap-2">
+              <LanguageSwitcher />
+              <Link
+                href="/signin"
+                onClick={queueChatSessionForAuth}
+                className="rounded-lg border border-[var(--app-card-border)] px-3 py-1.5 text-sm font-medium text-[var(--app-text-secondary)] transition hover:border-[var(--app-text-tertiary)] hover:text-[var(--app-text-heading)]"
+              >
+                {t("signIn", language)}
+              </Link>
+              <Link
+                href="/signup"
+                onClick={queueChatSessionForAuth}
+                className="rounded-lg bg-[var(--app-btn-primary-bg)] px-3 py-1.5 text-sm font-semibold text-[var(--app-btn-primary-text)] shadow-[var(--app-shadow-sm)] transition hover:bg-[var(--app-btn-primary-hover)] hover:-translate-y-px active:translate-y-0"
+              >
+                {t("signUp", language)}
+              </Link>
+            </div>
           </div>
         </div>
         <p className="mx-auto mt-1.5 w-full max-w-5xl text-xs text-[var(--app-text-tertiary)] sm:mt-2">
-          Guest chats are temporary and not saved to history.
+          {t("guestNotice", language)}
         </p>
       </header>
 
@@ -180,7 +190,7 @@ export default function GuestHomePage() {
             }`}
           >
             <MessageCircle size={16} />
-            Chat
+            {t("chat", language)}
           </button>
           <button
             type="button"
@@ -192,7 +202,7 @@ export default function GuestHomePage() {
             }`}
           >
             <Eye size={16} />
-            Preview
+            {t("preview", language)}
           </button>
         </div>
       )}
@@ -207,7 +217,7 @@ export default function GuestHomePage() {
             currentUserAvatarUrl={null}
             showHeader={false}
             centerInputWhenEmpty={!hasPreview}
-            inputPlaceholder="Describe the website you want to build..."
+            inputPlaceholder={t("inputPlaceholder", language)}
             inputErrorMessage={inputErrorMessage}
           />
         </div>
@@ -237,7 +247,7 @@ export default function GuestHomePage() {
             currentUserAvatarUrl={null}
             showHeader={false}
             centerInputWhenEmpty={!hasPreview}
-            inputPlaceholder="Describe the website you want to build..."
+            inputPlaceholder={t("inputPlaceholder", language)}
             inputErrorMessage={inputErrorMessage}
           />
         </div>
@@ -289,14 +299,14 @@ export default function GuestHomePage() {
                 onClick={queueDownloadAndContinue}
                 className="rounded-lg border border-[var(--app-card-border)] px-3 py-2.5 text-center text-sm font-medium text-[var(--app-text-secondary)] transition hover:border-[var(--app-text-tertiary)] hover:text-[var(--app-text-heading)]"
               >
-                Sign in
+                {t("signIn", language)}
               </Link>
               <Link
                 href="/signup"
                 onClick={queueDownloadAndContinue}
                 className="rounded-lg bg-[var(--app-btn-primary-bg)] px-3 py-2.5 text-center text-sm font-semibold text-[var(--app-btn-primary-text)] shadow-[var(--app-shadow-sm)] transition hover:bg-[var(--app-btn-primary-hover)] hover:-translate-y-px active:translate-y-0"
               >
-                Create account
+                {t("signUp", language)}
               </Link>
             </div>
           </div>

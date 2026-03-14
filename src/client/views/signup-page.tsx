@@ -4,8 +4,11 @@ import { FormEvent, useState } from "react";
 import FormInput from "@/client/components/forms/form-input";
 import PrimaryButton from "@/client/components/ui/primary-button";
 import { getSupabaseBrowserClient } from "@/client/lib/supabase-browser";
+import { useLanguage } from "@/client/lib/language-context";
+import { t } from "@/shared/constants/translations";
 
 export default function SignupForm() {
+  const { language } = useLanguage();
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
@@ -25,19 +28,19 @@ export default function SignupForm() {
 
     if (!fullName || !email || !password || !confirmPassword) {
       setIsLoading(false);
-      setErrorMessage("All fields are required.");
+      setErrorMessage(t("allFieldsRequired", language));
       return;
     }
 
     if (password.length < 8) {
       setIsLoading(false);
-      setErrorMessage("Password must be at least 8 characters.");
+      setErrorMessage(t("passwordMinEight", language));
       return;
     }
 
     if (password !== confirmPassword) {
       setIsLoading(false);
-      setErrorMessage("Passwords do not match.");
+      setErrorMessage(t("passwordsDoNotMatch", language));
       return;
     }
 
@@ -64,13 +67,13 @@ export default function SignupForm() {
       return;
     }
 
-    setSuccessMessage("Account created. Check your email and confirm your account before logging in.");
+    setSuccessMessage(t("accountCreatedCheckEmail", language));
   }
 
   return (
     <form className="space-y-4" onSubmit={handleSubmit}>
       <FormInput
-        label="Full name"
+        label={t("fullName", language)}
         name="fullName"
         placeholder="Your name"
         autoComplete="name"
@@ -79,7 +82,7 @@ export default function SignupForm() {
         maxLength={60}
       />
       <FormInput
-        label="Email"
+        label={t("email", language)}
         name="email"
         type="email"
         placeholder="you@example.com"
@@ -87,26 +90,26 @@ export default function SignupForm() {
         required
       />
       <FormInput
-        label="Password"
+        label={t("createPassword", language)}
         name="password"
         type="password"
-        placeholder="Create a password"
+        placeholder={t("createPassword", language)}
         autoComplete="new-password"
         required
         minLength={8}
       />
       <FormInput
-        label="Confirm password"
+        label={t("repeatPassword", language)}
         name="confirmPassword"
         type="password"
-        placeholder="Repeat password"
+        placeholder={t("repeatPassword", language)}
         autoComplete="new-password"
         required
         minLength={8}
       />
       <PrimaryButton
         type="submit"
-        label={isLoading ? "Creating..." : "Create account"}
+        label={isLoading ? `${t("createAccount", language)}...` : t("createAccount", language)}
         fullWidth
         disabled={isLoading}
       />

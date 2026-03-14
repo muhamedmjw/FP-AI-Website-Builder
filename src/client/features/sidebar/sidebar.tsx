@@ -93,11 +93,11 @@ export default function Sidebar({
   };
 
   return (
-    <aside className="relative flex h-screen w-80 flex-col bg-[var(--app-panel)]/95 shadow-[var(--app-sidebar-shadow)] backdrop-blur-xl">
+    <aside className="sidebar relative flex h-screen w-80 flex-col bg-[var(--app-panel)]/95 shadow-[var(--app-sidebar-shadow)] backdrop-blur-xl">
       <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(380px_180px_at_20%_0%,rgba(167,139,250,0.06),transparent_70%)]" />
       {/* Top: brand + greeting + compact account avatar (mobile only) */}
       <div className="relative z-20 flex items-start justify-between px-5 pb-2 pt-6">
-        <SidebarHeader userName={userName} />
+        <SidebarHeader />
         <div className="md:hidden">
           <SidebarFooter {...footerProps} variant="compact" />
         </div>

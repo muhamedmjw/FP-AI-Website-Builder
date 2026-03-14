@@ -5,10 +5,8 @@ import { MessageSquare } from "lucide-react";
 import { HistoryMessage } from "@/shared/types/database";
 import ChatBubble from "@/client/features/chat/chat-bubble";
 import ChatInput from "@/client/features/chat/chat-input";
-
-const EMPTY_STATE_TITLE = "Start your website with one prompt";
-const EMPTY_STATE_DESCRIPTION =
-  "Describe your business, style, and goals. I will turn it into a complete website structure.";
+import { useLanguage } from "@/client/lib/language-context";
+import { t } from "@/shared/constants/translations";
 
 function ElapsedTimer() {
   const [seconds, setSeconds] = useState(0);
@@ -48,22 +46,28 @@ type ChatPanelProps = {
 };
 
 export default function ChatPanel({
-  chatTitle = "Chat",
+  chatTitle,
   messages,
   onSend,
   isSending = false,
   currentUserAvatarUrl = null,
   disableInput = false,
-  inputPlaceholder = "Describe the website you want to build...",
+  inputPlaceholder,
   inputErrorMessage = "",
   showHeader = true,
   centerInputWhenEmpty = false,
   messageListFooter = null,
   inlineAttachments = [],
 }: ChatPanelProps) {
+  const { language } = useLanguage();
   const scrollRef = useRef<HTMLDivElement>(null);
   const visibleMessages = messages.filter((msg) => msg.role !== "system");
   const shouldCenterInput = centerInputWhenEmpty && visibleMessages.length === 0;
+  const emptyStateTitle = t("emptyStateTitle", language);
+  const emptyStateDescription = t("emptyStateDesc", language);
+  const resolvedInputPlaceholder =
+    inputPlaceholder ?? t("inputPlaceholder", language);
+  const resolvedChatTitle = chatTitle ?? t("chat", language);
 
   // Auto-scroll to bottom when new messages arrive
   useEffect(() => {
@@ -78,7 +82,7 @@ export default function ChatPanel({
         <div className="sticky top-0 z-10 bg-transparent px-3 py-3 sm:px-5 sm:py-4">
           <div className="mx-auto flex w-full max-w-4xl items-center gap-2.5">
             <h2 className="truncate text-sm font-semibold text-[var(--app-text-heading)] sm:text-base">
-              {chatTitle}
+              {resolvedChatTitle}
             </h2>
           </div>
         </div>
@@ -89,16 +93,16 @@ export default function ChatPanel({
           <div className="w-full max-w-4xl">
             <div className="mx-auto max-w-lg text-center">
               <p className="text-lg font-semibold text-[var(--app-text-heading)] sm:text-xl">
-                {EMPTY_STATE_TITLE}
+                {emptyStateTitle}
               </p>
               <p className="mt-2 text-sm text-[var(--app-text-tertiary)] sm:text-base">
-                {EMPTY_STATE_DESCRIPTION}
+                {emptyStateDescription}
               </p>
             </div>
             <ChatInput
               onSend={onSend}
               disabled={isSending || disableInput}
-              placeholder={inputPlaceholder}
+              placeholder={resolvedInputPlaceholder}
               isSticky={false}
               autoFocus
             />
@@ -123,10 +127,10 @@ export default function ChatPanel({
               <div className="flex h-full items-center justify-center">
                 <div className="max-w-lg px-4 text-center">
                   <p className="text-lg font-semibold text-[var(--app-text-heading)] sm:text-xl">
-                    {EMPTY_STATE_TITLE}
+                    {emptyStateTitle}
                   </p>
                   <p className="mt-2 text-sm text-[var(--app-text-tertiary)] sm:text-base">
-                    {EMPTY_STATE_DESCRIPTION}
+                    {emptyStateDescription}
                   </p>
                 </div>
               </div>
@@ -155,7 +159,7 @@ export default function ChatPanel({
                       <MessageSquare size={15} />
                     </div>
                     <div className="rounded-2xl bg-[var(--app-bubble-bot-bg)] px-3 py-2.5 text-sm text-[var(--app-bubble-bot-text)] shadow-[var(--app-shadow-md)] sm:px-4 sm:py-3.5 sm:text-base">
-                      Generating... <ElapsedTimer />
+                      {t("generating", language)} <ElapsedTimer />
                     </div>
                   </div>
                 )}
@@ -173,7 +177,7 @@ export default function ChatPanel({
             <ChatInput
               onSend={onSend}
               disabled={isSending || disableInput}
-              placeholder={inputPlaceholder}
+              placeholder={resolvedInputPlaceholder}
               isSticky
             />
           </div>

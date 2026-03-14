@@ -216,6 +216,12 @@ button, [role="button"], a, summary, [type="submit"], [type="reset"], [type="but
 .prismatic-shadow:hover {
   box-shadow: var(--app-shadow-md);
 }
+
+[dir="rtl"] .nav-links { flex-direction: row-reverse; }
+[dir="rtl"] .sidebar { direction: rtl; }
+[dir="rtl"] .chat-bubble-user { margin-left: 0; margin-right: auto; flex-direction: row; }
+[dir="rtl"] .footer-links a:hover { transform: translateX(-4px); }
+
 /* ─── Prismatic border (always visible, subtle) ─── */
 .prismatic-border {
   position: relative;
