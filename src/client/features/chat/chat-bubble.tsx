@@ -1,8 +1,6 @@
 "use client";
 
 import { Bot, User } from "lucide-react";
-import { useLanguage } from "@/client/lib/language-context";
-import { RTL_LANGUAGES } from "@/shared/constants/languages";
 
 /**
  * Chat message bubble — displays a single user or assistant message.
@@ -56,15 +54,14 @@ export default function ChatBubble({
   content,
   userAvatarUrl = null,
 }: ChatBubbleProps) {
-  const { language } = useLanguage();
   const isUser = role === "user";
-  const isRtl = RTL_LANGUAGES.includes(language);
 
   return (
     <div
+      dir="ltr"
       className={`ui-fade-up flex min-w-0 max-w-[92%] items-start gap-2 sm:max-w-[78%] sm:gap-2.5 ${
         isUser
-          ? `${isRtl ? "mr-auto ml-0 flex-row" : "ml-auto flex-row-reverse"} chat-bubble-user`
+          ? "ml-auto flex-row-reverse chat-bubble-user"
           : "mr-auto"
       }`}
     >
@@ -92,6 +89,7 @@ export default function ChatBubble({
       {/* Message */}
       {isUser ? (
         <div
+          dir="auto"
           className="min-w-0 overflow-hidden break-words rounded-2xl px-3 py-2.5 text-sm leading-relaxed shadow-[var(--app-shadow-md)] sm:px-4 sm:py-3.5 sm:text-base bg-[var(--app-bubble-user-bg)] text-[var(--app-bubble-user-text)]"
           style={{ overflowWrap: "anywhere" }}
         >
@@ -99,6 +97,7 @@ export default function ChatBubble({
         </div>
       ) : (
         <div
+          dir="auto"
           className="min-w-0 overflow-hidden break-words rounded-2xl px-3 py-2.5 text-sm leading-relaxed shadow-[var(--app-shadow-md)] sm:px-4 sm:py-3.5 sm:text-base bg-[var(--app-bubble-bot-bg)] text-[var(--app-bubble-bot-text)]"
           style={{ overflowWrap: "anywhere" }}
           dangerouslySetInnerHTML={{ __html: renderMarkdown(content) }}

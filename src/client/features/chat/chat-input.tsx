@@ -1,9 +1,7 @@
 "use client";
 
 import { FormEvent, useRef } from "react";
-import { SendHorizontal } from "lucide-react";
 import { useLanguage } from "@/client/lib/language-context";
-import { RTL_LANGUAGES } from "@/shared/constants/languages";
 import { t } from "@/shared/constants/translations";
 
 /**
@@ -26,7 +24,6 @@ export default function ChatInput({
   autoFocus = false,
 }: ChatInputProps) {
   const { language } = useLanguage();
-  const isRtl = RTL_LANGUAGES.includes(language);
   const inputRef = useRef<HTMLInputElement>(null);
   const resolvedPlaceholder = placeholder ?? t("inputPlaceholder", language);
 
@@ -63,7 +60,20 @@ export default function ChatInput({
           className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[var(--app-btn-primary-bg)] text-[var(--app-btn-primary-text)] shadow-[var(--app-shadow-sm)] transition hover:bg-[var(--app-btn-primary-hover)] hover:shadow-[var(--app-shadow-md)] hover:-translate-y-px active:translate-y-0 disabled:opacity-50 sm:h-11 sm:w-11"
           title="Send"
         >
-          <SendHorizontal size={17} className={isRtl ? "rotate-180" : ""} />
+          <svg
+            viewBox="0 0 24 24"
+            width="18"
+            height="18"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2.2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            aria-hidden="true"
+          >
+            <path d="M12 19V6" />
+            <path d="M6.5 11.5L12 6l5.5 5.5" />
+          </svg>
         </button>
       </div>
     </form>

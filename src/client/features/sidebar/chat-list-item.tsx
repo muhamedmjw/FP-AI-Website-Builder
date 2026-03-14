@@ -5,7 +5,6 @@ import { useEffect, useRef, useState } from "react";
 import { MoreHorizontal, Pencil, Trash2 } from "lucide-react";
 import { Chat } from "@/shared/types/database";
 import { useLanguage } from "@/client/lib/language-context";
-import { RTL_LANGUAGES } from "@/shared/constants/languages";
 import { t } from "@/shared/constants/translations";
 
 /**
@@ -27,17 +26,16 @@ export default function ChatListItem({
   onDelete,
 }: ChatListItemProps) {
   const { language } = useLanguage();
-  const isRtlLanguage = RTL_LANGUAGES.includes(language);
   const [menuOpen, setMenuOpen] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [editValue, setEditValue] = useState(chat.title);
   const inputRef = useRef<HTMLInputElement>(null);
   const menuRef = useRef<HTMLDivElement>(null);
   const menuId = `chat-actions-${chat.id}`;
-  const linkPaddingClass = isRtlLanguage ? "pl-9" : "pr-9";
-  const actionButtonSideClass = isRtlLanguage ? "left-2" : "right-2";
-  const dropdownSideClass = isRtlLanguage ? "left-0" : "right-0";
-  const menuTextAlignClass = isRtlLanguage ? "text-right" : "text-left";
+  const linkPaddingClass = "pr-12";
+  const actionButtonSideClass = "right-2";
+  const dropdownSideClass = "right-0";
+  const menuTextAlignClass = "text-left";
 
   // Focus input when entering edit mode
   useEffect(() => {
@@ -153,7 +151,7 @@ export default function ChatListItem({
         aria-haspopup="menu"
         aria-expanded={menuOpen}
         aria-controls={menuId}
-        className={`absolute ${actionButtonSideClass} top-1/2 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-xl text-[var(--app-text-tertiary)] transition-[background-color,color,opacity] duration-75 ease-out hover:bg-[var(--app-hover-bg-strong)] hover:text-[var(--app-text-heading)] ${menuOpen ? "" : "md:pointer-events-none md:opacity-0 md:group-hover:pointer-events-auto md:group-hover:opacity-100"}`}
+        className={`absolute ${actionButtonSideClass} top-1/2 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-xl text-[var(--app-text-tertiary)] transition-[color,opacity] duration-75 ease-out hover:text-white ${menuOpen ? "" : "md:pointer-events-none md:opacity-0 md:group-hover:pointer-events-auto md:group-hover:opacity-100"}`}
         title="Actions"
       >
         <MoreHorizontal size={14} />

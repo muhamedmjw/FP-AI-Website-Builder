@@ -18,7 +18,6 @@ import {
 import { useRouter } from "next/navigation";
 import { getSupabaseBrowserClient } from "@/client/lib/supabase-browser";
 import { useLanguage } from "@/client/lib/language-context";
-import { RTL_LANGUAGES } from "@/shared/constants/languages";
 import { t } from "@/shared/constants/translations";
 import { isMissingSessionError } from "@/shared/utils/auth-errors";
 import { MAX_AVATAR_FILE_SIZE } from "@/shared/constants/limits";
@@ -55,7 +54,6 @@ export default function SidebarFooter({
 }: SidebarFooterProps) {
   const router = useRouter();
   const { language, setLanguage } = useLanguage();
-  const isRtlLanguage = RTL_LANGUAGES.includes(language);
 
   const menuRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -301,7 +299,7 @@ export default function SidebarFooter({
     "text-sm font-medium text-[var(--app-text-secondary)]";
   const inputClass =
     "w-full rounded-lg border border-[var(--app-input-border)] bg-[var(--app-input-bg)] px-3.5 py-2.5 text-base text-[var(--app-input-text)] focus:outline-none focus:border-[var(--app-input-focus-border)]";
-  const selectInputClass = `${inputClass} appearance-none ${isRtlLanguage ? "pl-10" : "pr-10"}`;
+  const selectInputClass = `${inputClass} appearance-none pr-10`;
   const cancelButtonClass =
     "rounded-lg bg-[var(--app-hover-bg)] px-4 py-2.5 text-sm text-[var(--app-text-secondary)] transition hover:bg-[var(--app-hover-bg-strong)]";
 
@@ -521,7 +519,7 @@ export default function SidebarFooter({
                   </select>
                   <ChevronDown
                     size={16}
-                    className={`pointer-events-none absolute top-1/2 -translate-y-1/2 text-[var(--app-text-tertiary)] ${isRtlLanguage ? "left-3" : "right-3"}`}
+                    className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-[var(--app-text-tertiary)]"
                     aria-hidden="true"
                   />
                 </div>

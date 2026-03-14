@@ -49,7 +49,7 @@ function WorkspaceShellInner({
   const closeSidebar = useCallback(() => setSidebarOpenPath(null), []);
 
   return (
-    <div className="flex h-screen bg-[var(--app-bg)] text-[var(--app-text-primary)]">
+    <div className="workspace-shell flex h-screen bg-[var(--app-bg)] text-[var(--app-text-primary)]">
       {hasSidebar ? (
         <>
           {/* Mobile header bar */}
@@ -74,7 +74,7 @@ function WorkspaceShellInner({
 
           {/* Sidebar — always visible on md+, overlay drawer on mobile */}
           {/* Desktop sidebar */}
-          <div className="hidden md:flex">
+          <div className="workspace-sidebar-slot hidden md:flex">
             {sidebar}
           </div>
 
@@ -89,14 +89,14 @@ function WorkspaceShellInner({
               {/* Backdrop */}
               <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={closeSidebar} />
               {/* Drawer */}
-              <div className="relative z-10 h-full w-80 max-w-[85vw] animate-slide-in-left">
+              <div className="absolute left-0 top-0 z-10 h-full w-80 max-w-[85vw] animate-slide-in-left">
                 {sidebar}
               </div>
             </div>
           )}
 
           {/* Main content — add top padding on mobile for the header bar */}
-          <main className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden bg-[var(--app-bg)] pt-14 md:pt-0">
+          <main className="workspace-main-slot flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden bg-[var(--app-bg)] pt-14 md:pt-0">
             {children}
           </main>
         </>
