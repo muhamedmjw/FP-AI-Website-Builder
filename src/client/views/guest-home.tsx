@@ -12,6 +12,7 @@ import { savePendingGuestChatSession } from "@/client/lib/guest-chat-handoff";
 import LanguageSwitcher from "@/client/components/ui/language-switcher";
 import { useLanguage } from "@/client/lib/language-context";
 import { t } from "@/shared/constants/translations";
+import { localizeGuestChatErrorMessage } from "@/shared/utils/localized-errors";
 import type { AppLanguage } from "@/shared/types/database";
 
 function createGuestMessage(
@@ -101,12 +102,7 @@ export default function GuestHomePage() {
       }
     } catch (error) {
       const raw = error instanceof Error ? error.message : "";
-
-      if (raw.includes("Guest limit reached")) {
-        setInputErrorMessage(raw);
-      } else {
-        setInputErrorMessage("Failed to get a response. Please try again.");
-      }
+      setInputErrorMessage(localizeGuestChatErrorMessage(raw, language));
 
       // Remove the optimistic user message on error
       setMessages((prev) => prev.filter((m) => m.id !== userMessage.id));

@@ -55,6 +55,7 @@ export const translations: Record<AppLanguage, Record<string, string>> = {
     authFeatureTwo: "Save multiple chats and revisit your history.",
     authFeatureThree: "Export ready-to-run code templates.",
     emailPasswordRequired: "Email and password are required.",
+    invalidLoginCredentials: "Invalid login credentials.",
     emailNotConfirmed:
       "Your email is not confirmed yet. Check your inbox and confirm your account first.",
     allFieldsRequired: "All fields are required.",
@@ -69,6 +70,8 @@ export const translations: Record<AppLanguage, Record<string, string>> = {
     sessionExpiredPleaseSignInAgain:
       "Your session expired. Please sign in again.",
     couldNotSaveChanges: "Could not save changes.",
+    guestLimitReached: "Guest limit reached. Create a free account to continue.",
+    failedToGetResponse: "Failed to get a response. Please try again.",
     accountHeroTitle: "Build full websites from a short prompt.",
   },
   ar: {
@@ -125,6 +128,7 @@ export const translations: Record<AppLanguage, Record<string, string>> = {
     authFeatureTwo: "احفظ عدة محادثات وارجع إلى السجل متى شئت.",
     authFeatureThree: "صدّر قوالب كود جاهزة للتشغيل.",
     emailPasswordRequired: "البريد الإلكتروني وكلمة المرور مطلوبان.",
+    invalidLoginCredentials: "بيانات تسجيل الدخول غير صحيحة.",
     emailNotConfirmed:
       "لم يتم تأكيد بريدك الإلكتروني بعد. تحقّق من صندوق الوارد وأكّد حسابك أولاً.",
     allFieldsRequired: "جميع الحقول مطلوبة.",
@@ -139,6 +143,8 @@ export const translations: Record<AppLanguage, Record<string, string>> = {
     sessionExpiredPleaseSignInAgain:
       "انتهت جلستك. يرجى تسجيل الدخول مرة أخرى.",
     couldNotSaveChanges: "تعذر حفظ التغييرات.",
+    guestLimitReached: "وصلت إلى حد استخدام الزائر. أنشئ حساباً مجانياً للمتابعة.",
+    failedToGetResponse: "تعذر الحصول على رد. يرجى المحاولة مرة أخرى.",
     accountHeroTitle: "أنشئ مواقع كاملة من وصف قصير.",
   },
   ku: {
@@ -195,6 +201,7 @@ export const translations: Record<AppLanguage, Record<string, string>> = {
     authFeatureTwo: "چەندین گفتوگۆ پاشەکەوت بکە و دواتر بگەڕێوە بۆ مێژوو.",
     authFeatureThree: "قاڵبی کۆدی ئامادە بۆ کارکردن هەناردە بکە.",
     emailPasswordRequired: "ئیمەیڵ و وشەی نهێنی پێویستن.",
+    invalidLoginCredentials: "زانیاریی چوونەژوورەوە هەڵەیە.",
     emailNotConfirmed:
       "ئیمەیڵەکەت هێشتا پشتڕاست نەکراوەتەوە. سەندوقی هاتووەکانت بپشکنە و یەکەم جار ئەکاونتەکەت پشتڕاست بکەرەوە.",
     allFieldsRequired: "هەموو خانەکان پێویستن.",
@@ -209,6 +216,8 @@ export const translations: Record<AppLanguage, Record<string, string>> = {
     sessionExpiredPleaseSignInAgain:
       "دانیشتنت کۆتایی هات. تکایە دووبارە بچۆ ژوورەوە.",
     couldNotSaveChanges: "نەتوانرا گۆڕانکارییەکان پاشەکەوت بکرێن.",
+    guestLimitReached: "گەیشتوویتە سنووری میوان. بۆ بەردەوامبوون ئەکاونتێکی بەخۆڕایی دروست بکە.",
+    failedToGetResponse: "نەتوانرا وەڵامێک وەربگیرێت. تکایە دووبارە هەوڵبدەوە.",
     accountHeroTitle: "وێبسایتی تەواو لە وتەیەکی کورت دروست بکە.",
   },
 };

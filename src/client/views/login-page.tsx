@@ -6,6 +6,7 @@ import PrimaryButton from "@/client/components/ui/primary-button";
 import { getSupabaseBrowserClient } from "@/client/lib/supabase-browser";
 import { useLanguage } from "@/client/lib/language-context";
 import { t } from "@/shared/constants/translations";
+import { localizeAuthErrorMessage } from "@/shared/utils/localized-errors";
 
 export default function LoginForm() {
   const { language } = useLanguage();
@@ -34,12 +35,7 @@ export default function LoginForm() {
     setIsLoading(false);
 
     if (error) {
-      if (error.message.toLowerCase().includes("email not confirmed")) {
-        setErrorMessage(t("emailNotConfirmed", language));
-        return;
-      }
-
-      setErrorMessage(error.message);
+      setErrorMessage(localizeAuthErrorMessage(error.message, language));
       return;
     }
 

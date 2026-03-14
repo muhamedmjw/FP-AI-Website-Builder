@@ -5,6 +5,7 @@ import { useEffect, useRef, useState } from "react";
 import { MoreHorizontal, Pencil, Trash2 } from "lucide-react";
 import { Chat } from "@/shared/types/database";
 import { useLanguage } from "@/client/lib/language-context";
+import { RTL_LANGUAGES } from "@/shared/constants/languages";
 import { t } from "@/shared/constants/translations";
 
 /**
@@ -26,12 +27,17 @@ export default function ChatListItem({
   onDelete,
 }: ChatListItemProps) {
   const { language } = useLanguage();
+  const isRtlLanguage = RTL_LANGUAGES.includes(language);
   const [menuOpen, setMenuOpen] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [editValue, setEditValue] = useState(chat.title);
   const inputRef = useRef<HTMLInputElement>(null);
   const menuRef = useRef<HTMLDivElement>(null);
   const menuId = `chat-actions-${chat.id}`;
+  const linkPaddingClass = isRtlLanguage ? "pl-9" : "pr-9";
+  const actionButtonSideClass = isRtlLanguage ? "left-2" : "right-2";
+  const dropdownSideClass = isRtlLanguage ? "left-0" : "right-0";
+  const menuTextAlignClass = isRtlLanguage ? "text-right" : "text-left";
 
   // Focus input when entering edit mode
   useEffect(() => {
@@ -123,7 +129,7 @@ export default function ChatListItem({
     <div className="group relative">
       <Link
         href={`/chat/${chat.id}`}
-        className={`ui-fade-up block rounded-xl px-3.5 py-3 pr-9 text-base ${
+        className={`ui-fade-up block rounded-xl px-3.5 py-3 ${linkPaddingClass} text-base ${
           isActive
             ? "bg-[var(--app-hover-bg-strong)] text-[var(--app-text-heading)] shadow-[var(--app-shadow-sm)]"
             : "text-[var(--app-text-secondary)] hover:bg-[var(--app-hover-bg)] hover:text-[var(--app-text-heading)]"
@@ -147,7 +153,7 @@ export default function ChatListItem({
         aria-haspopup="menu"
         aria-expanded={menuOpen}
         aria-controls={menuId}
-        className={`absolute right-2 top-1/2 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-xl text-[var(--app-text-tertiary)] transition-[background-color,color,opacity] duration-75 ease-out hover:bg-[var(--app-hover-bg-strong)] hover:text-[var(--app-text-heading)] ${menuOpen ? "" : "md:pointer-events-none md:opacity-0 md:group-hover:pointer-events-auto md:group-hover:opacity-100"}`}
+        className={`absolute ${actionButtonSideClass} top-1/2 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-xl text-[var(--app-text-tertiary)] transition-[background-color,color,opacity] duration-75 ease-out hover:bg-[var(--app-hover-bg-strong)] hover:text-[var(--app-text-heading)] ${menuOpen ? "" : "md:pointer-events-none md:opacity-0 md:group-hover:pointer-events-auto md:group-hover:opacity-100"}`}
         title="Actions"
       >
         <MoreHorizontal size={14} />
@@ -159,7 +165,7 @@ export default function ChatListItem({
           id={menuId}
           ref={menuRef}
           role="menu"
-          className="absolute right-0 top-full z-50 mt-1.5 w-40 overflow-hidden rounded-xl border border-[var(--app-card-border)] bg-[var(--app-dropdown-bg)] shadow-[var(--app-shadow-lg)]"
+          className={`absolute ${dropdownSideClass} top-full z-50 mt-1.5 w-40 overflow-hidden rounded-xl border border-[var(--app-card-border)] bg-[var(--app-dropdown-bg)] shadow-[var(--app-shadow-lg)]`}
         >
           <button
             type="button"
@@ -169,7 +175,7 @@ export default function ChatListItem({
               setIsEditing(true);
             }}
             role="menuitem"
-            className="flex w-full items-center gap-2 px-3 py-2.5 text-left text-sm text-[var(--app-text-secondary)] transition hover:bg-[var(--app-hover-bg)] hover:text-[var(--app-text-heading)]"
+            className={`flex w-full items-center gap-2 px-3 py-2.5 ${menuTextAlignClass} text-sm text-[var(--app-text-secondary)] transition hover:bg-[var(--app-hover-bg)] hover:text-[var(--app-text-heading)]`}
           >
             <Pencil size={13} />
             {t("rename", language)}
@@ -178,7 +184,7 @@ export default function ChatListItem({
             type="button"
             onClick={handleDelete}
             role="menuitem"
-            className="flex w-full items-center gap-2 px-3 py-2.5 text-left text-sm text-rose-400 transition hover:bg-[var(--app-hover-bg)] hover:text-rose-300"
+            className={`flex w-full items-center gap-2 px-3 py-2.5 ${menuTextAlignClass} text-sm text-rose-400 transition hover:bg-[var(--app-hover-bg)] hover:text-rose-300`}
           >
             <Trash2 size={13} />
             {t("delete", language)}

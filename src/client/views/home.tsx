@@ -15,6 +15,7 @@ import {
   consumePendingGuestChatSession,
 } from "@/client/lib/guest-chat-handoff";
 import { useLanguage } from "@/client/lib/language-context";
+import { RTL_LANGUAGES } from "@/shared/constants/languages";
 import { t } from "@/shared/constants/translations";
 
 /**
@@ -24,6 +25,7 @@ import { t } from "@/shared/constants/translations";
  */
 export default function HomePage() {
   const { language } = useLanguage();
+  const isRtl = RTL_LANGUAGES.includes(language);
   const router = useRouter();
   const inputRef = useRef<HTMLInputElement>(null);
   const [isCreating, setIsCreating] = useState(false);
@@ -174,7 +176,7 @@ export default function HomePage() {
               className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[var(--app-btn-primary-bg)] text-[var(--app-btn-primary-text)] shadow-[var(--app-shadow-sm)] transition hover:bg-[var(--app-btn-primary-hover)] hover:shadow-[var(--app-shadow-md)] hover:-translate-y-px active:translate-y-0 disabled:opacity-50 sm:h-11 sm:w-11"
               title={isCreating ? "Creating..." : "Start"}
             >
-              <SendHorizontal size={17} />
+              <SendHorizontal size={17} className={isRtl ? "rotate-180" : ""} />
             </button>
           </div>
           {errorMessage ? (
