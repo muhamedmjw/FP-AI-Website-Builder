@@ -17,7 +17,7 @@ export function buildMessages(
 
   const systemMessage: ChatMessage = {
     role: "system",
-    content: `${SYSTEM_PROMPT}\n\nThe user's preferred website language is: ${languageLabel} (${language}). Generate website content in this language unless the user specifies otherwise.`,
+    content: `${SYSTEM_PROMPT}\n\nWEBSITE CONTENT LANGUAGE: Generate all text INSIDE the website HTML (headings, paragraphs, nav links, buttons, etc.) in: ${languageLabel} (${language}).\n\nCONVERSATION LANGUAGE: This is completely separate. Always detect the language the user is writing in and reply in THAT language. If the user writes in Kurdish Sorani, reply in Kurdish Sorani. If the user writes in Arabic, reply in Arabic. If the user writes in English, reply in English. Never mix these two concepts up.`,
   };
 
   const trimmed = history.slice(-AI_CONFIG.MAX_HISTORY_TURNS);
@@ -32,7 +32,28 @@ export function buildMessages(
   const modeSignal: ChatMessage = {
     role: "system",
     content: isEditMode
-      ? `EDIT MODE: A website already exists in the user's preview. The current HTML is:\n\n${existingHtml}\n\nMake ONLY the specific change the user is requesting. Preserve ALL existing CSS variables, layout, structure, fonts, sections. Return the complete updated HTML with surgical edits only. Never regenerate from scratch.`
+      ? `STRICT EDIT MODE - READ THIS CAREFULLY:
+A website already exists. The current complete HTML is provided below.
+
+YOUR ONLY JOB: Make the ONE specific change the user just asked for.
+
+STRICT RULES YOU MUST FOLLOW:
+- Copy the existing HTML exactly as your starting point
+- Change ONLY what the user explicitly asked for
+- Do NOT change colors unless asked
+- Do NOT change fonts unless asked
+- Do NOT change layout unless asked
+- Do NOT add new sections unless asked
+- Do NOT remove existing sections unless asked
+- Do NOT rename the business unless asked
+- Do NOT redesign anything unless asked
+- Preserve ALL existing CSS variables, class names, and structure
+- Return the COMPLETE updated HTML file with only the surgical edit applied
+
+If you regenerate or redesign anything not asked about, that is a FAILURE.
+
+CURRENT HTML:
+${existingHtml}`
       : "GENERATION MODE: No website exists yet. Generate a complete, beautiful website from scratch based on the user's description. Pick a color scheme that fits the business type — do NOT default to purple/indigo every time.",
   };
 

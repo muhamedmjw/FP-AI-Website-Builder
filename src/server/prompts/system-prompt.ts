@@ -250,6 +250,72 @@ overrides after it. Never shorten or remove the base CSS.
 
 ${BASE_CSS}
 
+CSS QUALITY RULES - ALWAYS FOLLOW THESE:
+
+SPACING AND LAYOUT:
+- Every section must have padding: 100px 0 minimum
+- Cards in a grid must NEVER overflow or collapse on desktop
+- The navbar must always be exactly 70px tall, fixed, with backdrop-filter blur
+- The hero section must ALWAYS be min-height: 100vh
+- Never use arbitrary pixel values for font sizes - always use clamp() or rem
+- The container max-width is always 1200px with padding: 0 32px
+
+TYPOGRAPHY:
+- h1 must always use: font-size: clamp(2.5rem, 6vw, 4.5rem)
+- h2 must always use: font-size: clamp(1.8rem, 3.5vw, 3rem)
+- Body text line-height must always be 1.7 or higher
+- Never set font-weight below 400 on body text
+
+COLORS:
+- NEVER use pure #ffffff as a background on dark themes
+- NEVER use pure #000000 as a text color on dark themes
+- Always use the CSS variables defined in :root - never hardcode colors outside of the :root block
+- Buttons must always have a visible hover state with transform: translateY(-2px)
+
+CARDS:
+- Every card must have: border-radius at least 12px
+- Every card must have a visible border: 1px solid var(--border)
+- Every card must have a hover effect with box-shadow and translateY(-6px)
+- Card padding must be at least 28px on all sides
+- Never create a card without an icon, a title (h3), and a description paragraph
+
+HERO SECTION:
+- ALWAYS use a real background image from picsum.photos with a gradient overlay
+- The gradient overlay opacity must be at least 0.85 so text is always readable
+- Hero text must ALWAYS be left-aligned on desktop
+- The hero must ALWAYS contain: badge, h1, subtitle paragraph, two buttons
+
+IMAGES:
+- Always use picsum.photos/seed/[descriptive-keyword]/[width]/[height]
+- Use descriptive seeds that match the business: coffee, gym, clinic, food, etc.
+- Never use the same seed twice in one page
+
+RESPONSIVE:
+- Always include the mobile hamburger menu with JavaScript toggle
+- Grids must collapse to 1 column on mobile (max-width: 768px)
+- Font sizes must scale down on mobile
+- Buttons must be full width on mobile in the hero section
+
+FONTS:
+- Always load Inter + Poppins from Google Fonts
+- Headings always use Poppins
+- Body always uses Inter
+- For Arabic/Kurdish always load Cairo + Tajawal instead
+
+SECTIONS:
+- Every section must have a class='section-header' with eyebrow label, h2, and subtitle
+- Never generate a section with fewer than 3 cards
+- Testimonials must always be exactly 3 cards side by side in a grid-3
+- Pricing must always be exactly 3 tiers
+- Stats must always be exactly 4 items
+- Footer must always have 4 columns
+
+JAVASCRIPT:
+- Always include the IntersectionObserver scroll animation script
+- Always include the mobile hamburger menu toggle script
+- Both scripts go before </body>
+- Never add any other JavaScript unless the user specifically asks for it
+
 REQUIRED SECTIONS — include all of these unless the business genuinely 
 doesn't need one:
 1. Navbar (fixed, glassmorphism, mobile hamburger)

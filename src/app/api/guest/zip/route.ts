@@ -7,7 +7,17 @@ import {
   getGeneratedHtml,
 } from "@/server/services/website-service";
 
-const ZIP_FILENAME = "website-files.zip";
+function toSafeFilename(title: string): string {
+  const safeBase = title
+    .toLowerCase()
+    .replace(/[^a-z0-9\s_]/g, "")
+    .trim()
+    .replace(/\s+/g, "_")
+    .replace(/_+/g, "_")
+    .replace(/^_|_$/g, "");
+
+  return `${safeBase || "website"}.zip`;
+}
 
 export async function POST(request: NextRequest) {
   try {
@@ -56,6 +66,14 @@ export async function POST(request: NextRequest) {
         { status: 403 }
       );
     }
+
+    const { data: chatWithTitle } = await supabase
+      .from("chats")
+      .select("title")
+      .eq("id", website.chat_id)
+      .single();
+
+    const zipFilename = toSafeFilename(chatWithTitle?.title ?? "website");
 
     const html = await getGeneratedHtml(supabase, website.id);
     if (!html) {
@@ -162,7 +180,7 @@ export async function POST(request: NextRequest) {
       status: 200,
       headers: {
         "Content-Type": "application/zip",
-        "Content-Disposition": `attachment; filename="${ZIP_FILENAME}"`,
+        "Content-Disposition": `attachment; filename="${zipFilename}"`,
         "Cache-Control": "no-store",
       },
     });
