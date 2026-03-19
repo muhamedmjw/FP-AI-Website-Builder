@@ -1,18 +1,24 @@
 /**
- * AI Service — handles all communication with the Groq API.
+ * AI Service - handles all communication with the Groq API.
  *
  * Responsibilities:
- * - Build the messages array (system prompt + conversation history)
+ * - Classify the latest user intent (build/edit/chat)
+ * - Build intent-specific prompt messages
  * - Call Groq via the groq-sdk (OpenAI-compatible)
  * - Parse the JSON response ({ type: 'website', html: '...' } | { type: 'questions', message: '...' })
- * - Log each API call to the ai_generations table
+ * - Log each worker API call to the ai_generations table
  */
 
 import Groq from "groq-sdk";
 import { SupabaseClient } from "@supabase/supabase-js";
 import { AppLanguage, HistoryMessage } from "@/shared/types/database";
 import { AI_MODELS, AI_CONFIG } from "@/shared/constants/ai";
-import { buildMessages } from "@/server/prompts/prompt-builder";
+import {
+  buildChatMessages,
+  buildClassifierMessages,
+  buildEditMessages,
+  buildGenerationMessages,
+} from "@/server/prompts/prompt-builder";
 
 // --- Types ---
 
@@ -28,6 +34,13 @@ export type AIResponseWebsite = {
 };
 
 export type AIResponse = AIResponseQuestions | AIResponseWebsite;
+
+type ClassifiedIntent = "build" | "edit" | "chat";
+
+type ClassifierResult = {
+  intent: ClassifiedIntent;
+  detectedLanguage: AppLanguage;
+};
 
 // --- Groq Client ---
 
@@ -47,13 +60,105 @@ const groq = new Groq({ apiKey: process.env.GROQ_API_KEY! });
 const MAX_RETRIES = 2;
 const RETRY_DELAYS = [1000, 2000];
 
+function isAppLanguage(value: unknown): value is AppLanguage {
+  return value === "en" || value === "ar" || value === "ku";
+}
+
+function isClassifiedIntent(value: unknown): value is ClassifiedIntent {
+  return value === "build" || value === "edit" || value === "chat";
+}
+
+function stripCodeFences(raw: string): string {
+  const cleaned = raw.trim();
+  const fenceMatch = cleaned.match(/^```(?:json)?\s*\n?([\s\S]*?)\n?\s*```$/);
+  if (fenceMatch) {
+    return fenceMatch[1].trim();
+  }
+
+  return cleaned;
+}
+
+function parseClassifierResult(raw: string): ClassifierResult | null {
+  try {
+    const parsed = JSON.parse(stripCodeFences(raw));
+
+    const intent = isClassifiedIntent(parsed?.intent) ? parsed.intent : null;
+    const detectedLanguageValue = parsed?.detectedLanguage ?? parsed?.language;
+    const detectedLanguage = isAppLanguage(detectedLanguageValue)
+      ? detectedLanguageValue
+      : null;
+
+    if (!intent || !detectedLanguage) {
+      return null;
+    }
+
+    return {
+      intent,
+      detectedLanguage,
+    };
+  } catch {
+    return null;
+  }
+}
+
+async function classifyIntent(
+  userMessage: string,
+  hasExistingWebsite: boolean
+): Promise<{ intent: "build" | "edit" | "chat"; detectedLanguage: AppLanguage }> {
+  const fallback: ClassifierResult = {
+    intent: "build",
+    detectedLanguage: "en",
+  };
+
+  try {
+    const response = await groq.chat.completions.create({
+      model: AI_MODELS.PRIMARY,
+      messages: buildClassifierMessages(userMessage),
+      max_tokens: 60,
+      temperature: 0.1,
+    });
+
+    const rawText = response.choices[0]?.message?.content ?? "";
+    const parsed = parseClassifierResult(rawText);
+
+    if (!parsed) {
+      return fallback;
+    }
+
+    if (parsed.intent === "edit" && !hasExistingWebsite) {
+      return {
+        intent: "build",
+        detectedLanguage: parsed.detectedLanguage,
+      };
+    }
+
+    return parsed;
+  } catch {
+    return fallback;
+  }
+}
+
+function validateWebsiteHtml(html: string): boolean {
+  const required = [
+    "<nav",
+    'class="hero"',
+    "<footer",
+    'class="btn btn-primary"',
+    "</html>",
+  ];
+
+  return required.every((token) => html.includes(token));
+}
+
 /**
  * Call Groq with retry logic. Retries up to MAX_RETRIES times with
  * exponential backoff if JSON parsing fails or the response is empty.
  */
 async function callGroqWithRetry(
   messages: { role: "system" | "user" | "assistant"; content: string }[],
-  modelName: string
+  modelName: string,
+  max_tokens: number,
+  temperature: number
 ): Promise<{ parsed: AIResponse; promptTokens: number | null; completionTokens: number | null; totalTokens: number | null }> {
   let lastError: Error | null = null;
 
@@ -61,8 +166,8 @@ async function callGroqWithRetry(
     const response = await groq.chat.completions.create({
       model: modelName,
       messages,
-      max_tokens: AI_CONFIG.MAX_TOKENS,
-      temperature: AI_CONFIG.TEMPERATURE,
+      max_tokens,
+      temperature,
     });
 
     const rawText = response.choices[0]?.message?.content ?? "";
@@ -115,12 +220,65 @@ export async function generateAIResponse(
   const startTime = Date.now();
   const modelName = AI_MODELS.PRIMARY;
 
-  // Build the conversation
-  const messages = buildMessages(history, language, existingHtml);
+  const latestUserMessage = history.filter((m) => m.role === "user").at(-1)?.content ?? "";
+
+  const { intent, detectedLanguage } = await classifyIntent(
+    latestUserMessage,
+    existingHtml !== null
+  );
+
+  let messages: { role: "system" | "user" | "assistant"; content: string }[];
+  let maxTokens: number;
+  let temperature: number;
+
+  if (intent === "build") {
+    messages = buildGenerationMessages(history, language, detectedLanguage);
+    maxTokens = AI_CONFIG.MAX_TOKENS;
+    temperature = 0.4;
+  } else if (intent === "edit") {
+    if (existingHtml && existingHtml.trim().length > 0) {
+      messages = buildEditMessages(history, existingHtml, language, detectedLanguage);
+      maxTokens = AI_CONFIG.MAX_TOKENS;
+      temperature = 0.2;
+    } else {
+      messages = buildGenerationMessages(history, language, detectedLanguage);
+      maxTokens = AI_CONFIG.MAX_TOKENS;
+      temperature = 0.4;
+    }
+  } else {
+    messages = buildChatMessages(history, detectedLanguage);
+    maxTokens = 300;
+    temperature = 0.7;
+  }
 
   try {
-    const { parsed, promptTokens, completionTokens, totalTokens } =
-      await callGroqWithRetry(messages, modelName);
+    let workerResult = await callGroqWithRetry(
+      messages,
+      modelName,
+      maxTokens,
+      temperature
+    );
+
+    if (intent === "build" && workerResult.parsed.type === "website" && !validateWebsiteHtml(workerResult.parsed.html)) {
+      console.warn("Build response failed HTML validation. Retrying generation once.");
+
+      const firstResult = workerResult;
+      try {
+        workerResult = await callGroqWithRetry(
+          messages,
+          modelName,
+          maxTokens,
+          temperature
+        );
+
+        if (workerResult.parsed.type === "website" && !validateWebsiteHtml(workerResult.parsed.html)) {
+          console.warn("Build response failed HTML validation after retry. Returning anyway.");
+        }
+      } catch (retryError) {
+        console.warn("Build retry failed after validation warning. Returning first response.", retryError);
+        workerResult = firstResult;
+      }
+    }
 
     const durationMs = Date.now() - startTime;
 
@@ -128,14 +286,14 @@ export async function generateAIResponse(
     await logGeneration(supabase, {
       chatId,
       modelName,
-      promptTokens,
-      completionTokens,
-      totalTokens,
+      promptTokens: workerResult.promptTokens,
+      completionTokens: workerResult.completionTokens,
+      totalTokens: workerResult.totalTokens,
       status: "success",
       durationMs,
     });
 
-    return parsed;
+    return workerResult.parsed;
   } catch (error) {
     const durationMs = Date.now() - startTime;
     const errorMessage =
@@ -322,8 +480,55 @@ export async function generateGuestAIResponse(
     created_at: new Date().toISOString(),
   }));
 
-  const messages = buildMessages(historyMessages, language, null);
+  const latestUserMessage = historyMessages.filter((m) => m.role === "user").at(-1)?.content ?? "";
+  const { intent, detectedLanguage } = await classifyIntent(latestUserMessage, false);
 
-  const { parsed } = await callGroqWithRetry(messages, modelName);
-  return parsed;
+  let messages: { role: "system" | "user" | "assistant"; content: string }[];
+  let maxTokens: number;
+  let temperature: number;
+
+  if (intent === "build") {
+    messages = buildGenerationMessages(historyMessages, language, detectedLanguage);
+    maxTokens = AI_CONFIG.MAX_TOKENS;
+    temperature = 0.4;
+  } else if (intent === "chat") {
+    messages = buildChatMessages(historyMessages, detectedLanguage);
+    maxTokens = 300;
+    temperature = 0.7;
+  } else {
+    // Guest mode has no persisted website HTML, so edit intent falls back to build.
+    messages = buildGenerationMessages(historyMessages, language, detectedLanguage);
+    maxTokens = AI_CONFIG.MAX_TOKENS;
+    temperature = 0.4;
+  }
+
+  let workerResult = await callGroqWithRetry(
+    messages,
+    modelName,
+    maxTokens,
+    temperature
+  );
+
+  if (intent === "build" && workerResult.parsed.type === "website" && !validateWebsiteHtml(workerResult.parsed.html)) {
+    console.warn("Guest build response failed HTML validation. Retrying generation once.");
+
+    const firstResult = workerResult;
+    try {
+      workerResult = await callGroqWithRetry(
+        messages,
+        modelName,
+        maxTokens,
+        temperature
+      );
+
+      if (workerResult.parsed.type === "website" && !validateWebsiteHtml(workerResult.parsed.html)) {
+        console.warn("Guest build response failed HTML validation after retry. Returning anyway.");
+      }
+    } catch (retryError) {
+      console.warn("Guest build retry failed after validation warning. Returning first response.", retryError);
+      workerResult = firstResult;
+    }
+  }
+
+  return workerResult.parsed;
 }
