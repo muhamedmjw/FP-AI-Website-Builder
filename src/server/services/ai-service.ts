@@ -223,6 +223,26 @@ type GenerationLog = {
  * Runs a small fast completion — no logging needed.
  */
 export async function generateChatTitle(userMessage: string): Promise<string> {
+  const trimmedMessage = userMessage.trim();
+
+  if (!trimmedMessage) {
+    return "New Website";
+  }
+
+  // Fast local fallback for very short or obviously noisy single-token English input.
+  if (/^[A-Za-z]{1,4}$/.test(trimmedMessage)) {
+    return "New Website";
+  }
+
+  if (
+    /^[A-Za-z0-9]+[;:/\\|`~!@#$%^&*()_\-+=\[\]{}<>?,.][A-Za-z0-9;:/\\|`~!@#$%^&*()_\-+=\[\]{}<>?,.]*$/.test(
+      trimmedMessage
+    ) &&
+    !/\s/.test(trimmedMessage)
+  ) {
+    return "New Website";
+  }
+
   try {
     const response = await groq.chat.completions.create({
       model: AI_MODELS.PRIMARY,
@@ -230,18 +250,33 @@ export async function generateChatTitle(userMessage: string): Promise<string> {
         {
           role: "system",
           content:
-            "You are a title generator. Given the user's message, respond with ONLY a short title (3-6 words) that summarizes what website they want. No quotes, no punctuation at the end, no extra text.",
+            "You are a title generator. Given the user's message, respond with ONLY a short title (3-6 words) summarizing what website they want to build. IMPORTANT RULES: Write the title in the SAME language as the user's message. If the message is in Arabic, write the title in Arabic. If the message is in Kurdish Sorani, write the title in Kurdish Sorani. If the message is in English, write the title in English. If the input is gibberish, random characters, too short to understand, or makes no sense, return exactly: New Website. No quotes, no punctuation at the end, no extra text, just the title.",
         },
-        { role: "user", content: userMessage },
+        { role: "user", content: trimmedMessage },
       ],
       max_tokens: 20,
       temperature: 0.5,
     });
 
-    const title = response.choices[0]?.message?.content?.trim();
-    return title && title.length > 0 && title.length <= 60
-      ? title
-      : "New Website";
+    const rawTitle = response.choices[0]?.message?.content?.trim() ?? "";
+    const title = rawTitle
+      .replace(/^["'`]+|["'`]+$/g, "")
+      .replace(/[.!?،؛:]+$/u, "")
+      .trim();
+    const lowerTitle = title.toLowerCase();
+    const words = title.split(/\s+/u).filter(Boolean);
+
+    if (
+      !title ||
+      title.length > 60 ||
+      words.length > 6 ||
+      lowerTitle === "invalid user input" ||
+      lowerTitle === "invalid input"
+    ) {
+      return "New Website";
+    }
+
+    return title;
   } catch {
     return "New Website";
   }

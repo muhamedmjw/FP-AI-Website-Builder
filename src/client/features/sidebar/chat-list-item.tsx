@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { MoreHorizontal, Pencil, Trash2 } from "lucide-react";
 import { Chat } from "@/shared/types/database";
 import { useLanguage } from "@/client/lib/language-context";
@@ -27,6 +28,7 @@ export default function ChatListItem({
 }: ChatListItemProps) {
   const { language } = useLanguage();
   const [menuOpen, setMenuOpen] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [editValue, setEditValue] = useState(chat.title);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -87,16 +89,14 @@ export default function ChatListItem({
     setIsEditing(false);
   }
 
-  async function handleDelete() {
+  function handleDelete() {
     setMenuOpen(false);
+    setShowDeleteConfirm(true);
+  }
 
-    const confirmed = window.confirm(
-      `Delete "${chat.title}"? This cannot be undone.`
-    );
-
-    if (confirmed) {
-      await onDelete(chat.id);
-    }
+  async function handleDeleteConfirm() {
+    await onDelete(chat.id);
+    setShowDeleteConfirm(false);
   }
 
   // Editing mode - show inline input
@@ -124,71 +124,104 @@ export default function ChatListItem({
 
   // Normal mode - show chat link with actions button
   return (
-    <div className="group relative">
-      <Link
-        href={`/chat/${chat.id}`}
-        className={`ui-fade-up block rounded-xl px-3.5 py-3 ${linkPaddingClass} text-base ${
-          isActive
-            ? "bg-[var(--app-hover-bg-strong)] text-[var(--app-text-heading)] shadow-[var(--app-shadow-sm)]"
-            : "text-[var(--app-text-secondary)] hover:bg-[var(--app-hover-bg)] hover:text-[var(--app-text-heading)]"
-        }`}
-      >
-        <p className="truncate text-[15px] font-semibold">{chat.title}</p>
-        <p className="mt-0.5 truncate text-xs uppercase tracking-[0.08em] text-[var(--app-text-muted)]">
-          {new Date(chat.updated_at).toLocaleDateString()}
-        </p>
-      </Link>
-
-      {/* Actions button - visible on hover or when menu is open */}
-      <button
-        type="button"
-        onClick={(e) => {
-          e.preventDefault();
-          e.stopPropagation();
-          setMenuOpen((prev) => !prev);
-        }}
-        aria-label={`Open actions for ${chat.title}`}
-        aria-haspopup="menu"
-        aria-expanded={menuOpen}
-        aria-controls={menuId}
-        className={`absolute ${actionButtonSideClass} top-1/2 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-xl text-[var(--app-text-tertiary)] transition-[color,opacity] duration-75 ease-out hover:text-white ${menuOpen ? "" : "md:pointer-events-none md:opacity-0 md:group-hover:pointer-events-auto md:group-hover:opacity-100"}`}
-        title="Actions"
-      >
-        <MoreHorizontal size={14} />
-      </button>
-
-      {/* Dropdown menu */}
-      {menuOpen && (
-        <div
-          id={menuId}
-          ref={menuRef}
-          role="menu"
-          className={`absolute ${dropdownSideClass} top-full z-50 mt-1.5 w-40 overflow-hidden rounded-xl border border-[var(--app-card-border)] bg-[var(--app-dropdown-bg)] shadow-[var(--app-shadow-lg)]`}
+    <>
+      <div className="group relative">
+        <Link
+          href={`/chat/${chat.id}`}
+          className={`ui-fade-up block rounded-xl px-3.5 py-3 ${linkPaddingClass} text-base ${
+            isActive
+              ? "bg-[var(--app-hover-bg-strong)] text-[var(--app-text-heading)] shadow-[var(--app-shadow-sm)]"
+              : "text-[var(--app-text-secondary)] hover:bg-[var(--app-hover-bg)] hover:text-[var(--app-text-heading)]"
+          }`}
         >
-          <button
-            type="button"
-            onClick={() => {
-              setMenuOpen(false);
-              setEditValue(chat.title);
-              setIsEditing(true);
-            }}
-            role="menuitem"
-            className={`flex w-full items-center gap-2 px-3 py-2.5 ${menuTextAlignClass} text-sm text-[var(--app-text-secondary)] transition hover:bg-[var(--app-hover-bg)] hover:text-[var(--app-text-heading)]`}
+          <p className="truncate text-[15px] font-semibold">{chat.title}</p>
+          <p className="mt-0.5 truncate text-xs uppercase tracking-[0.08em] text-[var(--app-text-muted)]">
+            {new Date(chat.updated_at).toLocaleDateString()}
+          </p>
+        </Link>
+
+        {/* Actions button - visible on hover or when menu is open */}
+        <button
+          type="button"
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            setMenuOpen((prev) => !prev);
+          }}
+          aria-label={`Open actions for ${chat.title}`}
+          aria-haspopup="menu"
+          aria-expanded={menuOpen}
+          aria-controls={menuId}
+          className={`absolute ${actionButtonSideClass} top-1/2 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-xl text-[var(--app-text-tertiary)] transition-[color,opacity] duration-75 ease-out hover:text-white ${menuOpen ? "" : "md:pointer-events-none md:opacity-0 md:group-hover:pointer-events-auto md:group-hover:opacity-100"}`}
+          title="Actions"
+        >
+          <MoreHorizontal size={14} />
+        </button>
+
+        {/* Dropdown menu */}
+        {menuOpen && (
+          <div
+            id={menuId}
+            ref={menuRef}
+            role="menu"
+            className={`absolute ${dropdownSideClass} top-full z-50 mt-1.5 w-40 overflow-hidden rounded-xl border border-[var(--app-card-border)] bg-[var(--app-dropdown-bg)] shadow-[var(--app-shadow-lg)]`}
           >
-            <Pencil size={13} />
-            {t("rename", language)}
-          </button>
-          <button
-            type="button"
-            onClick={handleDelete}
-            role="menuitem"
-            className={`flex w-full items-center gap-2 px-3 py-2.5 ${menuTextAlignClass} text-sm text-rose-400 transition hover:bg-[var(--app-hover-bg)] hover:text-rose-300`}
-          >
-            <Trash2 size={13} />
-            {t("delete", language)}
-          </button>
-        </div>
-      )}
-    </div>
+            <button
+              type="button"
+              onClick={() => {
+                setMenuOpen(false);
+                setEditValue(chat.title);
+                setIsEditing(true);
+              }}
+              role="menuitem"
+              className={`flex w-full items-center gap-2 px-3 py-2.5 ${menuTextAlignClass} text-sm text-[var(--app-text-secondary)] transition hover:bg-[var(--app-hover-bg)] hover:text-[var(--app-text-heading)]`}
+            >
+              <Pencil size={13} />
+              {t("rename", language)}
+            </button>
+            <button
+              type="button"
+              onClick={handleDelete}
+              role="menuitem"
+              className={`flex w-full items-center gap-2 px-3 py-2.5 ${menuTextAlignClass} text-sm text-rose-400 transition hover:bg-[var(--app-hover-bg)] hover:text-rose-300`}
+            >
+              <Trash2 size={13} />
+              {t("delete", language)}
+            </button>
+          </div>
+        )}
+      </div>
+
+      {showDeleteConfirm &&
+        createPortal(
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm">
+            <div className="w-full max-w-sm rounded-2xl border border-[var(--app-card-border)] bg-[var(--app-panel)] p-6 shadow-[var(--app-shadow-lg)]">
+              <h3 className="text-lg font-semibold text-[var(--app-text-heading)]">
+                Delete Chat
+              </h3>
+              <p className="mt-2 text-sm text-[var(--app-text-secondary)]">
+                {`Delete "${chat.title}"? This cannot be undone.`}
+              </p>
+              <div className="mt-6 flex justify-end gap-2">
+                <button
+                  type="button"
+                  onClick={() => setShowDeleteConfirm(false)}
+                  className="rounded-lg bg-[var(--app-hover-bg)] px-4 py-2 text-sm text-[var(--app-text-secondary)] hover:bg-[var(--app-hover-bg-strong)]"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={handleDeleteConfirm}
+                  className="rounded-lg bg-rose-600 px-4 py-2 text-sm font-semibold text-white hover:bg-rose-500"
+                >
+                  Delete
+                </button>
+              </div>
+            </div>
+          </div>,
+          document.body
+        )}
+    </>
   );
 }
