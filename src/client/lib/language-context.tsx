@@ -28,7 +28,8 @@ function getUiFontStack(language: AppLanguage): string {
 		return '"Cairo", sans-serif';
 	}
 
-	return "";
+	// For English, include Kurdish and Arabic fonts to support text in those languages
+	return '"KurdishUI", "Noto Sans Arabic", "Cairo", "Tajawal", sans-serif';
 }
 
 type LanguageContextValue = {
@@ -113,12 +114,11 @@ export function LanguageProvider({
 		document.documentElement.setAttribute("lang", nextLanguage);
 		document.documentElement.setAttribute("dir", isRtl ? "rtl" : "ltr");
 
-		if (isRtl) {
-			ensureRtlFontLink(nextLanguage);
-		} else {
+		// Always apply fonts to support text in all languages
+		ensureRtlFontLink(nextLanguage);
+
+		if (!isRtl) {
 			removeRtlFontLink();
-			document.documentElement.style.removeProperty("--font-ui");
-			document.body.style.removeProperty("--font-ui");
 		}
 	}, []);
 
