@@ -128,6 +128,10 @@ body {
   min-height: 100dvh;
 }
 
+html[lang="en"] body {
+  --font-ui: "KurdishUI", "Noto Sans Arabic", "Cairo", "Tajawal", sans-serif;
+}
+
 html[lang="ku"] body {
   --font-ui: "KurdishUI", "Noto Sans Arabic", "Cairo", "Tajawal", sans-serif;
 }

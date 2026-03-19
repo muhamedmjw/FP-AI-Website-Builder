@@ -1,13 +1,7 @@
 import { AI_CONFIG } from "@/shared/constants/ai";
 import { AppLanguage, HistoryMessage } from "@/shared/types/database";
-import {
-  APP_KNOWLEDGE,
-  HTML_GENERATION_RULES,
-  LIGHT_THEME_OVERRIDES,
-  RTL_RULES,
-  THEME_DEFINITIONS,
-  VISUAL_QUALITY_CHECKLIST,
-} from "./system-prompt";
+import { BASE_CSS } from "./base-css";
+import { APP_KNOWLEDGE, SYSTEM_PROMPT } from "./system-prompt";
 
 export type ChatMessage = {
   role: "system" | "user" | "assistant";
@@ -28,6 +22,37 @@ function mapHistoryToChatMessages(history: HistoryMessage[]): ChatMessage[] {
       role: msg.role,
       content: msg.content,
     }));
+}
+
+function buildLanguageInstruction(
+  websiteLanguageLabel: string,
+  websiteLanguage: AppLanguage
+): string {
+  return `
+WEBSITE CONTENT LANGUAGE: All text inside the generated HTML website
+(headings, paragraphs, navigation, buttons, cards, testimonials, footer,
+form labels) must be written in: ${websiteLanguageLabel} (${websiteLanguage}).
+
+CONVERSATION LANGUAGE: This is completely separate from the website language.
+Detect what language the user is writing in their chat message and reply
+in THAT language. If the user writes in Kurdish Sorani, reply in Kurdish Sorani.
+If they write in Arabic, reply in Arabic. If they write in English, reply in
+English. Never use the website content language for your conversation replies.
+`.trim();
+}
+
+function buildMessages(
+  history: HistoryMessage[],
+  systemMessage: string,
+  modeSignal: string
+): ChatMessage[] {
+  return [
+    {
+      role: "system",
+      content: `${systemMessage}\n\n${modeSignal}`.trim(),
+    },
+    ...mapHistoryToChatMessages(history),
+  ];
 }
 
 export function buildClassifierMessages(userMessage: string): ChatMessage[] {
@@ -73,48 +98,25 @@ export function buildGenerationMessages(
 ): ChatMessage[] {
   const websiteLanguageLabel = getLanguageLabel(websiteLanguage);
   const userLanguageLabel = getLanguageLabel(detectedUserLanguage);
+  const languageInstruction = buildLanguageInstruction(websiteLanguageLabel, websiteLanguage);
 
-  const systemPrompt = `
-You are a website generation engine. Your ONLY job is to generate a
-complete, beautiful, professional HTML website.
+  const systemMessage = `
+${SYSTEM_PROMPT}
 
-LANGUAGE RULES - READ CAREFULLY:
-WEBSITE CONTENT LANGUAGE: All text inside the HTML (headings, paragraphs,
-nav links, button labels, card text, footer text, form labels) must be
-written in: ${websiteLanguageLabel} (${websiteLanguage}). This is the language of the website itself.
-
-CONVERSATION LANGUAGE: Your 'message' field reply must be written in:
-${userLanguageLabel} (${detectedUserLanguage}). This is the language the user is speaking to you in.
-These two are completely independent. Never confuse them.
-
-OUTPUT FORMAT - ALWAYS return raw JSON only, no markdown:
-{ "type": "website", "html": "<!DOCTYPE html>...", "message": "short reply in user language" }
-
-MESSAGE FIELD RULES:
-- Write in the user's detected language (${detectedUserLanguage})
-- Maximum 2 sentences
-- Describe ONE interesting design choice you made
-- Never list the sections you included
-- Never mention 'Download ZIP'
-- Warm and casual tone
-
-THEME SELECTION - pick the theme that best fits the business type:
-${THEME_DEFINITIONS}
-
-RTL RULES:
-${RTL_RULES}
-
-LIGHT THEME OVERRIDES:
-${LIGHT_THEME_OVERRIDES}
-
-HTML GENERATION RULES:
-${HTML_GENERATION_RULES}
-
-VISUAL QUALITY CHECKLIST - verify ALL before responding:
-${VISUAL_QUALITY_CHECKLIST}
+${languageInstruction}
 `.trim();
 
-  return [{ role: "system", content: systemPrompt }, ...mapHistoryToChatMessages(history)];
+  const modeSignal = `
+BUILD MODE - GENERATE A NEW WEBSITE:
+- Return type "website" with one complete HTML document.
+- The message field must be in ${userLanguageLabel} (${detectedUserLanguage}).
+- Embed the complete BASE_CSS exactly inside a <style> tag.
+
+BASE_CSS:
+${BASE_CSS}
+`.trim();
+
+  return buildMessages(history, systemMessage, modeSignal);
 }
 
 export function buildEditMessages(
@@ -125,42 +127,34 @@ export function buildEditMessages(
 ): ChatMessage[] {
   const websiteLanguageLabel = getLanguageLabel(websiteLanguage);
   const userLanguageLabel = getLanguageLabel(detectedUserLanguage);
+  const languageInstruction = buildLanguageInstruction(websiteLanguageLabel, websiteLanguage);
 
-  const systemPrompt = `
-You are a website editor engine. Your ONLY job is to make ONE specific
-surgical change to an existing website.
+  const systemMessage = `
+${SYSTEM_PROMPT}
 
-LANGUAGE RULES:
-WEBSITE CONTENT LANGUAGE: Keep all existing website text in its current
-language. Only change text language if the user explicitly asks.
-Current website language context: ${websiteLanguageLabel} (${websiteLanguage}).
-CONVERSATION LANGUAGE: Your 'message' reply must be in: ${userLanguageLabel} (${detectedUserLanguage})
+${languageInstruction}
 
-OUTPUT FORMAT - ALWAYS return raw JSON only, no markdown:
-{ "type": "website", "html": "<!DOCTYPE html>...", "message": "short reply in user language" }
+CONVERSATION OUTPUT LANGUAGE FOR THIS TURN: ${userLanguageLabel} (${detectedUserLanguage}).
+`.trim();
 
-STRICT EDIT RULES - THIS IS CRITICAL:
-- Start with the existing HTML below as your base. Copy it exactly.
-- Make ONLY the specific change the user asked for in their last message
-- Do NOT change colors unless the user asked to change colors
-- Do NOT change fonts unless the user asked to change fonts
-- Do NOT change layout unless the user asked to change layout
-- Do NOT add new sections unless the user asked to add a section
-- Do NOT remove sections unless the user asked to remove a section
-- Do NOT rename the business or change any content unless asked
-- Do NOT redesign or restyle anything not mentioned by the user
-- Preserve ALL existing CSS variables, class names, IDs, and structure
-- Return the COMPLETE updated HTML file - never return partial HTML
-- If you change anything not requested, that is a critical failure
+  const modeSignal = `
+EDIT MODE - STRICT SURGICAL EDITING ONLY:
+The current website HTML is provided below.
 
-MESSAGE FIELD: One sentence describing exactly what you changed.
-Written in ${userLanguageLabel} (${detectedUserLanguage}).
+FIRST: Check if the user is asking to add a section. If that section
+already exists in the HTML, DO NOT edit anything. Instead return:
+{"type":"questions","message":"[Tell user in their language that the section
+already exists and ask what they want to change about it]"}
 
-CURRENT WEBSITE HTML TO EDIT:
+SECOND: If making an edit, copy the existing HTML exactly.
+Change ONLY the specific thing the user asked for.
+Never change anything else. Return the complete updated HTML.
+
+CURRENT HTML:
 ${existingHtml}
 `.trim();
 
-  return [{ role: "system", content: systemPrompt }, ...mapHistoryToChatMessages(history)];
+  return buildMessages(history, systemMessage, modeSignal);
 }
 
 export function buildChatMessages(
