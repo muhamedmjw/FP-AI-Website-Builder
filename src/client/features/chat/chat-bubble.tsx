@@ -1,5 +1,6 @@
 "use client";
 
+import { ReactNode, useState } from "react";
 import { Bot, User } from "lucide-react";
 
 /**
@@ -34,7 +35,11 @@ function renderMarkdown(text: string): string {
   // Links: [text](url)
   html = html.replace(
     /\[([^\]]+)\]\(([^)]+)\)/g,
-    '<a href="$2" target="_blank" rel="noopener noreferrer" class="underline text-[var(--app-link-text)] hover:opacity-80">$1</a>'
+    (_, text, url) => {
+      const safeUrl = /^https?:\/\//i.test(url) ? url : "#";
+      const blockedAttribute = safeUrl === "#" ? ' data-blocked="true"' : "";
+      return `<a href="${safeUrl}"${blockedAttribute} target="_blank" rel="noopener noreferrer" class="underline text-[var(--app-link-text,#67e8f9)] hover:opacity-80">${text}</a>`;
+    }
   );
 
   // Line breaks
@@ -48,6 +53,30 @@ type ChatBubbleProps = {
   content: string;
   userAvatarUrl?: string | null;
 };
+
+type UserAvatarProps = {
+  src: string | null;
+  fallbackIcon: ReactNode;
+};
+
+function UserAvatar({ src, fallbackIcon }: UserAvatarProps) {
+  const [imgError, setImgError] = useState(false);
+
+  if (!src || imgError) {
+    return <>{fallbackIcon}</>;
+  }
+
+  return (
+    /* eslint-disable-next-line @next/next/no-img-element */
+    <img
+      src={src}
+      alt="Your profile picture"
+      loading="lazy"
+      onError={() => setImgError(true)}
+      className="h-7 w-7 rounded-full object-cover sm:h-9 sm:w-9"
+    />
+  );
+}
 
 export default function ChatBubble({
   role,
@@ -77,12 +106,7 @@ export default function ChatBubble({
         {!isUser && <Bot size={16} />}
         {isUser && !userAvatarUrl && <User size={16} />}
         {isUser && userAvatarUrl && (
-          /* eslint-disable-next-line @next/next/no-img-element */
-          <img
-            src={userAvatarUrl}
-            alt="Your profile picture"
-            className="h-7 w-7 rounded-full object-cover sm:h-9 sm:w-9"
-          />
+          <UserAvatar src={userAvatarUrl} fallbackIcon={<User size={16} />} />
         )}
       </div>
 

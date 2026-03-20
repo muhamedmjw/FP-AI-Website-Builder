@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient, SupabaseClient } from "@supabase/supabase-js";
 import { generateGuestAIResponse } from "@/server/services/ai-service";
-import { MAX_GUEST_PROMPTS } from "@/shared/constants/limits";
+import { MAX_GUEST_PROMPTS, MAX_PROMPT_LENGTH } from "@/shared/constants/limits";
 import type { AppLanguage } from "@/shared/types/database";
 
 const GUEST_TOKEN_COOKIE = "guest_token";
@@ -94,6 +94,13 @@ export async function POST(request: NextRequest) {
     if (!content || typeof content !== "string" || content.trim().length === 0) {
       return NextResponse.json(
         { error: "content is required." },
+        { status: 400 }
+      );
+    }
+
+    if (content.trim().length > MAX_PROMPT_LENGTH) {
+      return NextResponse.json(
+        { error: "Prompt too long." },
         { status: 400 }
       );
     }

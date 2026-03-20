@@ -9,25 +9,16 @@ import { useLanguage } from "@/client/lib/language-context";
 import { t } from "@/shared/constants/translations";
 import type { AppLanguage } from "@/shared/types/database";
 
-function ElapsedTimer({ language }: { language: AppLanguage }) {
-  const [seconds, setSeconds] = useState(0);
-
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setSeconds((s) => s + 1);
-    }, 1000);
-    return () => clearInterval(interval);
-  }, []);
-
+function formatElapsedTimer(seconds: number, language: AppLanguage) {
   if (language === "ar") {
-    return <>{seconds}ث</>;
+    return `${seconds}ث`;
   }
 
   if (language === "ku") {
-    return <>{seconds} چرکە</>;
+    return `${seconds} چرکە`;
   }
 
-  return <>{seconds}s</>;
+  return `${seconds}s`;
 }
 
 function GeneratingDots() {
@@ -54,6 +45,7 @@ type ChatPanelProps = {
   disableInput?: boolean;
   inputPlaceholder?: string;
   inputErrorMessage?: string;
+  inputBanner?: ReactNode;
   showHeader?: boolean;
   centerInputWhenEmpty?: boolean;
   messageListFooter?: ReactNode;
@@ -73,6 +65,7 @@ export default function ChatPanel({
   disableInput = false,
   inputPlaceholder,
   inputErrorMessage = "",
+  inputBanner = null,
   showHeader = true,
   centerInputWhenEmpty = false,
   messageListFooter = null,
@@ -88,6 +81,14 @@ export default function ChatPanel({
   const resolvedInputPlaceholder =
     inputPlaceholder ?? t("inputPlaceholder", language);
   const resolvedChatTitle = chatTitle ?? t("chat", language);
+  const [generatingSeconds, setGeneratingSeconds] = useState(0);
+
+  const generatingLabel =
+    generatingSeconds >= 60
+      ? t("stillWorking", language)
+      : generatingSeconds >= 30
+        ? t("takingLonger", language)
+        : t("generatingCode", language);
 
   // Auto-scroll to bottom when new messages arrive
   useEffect(() => {
@@ -95,6 +96,19 @@ export default function ChatPanel({
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
   }, [messages]);
+
+  useEffect(() => {
+    if (!isSending) {
+      setGeneratingSeconds(0);
+      return;
+    }
+
+    const interval = setInterval(() => {
+      setGeneratingSeconds((seconds) => seconds + 1);
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, [isSending]);
 
   return (
     <div className="flex h-full flex-col">
@@ -126,6 +140,7 @@ export default function ChatPanel({
               isSticky={false}
               autoFocus
             />
+            {inputBanner}
             {inputErrorMessage ? (
               <p
                 className="mx-auto mt-1 max-w-4xl px-5 text-sm text-rose-400"
@@ -188,7 +203,7 @@ export default function ChatPanel({
                           isRtlLanguage ? "text-right" : "text-left"
                         }`}
                       >
-                        {t("generatingCode", language)} (<ElapsedTimer language={language} />)
+                        {generatingLabel} ({formatElapsedTimer(generatingSeconds, language)})
                       </p>
                       <div className="generating-bubble rounded-2xl px-3 py-2.5 shadow-[var(--app-shadow-md)] sm:px-4 sm:py-3.5">
                         <GeneratingDots />
@@ -202,6 +217,7 @@ export default function ChatPanel({
 
           {/* Input bar */}
           <div>
+            {inputBanner}
             {inputErrorMessage ? (
               <p className="mx-auto max-w-4xl px-5 text-sm text-rose-400" role="alert">
                 {inputErrorMessage}

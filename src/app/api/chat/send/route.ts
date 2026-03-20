@@ -12,6 +12,7 @@ import {
   saveGeneratedHtml,
 } from "@/server/services/website-service";
 import { AI_CONFIG } from "@/shared/constants/ai";
+import { MAX_PROMPT_LENGTH } from "@/shared/constants/limits";
 import type { AppLanguage } from "@/shared/types/database";
 
 function isAppLanguage(value: unknown): value is AppLanguage {
@@ -85,6 +86,13 @@ export async function POST(request: NextRequest) {
     if (!content || typeof content !== "string" || content.trim().length === 0) {
       return NextResponse.json(
         { error: "content is required." },
+        { status: 400 }
+      );
+    }
+
+    if (content.trim().length > MAX_PROMPT_LENGTH) {
+      return NextResponse.json(
+        { error: "Prompt too long." },
         { status: 400 }
       );
     }
@@ -200,8 +208,16 @@ export async function POST(request: NextRequest) {
     // If this is the first user message, generate a short title
     const userMessages = historyForAI.filter((m) => m.role === "user");
     if (userMessages.length === 1) {
-      const title = await generateChatTitle(content.trim(), effectiveLanguage);
-      await renameChat(supabase, chatId, title);
+      try {
+        const title = await generateChatTitle(content.trim(), effectiveLanguage);
+        await renameChat(supabase, chatId, title);
+      } catch {
+        try {
+          await renameChat(supabase, chatId, "New Website");
+        } catch {
+          // Keep request successful even if title updates fail.
+        }
+      }
     }
 
     // Fetch full message list so client has the latest state.

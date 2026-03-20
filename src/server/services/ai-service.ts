@@ -515,12 +515,16 @@ function isExpectedTitleLanguage(title: string, language: AppLanguage): boolean 
   const hasArabicScript = /\p{Script=Arabic}/u.test(title);
   const hasLatinScript = /\p{Script=Latin}/u.test(title);
 
+  if (language === "ar" || language === "ku") {
+    // Kurdish Sorani and Arabic both use Arabic script; allow mixed titles as long as Arabic script exists.
+    return hasArabicScript;
+  }
+
   if (language === "en") {
     return hasLatinScript;
   }
 
-  // Arabic and Kurdish Sorani both use Arabic script.
-  return hasArabicScript;
+  return true;
 }
 
 function toTitleCaseEnglish(input: string): string {
@@ -553,15 +557,10 @@ function buildHeuristicTitleFromMessage(
     return null;
   }
 
-  if (language === "en") {
-    source = source
-      .replace(
-        /^(please\s+)?((can|could|would)\s+you\s+)?(make|build|create|generate|design|develop)\s+(me\s+)?(a|an|the)?\s*/iu,
-        ""
-      )
-      .replace(/^(i\s+(need|want)\s+)(a|an|the)?\s*/iu, "")
-      .replace(/^(website\s+for\s+)/iu, "")
-      .trim();
+  const fillerPattern = /^(?:please|can you|could you|make me|build me|create|generate|design|i want|i need|make a|build a|a website for|website about)\s+/iu;
+
+  while (fillerPattern.test(source)) {
+    source = source.replace(fillerPattern, "").trim();
   }
 
   const words = source
@@ -570,16 +569,22 @@ function buildHeuristicTitleFromMessage(
     .trim()
     .split(" ")
     .filter(Boolean)
-    .slice(0, 6);
+    .slice(0, 7);
 
   if (words.length === 0) {
     return null;
   }
 
-  const baseTitle = words.join(" ").trim();
+  const baseTitle = words.join(" ").trim().slice(0, 50).trim();
 
   if (!isExpectedTitleLanguage(baseTitle, language)) {
     return null;
+  }
+
+  const hasArabicScript = /\p{Script=Arabic}/u.test(baseTitle);
+
+  if (hasArabicScript) {
+    return baseTitle;
   }
 
   return language === "en" ? toTitleCaseEnglish(baseTitle) : baseTitle;
@@ -591,14 +596,6 @@ export async function generateChatTitle(
 ): Promise<string> {
   const trimmedMessage = userMessage.trim();
   const defaultTitle = formatDefaultChatTitle();
-  const heuristicTitle = buildHeuristicTitleFromMessage(
-    trimmedMessage,
-    preferredLanguage
-  );
-
-  if (isLikelyGibberish(trimmedMessage)) {
-    return defaultTitle;
-  }
 
   const languageLabel =
     preferredLanguage === "ar"
@@ -637,16 +634,19 @@ export async function generateChatTitle(
         .replace(/[.!?،؛:]+$/u, "")
         .trim();
 
-      const words = title.split(/\s+/u).filter(Boolean).slice(0, 6);
+      const words = title.split(/\s+/u).filter(Boolean);
       const normalizedTitle = words.join(" ").trim();
       const lowerTitle = normalizedTitle.toLowerCase();
 
       if (
         !normalizedTitle ||
-        normalizedTitle.length > 60 ||
+        normalizedTitle.length > 50 ||
+        words.length < 2 ||
+        words.length > 7 ||
         lowerTitle === "invalid user input" ||
         lowerTitle === "invalid input" ||
         lowerTitle === "new website" ||
+        isLikelyGibberish(normalizedTitle) ||
         !isExpectedTitleLanguage(normalizedTitle, preferredLanguage)
       ) {
         continue;
@@ -659,6 +659,11 @@ export async function generateChatTitle(
       continue;
     }
   }
+
+  const heuristicTitle = buildHeuristicTitleFromMessage(
+    trimmedMessage,
+    preferredLanguage
+  );
 
   return heuristicTitle ?? defaultTitle;
 }

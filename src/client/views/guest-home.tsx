@@ -63,6 +63,41 @@ async function sendGuestChat(
   return data as GuestAIResponse;
 }
 
+function GuestLimitBanner({
+  language,
+  queueChatSessionForAuth,
+}: {
+  language: AppLanguage;
+  queueChatSessionForAuth: () => void;
+}) {
+  return (
+    <div className="mx-auto mb-2 w-full max-w-4xl rounded-2xl border border-[var(--app-card-border)] bg-[var(--app-card-bg)] p-4">
+      <h3 className="font-semibold text-[var(--app-text-heading)]">
+        You've used your 3 free prompts
+      </h3>
+      <p className="mt-1 text-sm text-[var(--app-text-secondary)]">
+        Create a free account to keep building - no credit card required.
+      </p>
+      <div className="mt-3 grid gap-2 sm:grid-cols-2">
+        <Link
+          href="/signin"
+          onClick={queueChatSessionForAuth}
+          className="rounded-lg border border-[var(--app-card-border)] px-3 py-2.5 text-center text-sm font-medium text-[var(--app-text-secondary)] transition hover:border-[var(--app-text-tertiary)] hover:text-[var(--app-text-heading)]"
+        >
+          {t("signIn", language)}
+        </Link>
+        <Link
+          href="/signup"
+          onClick={queueChatSessionForAuth}
+          className="rounded-lg bg-[var(--app-btn-primary-bg)] px-3 py-2.5 text-center text-sm font-semibold text-[var(--app-btn-primary-text)] shadow-[var(--app-shadow-sm)] transition hover:bg-[var(--app-btn-primary-hover)] hover:-translate-y-px active:translate-y-0"
+        >
+          {t("signUp", language)}
+        </Link>
+      </div>
+    </div>
+  );
+}
+
 export default function GuestHomePage() {
   const { language } = useLanguage();
   const [messages, setMessages] = useState<HistoryMessage[]>([]);
@@ -74,6 +109,10 @@ export default function GuestHomePage() {
   const [mobileTab, setMobileTab] = useState<"chat" | "preview">("chat");
 
   const hasPreview = typeof html === "string" && html.trim().length > 0;
+  const isLimitReached =
+    inputErrorMessage === t("guestLimitReached", language) ||
+    inputErrorMessage.toLowerCase().includes("limit");
+  const displayedInputError = isLimitReached ? "" : inputErrorMessage;
 
   async function handleSend(content: string) {
     if (isSending) return;
@@ -173,9 +212,12 @@ export default function GuestHomePage() {
         </p>
       </header>
 
-      {/* Mobile tab bar — visible only on small screens when preview exists */}
-      {hasPreview && (
-        <div className="flex shrink-0 border-b border-[var(--app-border)] md:hidden">
+      {/* Mobile tab bar */}
+      <div
+        className={`flex shrink-0 border-b border-[var(--app-border)] md:hidden overflow-hidden transition-all duration-300 ${
+          hasPreview ? "max-h-12 opacity-100" : "max-h-0 opacity-0"
+        }`}
+      >
           <button
             type="button"
             onClick={() => setMobileTab("chat")}
@@ -200,8 +242,7 @@ export default function GuestHomePage() {
             <Eye size={16} />
             {t("preview", language)}
           </button>
-        </div>
-      )}
+      </div>
 
       {/* Desktop: side-by-side layout */}
       <div className="hidden min-h-0 flex-1 md:flex">
@@ -214,7 +255,15 @@ export default function GuestHomePage() {
             showHeader={false}
             centerInputWhenEmpty={!hasPreview}
             inputPlaceholder={t("inputPlaceholder", language)}
-            inputErrorMessage={inputErrorMessage}
+            inputErrorMessage={displayedInputError}
+            inputBanner={
+              isLimitReached ? (
+                <GuestLimitBanner
+                  language={language}
+                  queueChatSessionForAuth={queueChatSessionForAuth}
+                />
+              ) : null
+            }
           />
         </div>
 
@@ -244,7 +293,15 @@ export default function GuestHomePage() {
             showHeader={false}
             centerInputWhenEmpty={!hasPreview}
             inputPlaceholder={t("inputPlaceholder", language)}
-            inputErrorMessage={inputErrorMessage}
+            inputErrorMessage={displayedInputError}
+            inputBanner={
+              isLimitReached ? (
+                <GuestLimitBanner
+                  language={language}
+                  queueChatSessionForAuth={queueChatSessionForAuth}
+                />
+              ) : null
+            }
           />
         </div>
 

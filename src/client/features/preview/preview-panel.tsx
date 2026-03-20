@@ -156,7 +156,7 @@ export default function PreviewPanel({
             key={iframeKey}
             title="Website Preview"
             srcDoc={html}
-            sandbox="allow-scripts"
+            sandbox="allow-scripts allow-same-origin allow-popups"
             className="min-h-0 flex-1 border-0 bg-white"
             style={{ width: "100%" }}
           />

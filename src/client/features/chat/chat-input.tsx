@@ -1,8 +1,9 @@
 "use client";
 
-import { FormEvent, useRef } from "react";
+import { FormEvent, useState } from "react";
 import { useLanguage } from "@/client/lib/language-context";
 import { t } from "@/shared/constants/translations";
+import { MAX_PROMPT_LENGTH } from "@/shared/constants/limits";
 
 /**
  * Chat input bar — text input + send button at the bottom of the chat panel.
@@ -16,6 +17,8 @@ type ChatInputProps = {
   autoFocus?: boolean;
 };
 
+const AI_PROVIDER_LABEL = "NVIDIA Nemotron";
+
 export default function ChatInput({
   onSend,
   disabled = false,
@@ -24,20 +27,19 @@ export default function ChatInput({
   autoFocus = false,
 }: ChatInputProps) {
   const { language } = useLanguage();
-  const inputRef = useRef<HTMLInputElement>(null);
+  const [inputValue, setInputValue] = useState("");
   const resolvedPlaceholder = placeholder ?? t("inputPlaceholder", language);
+  const charCount = inputValue.length;
+  const shouldShowCounter = charCount > MAX_PROMPT_LENGTH * 0.8;
 
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
 
-    const message = inputRef.current?.value.trim();
+    const message = inputValue.trim();
     if (!message) return;
 
     onSend(message);
-
-    if (inputRef.current) {
-      inputRef.current.value = "";
-    }
+    setInputValue("");
   }
 
   return (
@@ -46,14 +48,26 @@ export default function ChatInput({
       className={`${isSticky ? "sticky bottom-0 z-10" : ""} bg-transparent px-3 py-3 sm:px-5 sm:py-4`}
     >
       <div className="mx-auto flex w-full max-w-4xl items-center gap-2 rounded-2xl bg-[var(--app-card-bg)]/80 p-1.5 shadow-[var(--app-shadow-lg)] backdrop-blur-sm sm:p-2">
-        <input
-          ref={inputRef}
-          type="text"
-          placeholder={resolvedPlaceholder}
-          disabled={disabled}
-          autoFocus={autoFocus}
-          className="flex-1 rounded-xl bg-transparent px-2.5 py-2 text-sm text-[var(--app-input-text)] placeholder:text-[var(--app-text-tertiary)] focus:outline-none disabled:opacity-50 sm:px-3 sm:py-2.5 sm:text-base"
-        />
+        <div className="flex min-w-0 flex-1 flex-col">
+          <input
+            type="text"
+            value={inputValue}
+            onChange={(event) => setInputValue(event.target.value)}
+            maxLength={MAX_PROMPT_LENGTH}
+            placeholder={resolvedPlaceholder}
+            disabled={disabled}
+            autoFocus={autoFocus}
+            className="flex-1 rounded-xl bg-transparent px-2.5 py-2 text-sm text-[var(--app-input-text)] placeholder:text-[var(--app-text-tertiary)] focus:outline-none disabled:opacity-50 sm:px-3 sm:py-2.5 sm:text-base"
+          />
+          {shouldShowCounter ? (
+            <p className="px-2.5 pb-0.5 text-[10px] text-[var(--app-text-muted)] sm:px-3" aria-live="polite">
+              {charCount}/{MAX_PROMPT_LENGTH}
+            </p>
+          ) : null}
+        </div>
+        <span className="hidden shrink-0 select-none rounded-full border border-[var(--app-border)] bg-[var(--app-hover-bg)] px-2 py-0.5 text-[10px] font-medium text-[var(--app-text-muted)] sm:flex">
+          {AI_PROVIDER_LABEL}
+        </span>
         <button
           type="submit"
           disabled={disabled}

@@ -3,7 +3,7 @@
 import { FormEvent, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { getSupabaseBrowserClient } from "@/client/lib/supabase-browser";
-import { addMessage, createChat } from "@/shared/services/chat-service";
+import { addMessage, createChat, deleteChat } from "@/shared/services/chat-service";
 import { sendChatMessage } from "@/client/lib/api/chat-api";
 import { getCurrentUser } from "@/shared/services/user-service";
 import {
@@ -15,6 +15,8 @@ import {
 } from "@/client/lib/guest-chat-handoff";
 import { useLanguage } from "@/client/lib/language-context";
 import { t } from "@/shared/constants/translations";
+
+const AI_PROVIDER_LABEL = "NVIDIA Nemotron";
 
 /**
  * Authenticated home screen - centered prompt input.
@@ -121,10 +123,18 @@ export default function HomePage() {
       }
 
       const chat = await createChat(supabase, user.id, "New Website");
-      await sendChatMessage(chat.id, message, language);
-
-      router.push(`/chat/${chat.id}`);
-      router.refresh();
+      try {
+        await sendChatMessage(chat.id, message, language);
+        router.push(`/chat/${chat.id}`);
+        router.refresh();
+      } catch (error) {
+        try {
+          await deleteChat(supabase, chat.id);
+        } catch {
+          // Ignore cleanup errors.
+        }
+        throw error;
+      }
     } catch (error) {
       const raw = error instanceof Error ? error.message : "";
 
@@ -167,6 +177,9 @@ export default function HomePage() {
               disabled={isCreating}
               className="flex-1 rounded-xl bg-transparent px-2.5 py-2 text-sm text-[var(--app-input-text)] placeholder:text-[var(--app-text-tertiary)] focus:outline-none disabled:opacity-50 sm:px-3 sm:py-2.5 sm:text-base"
             />
+            <span className="shrink-0 select-none rounded-full border border-[var(--app-border)] bg-[var(--app-hover-bg)] px-2 py-0.5 text-[10px] font-medium text-[var(--app-text-muted)]">
+              {AI_PROVIDER_LABEL}
+            </span>
             <button
               type="submit"
               disabled={isCreating}

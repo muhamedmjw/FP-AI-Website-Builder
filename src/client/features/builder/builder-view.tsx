@@ -177,9 +177,12 @@ export default function BuilderView({
       ref={containerRef}
       className="flex h-full min-w-0 flex-col overflow-hidden bg-[radial-gradient(1000px_420px_at_50%_-140px,rgba(167,139,250,0.06),transparent_62%),var(--app-bg)]"
     >
-      {/* Mobile tab bar — only visible on small screens when preview exists */}
-      {hasPreview && (
-        <div className="flex shrink-0 border-b border-[var(--app-border)] md:hidden">
+      {/* Mobile tab bar */}
+      <div
+        className={`flex shrink-0 border-b border-[var(--app-border)] md:hidden overflow-hidden transition-all duration-300 ${
+          hasPreview ? "max-h-12 opacity-100" : "max-h-0 opacity-0"
+        }`}
+      >
           <button
             type="button"
             onClick={() => setMobileTab("chat")}
@@ -204,8 +207,7 @@ export default function BuilderView({
             <Eye size={16} />
             {t("preview", language)}
           </button>
-        </div>
-      )}
+      </div>
 
       {/* Desktop: side-by-side split layout */}
       <div className="builder-desktop-split hidden min-h-0 flex-1 md:flex">

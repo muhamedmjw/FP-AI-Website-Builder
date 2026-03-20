@@ -85,11 +85,17 @@ export default function SidebarFooter({
   const [avatarPreview, setAvatarPreview] = useState<string | null>(
     userAvatarUrl
   );
+  const [compactAvatarImgError, setCompactAvatarImgError] = useState(false);
+  const [fullAvatarImgError, setFullAvatarImgError] = useState(false);
+  const [settingsAvatarImgError, setSettingsAvatarImgError] = useState(false);
 
   useEffect(() => {
     setNameInput(userName ?? "");
     setEmailInput(userEmail ?? "");
     setAvatarPreview(userAvatarUrl);
+    setCompactAvatarImgError(false);
+    setFullAvatarImgError(false);
+    setSettingsAvatarImgError(false);
   }, [userName, userEmail, userAvatarUrl]);
 
   useEffect(() => {
@@ -371,10 +377,12 @@ export default function SidebarFooter({
             aria-haspopup="menu"
             title={t("account", language)}
           >
-            {avatarPreview ? (
+            {avatarPreview && !compactAvatarImgError ? (
               <img
                 src={avatarPreview}
                 alt="Account avatar"
+                loading="lazy"
+                onError={() => setCompactAvatarImgError(true)}
                 className="h-9 w-9 rounded-full object-cover border border-[var(--app-card-border)]"
               />
             ) : (
@@ -394,10 +402,12 @@ export default function SidebarFooter({
               aria-haspopup="menu"
               title={t("account", language)}
             >
-              {avatarPreview ? (
+              {avatarPreview && !fullAvatarImgError ? (
                 <img
                   src={avatarPreview}
                   alt="Account avatar"
+                  loading="lazy"
+                  onError={() => setFullAvatarImgError(true)}
                   className="h-8 w-8 rounded-full object-cover border border-[var(--app-card-border)]"
                 />
               ) : (
@@ -496,10 +506,12 @@ export default function SidebarFooter({
 
             <form onSubmit={handleSaveSettings} className="space-y-5 px-6 py-5">
               <div className="flex items-center gap-4">
-                {avatarPreview ? (
+                {avatarPreview && !settingsAvatarImgError ? (
                   <img
                     src={avatarPreview}
                     alt="Profile preview"
+                    loading="lazy"
+                    onError={() => setSettingsAvatarImgError(true)}
                     className="h-16 w-16 rounded-full object-cover border border-[var(--app-card-border)]"
                   />
                 ) : (

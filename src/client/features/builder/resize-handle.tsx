@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef } from "react";
+import { TouchEvent, useCallback, useEffect, useRef } from "react";
 
 /**
  * Vertical drag handle for resizing the preview panel.
@@ -14,6 +14,7 @@ type ResizeHandleProps = {
 
 export default function ResizeHandle({ onResize, onResizeEnd }: ResizeHandleProps) {
   const isDragging = useRef(false);
+  const lastTouchX = useRef(0);
 
   const handleMouseMove = useCallback(
     (event: MouseEvent) => {
@@ -46,10 +47,33 @@ export default function ResizeHandle({ onResize, onResizeEnd }: ResizeHandleProp
     document.body.style.userSelect = "none";
   }
 
+  function handleTouchStart(event: TouchEvent<HTMLDivElement>) {
+    isDragging.current = true;
+    lastTouchX.current = event.touches[0].clientX;
+  }
+
+  function handleTouchMove(event: TouchEvent<HTMLDivElement>) {
+    if (!isDragging.current) return;
+
+    const currentTouchX = event.touches[0].clientX;
+    const deltaX = currentTouchX - lastTouchX.current;
+    lastTouchX.current = currentTouchX;
+    onResize(deltaX);
+    event.preventDefault();
+  }
+
+  function handleTouchEnd() {
+    isDragging.current = false;
+    onResizeEnd();
+  }
+
   return (
     <div
       onMouseDown={handleMouseDown}
-      className="group flex w-2 shrink-0 cursor-col-resize items-center justify-center hover:bg-[var(--app-hover-bg)]"
+      onTouchStart={handleTouchStart}
+      onTouchMove={handleTouchMove}
+      onTouchEnd={handleTouchEnd}
+      className="group flex w-4 shrink-0 cursor-col-resize items-center justify-center hover:bg-[var(--app-hover-bg)]"
       title="Drag to resize"
     >
       <div className="h-8 w-0.5 rounded-full bg-[var(--app-border)] transition group-hover:bg-[var(--app-text-muted)]" />
