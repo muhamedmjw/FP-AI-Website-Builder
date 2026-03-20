@@ -6,7 +6,7 @@
 import OpenAI from "openai";
 import { SupabaseClient } from "@supabase/supabase-js";
 import { AppLanguage, HistoryMessage } from "@/shared/types/database";
-import { AI_CONFIG } from "@/shared/constants/ai";
+import { AI_CONFIG, AI_MODELS } from "@/shared/constants/ai";
 import {
   buildChatMessages,
   buildClassifierMessages,
@@ -56,8 +56,9 @@ const openrouter = new OpenAI({
   apiKey: process.env.OPENROUTER_API_KEY!,
 });
 
-const PRIMARY_MODEL = "nvidia/nemotron-3-super-120b-a12b:free";
-const FALLBACK_MODEL = "nvidia/nemotron-3-nano-30b-a3b:free";
+const PRIMARY_MODEL = process.env.OPENROUTER_MODEL_PRIMARY?.trim() || AI_MODELS.PRIMARY;
+const FALLBACK_MODEL = process.env.OPENROUTER_MODEL_FALLBACK?.trim() || AI_MODELS.FALLBACK;
+const MODEL_CANDIDATES = Array.from(new Set([PRIMARY_MODEL, FALLBACK_MODEL]));
 const MODEL_NAME = PRIMARY_MODEL;
 
 const MAX_RETRIES = 2;
@@ -220,7 +221,7 @@ async function callOpenRouterWithRetry(
   modelUsed: string;
 }> {
   let lastError: Error | null = null;
-  const modelsToTry = [PRIMARY_MODEL, FALLBACK_MODEL];
+  const modelsToTry = MODEL_CANDIDATES;
 
   for (const model of modelsToTry) {
     for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
@@ -253,7 +254,7 @@ async function classifyIntent(
 
   const messages = buildClassifierMessages(userMessage) as AIMessage[];
 
-  for (const model of [PRIMARY_MODEL, FALLBACK_MODEL]) {
+  for (const model of MODEL_CANDIDATES) {
     try {
       const response = await openrouter.chat.completions.create({
         model,
@@ -479,7 +480,7 @@ export async function generateChatTitle(userMessage: string): Promise<string> {
     return "New Website";
   }
 
-  for (const model of [PRIMARY_MODEL, FALLBACK_MODEL]) {
+  for (const model of MODEL_CANDIDATES) {
     try {
       const response = await openrouter.chat.completions.create({
         model,

@@ -150,10 +150,11 @@ NEXT_PUBLIC_SUPABASE_URL=          # Your Supabase project URL (https://xxx.supa
 NEXT_PUBLIC_SUPABASE_ANON_KEY=     # Supabase anon/public key
 SUPABASE_SERVICE_ROLE_KEY=         # For server-side guest_usage and ai_generations writes
 
-# ── AI Provider ──
-AI_PROVIDER_API_KEY=               # OpenAI / Anthropic / Gemini key
-AI_MODEL_GUEST=                    # e.g. gpt-4o-mini
-AI_MODEL_REGISTERED=               # e.g. gpt-4o
+# -- AI Provider (OpenRouter) --
+OPENROUTER_API_KEY=                # Required: OpenRouter API key
+# Optional model overrides (defaults are free NVIDIA Nemotron models):
+# OPENROUTER_MODEL_PRIMARY=nvidia/nemotron-3-super-120b-a12b:free
+# OPENROUTER_MODEL_FALLBACK=nvidia/nemotron-3-nano-30b-a3b:free
 ```
 
 ---

@@ -1,5 +1,7 @@
 export const AI_MODELS = {
-  PRIMARY: 'llama-3.3-70b-versatile',
+  // OpenRouter free NVIDIA models.
+  PRIMARY: "nvidia/nemotron-3-super-120b-a12b:free",
+  FALLBACK: "nvidia/nemotron-3-nano-30b-a3b:free",
 } as const;
 
 export const AI_CONFIG = {

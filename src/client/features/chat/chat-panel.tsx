@@ -21,6 +21,16 @@ function ElapsedTimer() {
   return <>{seconds}s</>;
 }
 
+function GeneratingDots() {
+  return (
+    <span className="generating-dots" role="status" aria-live="polite" aria-label="Generating">
+      <span />
+      <span />
+      <span />
+    </span>
+  );
+}
+
 /**
  * Chat panel — displays conversation history and input bar.
  * Takes up the left side of the builder split view.
@@ -158,8 +168,13 @@ export default function ChatPanel({
                     <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[var(--app-avatar-bot-bg)] text-[var(--app-avatar-bot-text)] sm:h-9 sm:w-9">
                       <MessageSquare size={15} />
                     </div>
-                    <div className="rounded-2xl bg-[var(--app-bubble-bot-bg)] px-3 py-2.5 text-sm text-[var(--app-bubble-bot-text)] shadow-[var(--app-shadow-md)] sm:px-4 sm:py-3.5 sm:text-base">
-                      {t("generating", language)} <ElapsedTimer />
+                    <div className="min-w-0">
+                      <p className="generating-status mb-1 text-[10px] font-medium tracking-[0.04em] sm:text-xs">
+                        Generating your code (<ElapsedTimer />)
+                      </p>
+                      <div className="rounded-2xl bg-[var(--app-bubble-bot-bg)] px-3 py-2.5 shadow-[var(--app-shadow-md)] sm:px-4 sm:py-3.5">
+                        <GeneratingDots />
+                      </div>
                     </div>
                   </div>
                 )}

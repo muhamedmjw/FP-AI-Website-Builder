@@ -157,7 +157,7 @@ export async function POST(request: NextRequest) {
       ? await getGeneratedHtml(supabase, existingWebsite.id)
       : null;
 
-    // Call Groq AI — pass existingHtml so edit mode activates correctly
+    // Call OpenRouter AI — pass existingHtml so edit mode activates correctly
     const aiResponse = await generateAIResponse(
       supabase,
       chatId,
