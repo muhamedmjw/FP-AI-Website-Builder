@@ -460,25 +460,152 @@ export async function generateGuestAIResponse(
   return workerResult.parsed;
 }
 
-export async function generateChatTitle(userMessage: string): Promise<string> {
-  const trimmedMessage = userMessage.trim();
+function formatDefaultChatTitle(): string {
+  const now = new Date();
+  const month = new Intl.DateTimeFormat("en-US", { month: "long" }).format(now);
+  const day = new Intl.DateTimeFormat("en-US", { day: "2-digit" }).format(now);
 
-  if (!trimmedMessage) {
-    return "New Website";
+  return `New Website. ${month}, ${day}`;
+}
+
+function isLikelyGibberish(input: string): boolean {
+  const value = input.trim();
+
+  if (!value) {
+    return true;
   }
 
-  if (/^[A-Za-z]{1,4}$/.test(trimmedMessage)) {
-    return "New Website";
+  if (/^[\p{P}\p{S}\p{N}\s]+$/u.test(value)) {
+    return true;
+  }
+
+  if (/^[A-Za-z]{1,4}$/u.test(value)) {
+    return true;
   }
 
   if (
-    /^[A-Za-z0-9]+[;:/\\|`~!@#$%^&*()_\-+=\[\]{}<>?,.][A-Za-z0-9;:/\\|`~!@#$%^&*()_\-+=\[\]{}<>?,.]*$/.test(
-      trimmedMessage
+    /^[A-Za-z0-9]+[;:/\\|`~!@#$%^&*()_\-+=\[\]{}<>?,.][A-Za-z0-9;:/\\|`~!@#$%^&*()_\-+=\[\]{}<>?,.]*$/u.test(
+      value
     ) &&
-    !/\s/.test(trimmedMessage)
+    !/\s/u.test(value)
   ) {
-    return "New Website";
+    return true;
   }
+
+  const letters = value.match(/\p{L}/gu)?.length ?? 0;
+  const nonWhitespace = value.replace(/\s/gu, "").length;
+
+  if (letters === 0) {
+    return true;
+  }
+
+  // Too many symbols/digits compared to letters is usually keyboard noise.
+  if (letters / nonWhitespace < 0.45) {
+    return true;
+  }
+
+  return false;
+}
+
+function isExpectedTitleLanguage(title: string, language: AppLanguage): boolean {
+  if (!title.trim()) {
+    return false;
+  }
+
+  const hasArabicScript = /\p{Script=Arabic}/u.test(title);
+  const hasLatinScript = /\p{Script=Latin}/u.test(title);
+
+  if (language === "en") {
+    return hasLatinScript;
+  }
+
+  // Arabic and Kurdish Sorani both use Arabic script.
+  return hasArabicScript;
+}
+
+function toTitleCaseEnglish(input: string): string {
+  const keepLower = new Set(["a", "an", "and", "for", "in", "of", "on", "or", "the", "to", "with"]);
+
+  return input
+    .toLowerCase()
+    .split(/\s+/u)
+    .filter(Boolean)
+    .map((word, index) => {
+      if (index > 0 && keepLower.has(word)) {
+        return word;
+      }
+
+      return word.charAt(0).toUpperCase() + word.slice(1);
+    })
+    .join(" ");
+}
+
+function buildHeuristicTitleFromMessage(
+  userMessage: string,
+  language: AppLanguage
+): string | null {
+  let source = userMessage
+    .replace(/[\r\n\t]+/gu, " ")
+    .replace(/\s+/gu, " ")
+    .trim();
+
+  if (!source) {
+    return null;
+  }
+
+  if (language === "en") {
+    source = source
+      .replace(
+        /^(please\s+)?((can|could|would)\s+you\s+)?(make|build|create|generate|design|develop)\s+(me\s+)?(a|an|the)?\s*/iu,
+        ""
+      )
+      .replace(/^(i\s+(need|want)\s+)(a|an|the)?\s*/iu, "")
+      .replace(/^(website\s+for\s+)/iu, "")
+      .trim();
+  }
+
+  const words = source
+    .replace(/[^\p{L}\p{N}\s]/gu, " ")
+    .replace(/\s+/gu, " ")
+    .trim()
+    .split(" ")
+    .filter(Boolean)
+    .slice(0, 6);
+
+  if (words.length === 0) {
+    return null;
+  }
+
+  const baseTitle = words.join(" ").trim();
+
+  if (!isExpectedTitleLanguage(baseTitle, language)) {
+    return null;
+  }
+
+  return language === "en" ? toTitleCaseEnglish(baseTitle) : baseTitle;
+}
+
+export async function generateChatTitle(
+  userMessage: string,
+  preferredLanguage: AppLanguage = "en"
+): Promise<string> {
+  const trimmedMessage = userMessage.trim();
+  const defaultTitle = formatDefaultChatTitle();
+  const heuristicTitle = buildHeuristicTitleFromMessage(
+    trimmedMessage,
+    preferredLanguage
+  );
+
+  if (isLikelyGibberish(trimmedMessage)) {
+    return defaultTitle;
+  }
+
+  const languageLabel =
+    preferredLanguage === "ar"
+      ? "Arabic"
+      : preferredLanguage === "ku"
+        ? "Kurdish Sorani"
+        : "English";
 
   for (const model of MODEL_CANDIDATES) {
     try {
@@ -488,7 +615,7 @@ export async function generateChatTitle(userMessage: string): Promise<string> {
           {
             role: "system",
             content:
-              "You are a title generator. Based on the user's request, return ONLY a short descriptive title of 3 to 6 words for the website/chat. Use the SAME language as the user's message. Make it specific to the website goal. If the input is unclear or meaningless, return exactly: New Website.",
+              `You are a title generator. Return ONLY one short descriptive title of 2 to 7 words for a website/chat. The title MUST be written in ${languageLabel}. Do not add quotes, explanations, prefixes, or extra text. If the user input is unclear or meaningless, return exactly: New Website.`,
           },
           { role: "user", content: trimmedMessage },
         ],
@@ -510,26 +637,30 @@ export async function generateChatTitle(userMessage: string): Promise<string> {
         .replace(/[.!?،؛:]+$/u, "")
         .trim();
 
-      const lowerTitle = title.toLowerCase();
-      const words = title.split(/\s+/u).filter(Boolean);
+      const words = title.split(/\s+/u).filter(Boolean).slice(0, 6);
+      const normalizedTitle = words.join(" ").trim();
+      const lowerTitle = normalizedTitle.toLowerCase();
 
       if (
-        !title ||
-        title.length > 60 ||
-        words.length > 6 ||
+        !normalizedTitle ||
+        normalizedTitle.length > 60 ||
         lowerTitle === "invalid user input" ||
-        lowerTitle === "invalid input"
+        lowerTitle === "invalid input" ||
+        lowerTitle === "new website" ||
+        !isExpectedTitleLanguage(normalizedTitle, preferredLanguage)
       ) {
-        return "New Website";
+        continue;
       }
 
-      return title;
+      return preferredLanguage === "en"
+        ? toTitleCaseEnglish(normalizedTitle)
+        : normalizedTitle;
     } catch {
       continue;
     }
   }
 
-  return "New Website";
+  return heuristicTitle ?? defaultTitle;
 }
 
 async function logGeneration(

@@ -200,7 +200,7 @@ export async function POST(request: NextRequest) {
     // If this is the first user message, generate a short title
     const userMessages = historyForAI.filter((m) => m.role === "user");
     if (userMessages.length === 1) {
-      const title = await generateChatTitle(content.trim());
+      const title = await generateChatTitle(content.trim(), effectiveLanguage);
       await renameChat(supabase, chatId, title);
     }
 

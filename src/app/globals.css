@@ -36,6 +36,7 @@
   --app-bubble-user-text: #171717;
   --app-bubble-bot-bg: #1a1a1a;
   --app-bubble-bot-text: #e5e5e5;
+  --app-generating-bubble-bg: #1a1a1a;
   --app-avatar-user-bg: #e5e5e5;
   --app-avatar-user-text: #171717;
   --app-avatar-bot-bg: rgba(255, 255, 255, 0.08);
@@ -99,6 +100,7 @@
   --app-bubble-user-text: #ffffff;
   --app-bubble-bot-bg: #f1f5f9;
   --app-bubble-bot-text: #1e293b;
+  --app-generating-bubble-bg: #d5dce6;
   --app-avatar-user-bg: #4f46e5;
   --app-avatar-user-text: #ffffff;
   --app-avatar-bot-bg: #e2e8f0;
@@ -474,11 +476,11 @@ button, [role="button"], a, summary, [type="submit"], [type="reset"], [type="but
 .generating-status {
   background-image: linear-gradient(
     110deg,
-    rgba(163, 163, 163, 0.55) 0%,
-    rgba(212, 212, 212, 0.9) 35%,
-    rgba(245, 245, 245, 0.95) 50%,
-    rgba(212, 212, 212, 0.9) 65%,
-    rgba(163, 163, 163, 0.55) 100%
+    rgba(120, 120, 120, 0.55) 0%,
+    rgba(158, 158, 158, 0.9) 35%,
+    rgba(198, 198, 198, 0.95) 50%,
+    rgba(158, 158, 158, 0.9) 65%,
+    rgba(120, 120, 120, 0.55) 100%
   );
   background-size: 220% 100%;
   -webkit-background-clip: text;
@@ -486,6 +488,16 @@ button, [role="button"], a, summary, [type="submit"], [type="reset"], [type="but
   -webkit-text-fill-color: transparent;
   animation: generating-text-shine 2.4s linear infinite;
   text-shadow: 0 0 8px rgba(212, 212, 212, 0.2);
+}
+
+.chat-generating-indicator {
+  direction: ltr;
+  margin-left: 0;
+  margin-right: auto;
+}
+
+.generating-bubble {
+  background: var(--app-generating-bubble-bg);
 }
 
 .generating-dots {

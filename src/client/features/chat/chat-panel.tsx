@@ -7,8 +7,9 @@ import ChatBubble from "@/client/features/chat/chat-bubble";
 import ChatInput from "@/client/features/chat/chat-input";
 import { useLanguage } from "@/client/lib/language-context";
 import { t } from "@/shared/constants/translations";
+import type { AppLanguage } from "@/shared/types/database";
 
-function ElapsedTimer() {
+function ElapsedTimer({ language }: { language: AppLanguage }) {
   const [seconds, setSeconds] = useState(0);
 
   useEffect(() => {
@@ -17,6 +18,14 @@ function ElapsedTimer() {
     }, 1000);
     return () => clearInterval(interval);
   }, []);
+
+  if (language === "ar") {
+    return <>{seconds}ث</>;
+  }
+
+  if (language === "ku") {
+    return <>{seconds} چرکە</>;
+  }
 
   return <>{seconds}s</>;
 }
@@ -70,6 +79,7 @@ export default function ChatPanel({
   inlineAttachments = [],
 }: ChatPanelProps) {
   const { language } = useLanguage();
+  const isRtlLanguage = language === "ar" || language === "ku";
   const scrollRef = useRef<HTMLDivElement>(null);
   const visibleMessages = messages.filter((msg) => msg.role !== "system");
   const shouldCenterInput = centerInputWhenEmpty && visibleMessages.length === 0;
@@ -164,15 +174,23 @@ export default function ChatPanel({
                 {messageListFooter}
 
                 {isSending && (
-                  <div className="ui-fade-up mr-auto flex max-w-[92%] items-start gap-2 sm:max-w-[78%] sm:gap-2.5">
+                  <div
+                    dir="ltr"
+                    className="chat-generating-indicator ui-fade-up ml-0 mr-auto flex max-w-[92%] items-start gap-2 sm:max-w-[78%] sm:gap-2.5"
+                  >
                     <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[var(--app-avatar-bot-bg)] text-[var(--app-avatar-bot-text)] sm:h-9 sm:w-9">
                       <MessageSquare size={15} />
                     </div>
                     <div className="min-w-0">
-                      <p className="generating-status mb-1 text-[10px] font-medium tracking-[0.04em] sm:text-xs">
-                        Generating your code (<ElapsedTimer />)
+                      <p
+                        dir={isRtlLanguage ? "rtl" : "ltr"}
+                        className={`generating-status mb-1 text-[10px] font-medium tracking-[0.04em] sm:text-xs ${
+                          isRtlLanguage ? "text-right" : "text-left"
+                        }`}
+                      >
+                        {t("generatingCode", language)} (<ElapsedTimer language={language} />)
                       </p>
-                      <div className="rounded-2xl bg-[var(--app-bubble-bot-bg)] px-3 py-2.5 shadow-[var(--app-shadow-md)] sm:px-4 sm:py-3.5">
+                      <div className="generating-bubble rounded-2xl px-3 py-2.5 shadow-[var(--app-shadow-md)] sm:px-4 sm:py-3.5">
                         <GeneratingDots />
                       </div>
                     </div>
