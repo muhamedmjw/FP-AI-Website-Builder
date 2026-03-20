@@ -109,15 +109,16 @@ function looksLikeBadJson(raw: string): boolean {
 }
 
 function validateWebsiteHtml(html: string): boolean {
-  const required = [
-    "<nav",
-    'class="hero"',
-    "<footer",
-    'class="btn btn-primary"',
-    "</html>",
-  ];
+  if (!html || html.trim().length < 500) return false;
 
-  return required.every((token) => html.includes(token));
+  const hasDoctype = /<html[\s>]/i.test(html);
+  const hasClosingHtml = /<\/html>/i.test(html);
+  const hasBody = /<body[\s>]/i.test(html) && /<\/body>/i.test(html);
+  const hasHead = /<head[\s>]/i.test(html);
+  const hasSomeContent =
+    /<(div|section|main|article|header|nav|footer|h1|h2|p)[^>]*>/i.test(html);
+
+  return hasDoctype && hasClosingHtml && hasBody && hasHead && hasSomeContent;
 }
 
 function parseAIResponse(raw: string): AIResponse {
@@ -348,21 +349,10 @@ export async function generateAIResponse(
     );
 
     if (
-      intent === "build" &&
       workerResult.parsed.type === "website" &&
       !validateWebsiteHtml(workerResult.parsed.html)
     ) {
-      const firstResult = workerResult;
-
-      try {
-        workerResult = await callOpenRouterWithRetry(
-          messages,
-          maxTokens,
-          temperature
-        );
-      } catch {
-        workerResult = firstResult;
-      }
+      console.warn("AI returned potentially incomplete HTML — serving anyway.");
     }
 
     const durationMs = Date.now() - startTime;
@@ -440,21 +430,10 @@ export async function generateGuestAIResponse(
   );
 
   if (
-    intent === "build" &&
     workerResult.parsed.type === "website" &&
     !validateWebsiteHtml(workerResult.parsed.html)
   ) {
-    const firstResult = workerResult;
-
-    try {
-      workerResult = await callOpenRouterWithRetry(
-        messages,
-        maxTokens,
-        temperature
-      );
-    } catch {
-      workerResult = firstResult;
-    }
+    console.warn("AI returned potentially incomplete HTML — serving anyway.");
   }
 
   return workerResult.parsed;
