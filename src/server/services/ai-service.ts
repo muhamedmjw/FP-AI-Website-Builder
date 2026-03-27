@@ -246,14 +246,15 @@ async function callOpenRouterWithRetry(
 
 async function classifyIntent(
   userMessage: string,
-  hasExistingWebsite: boolean
+  hasExistingWebsite: boolean,
+  websiteLanguage: AppLanguage
 ): Promise<{ intent: "build" | "edit" | "chat"; detectedLanguage: AppLanguage }> {
   const fallback: ClassifierResult = {
     intent: "build",
     detectedLanguage: "en",
   };
 
-  const messages = buildClassifierMessages(userMessage) as AIMessage[];
+  const messages = buildClassifierMessages(userMessage, websiteLanguage) as AIMessage[];
 
   for (const model of MODEL_CANDIDATES) {
     try {
@@ -309,7 +310,8 @@ export async function generateAIResponse(
 
   const { intent, detectedLanguage } = await classifyIntent(
     latestUserMessage,
-    existingHtml !== null
+    existingHtml !== null,
+    language
   );
 
   let messages: AIMessage[];
@@ -403,7 +405,11 @@ export async function generateGuestAIResponse(
   const latestUserMessage =
     historyMessages.filter((m) => m.role === "user").at(-1)?.content ?? "";
 
-  const { intent, detectedLanguage } = await classifyIntent(latestUserMessage, false);
+  const { intent, detectedLanguage } = await classifyIntent(
+    latestUserMessage,
+    false,
+    language
+  );
 
   let messages: AIMessage[];
   let maxTokens: number;

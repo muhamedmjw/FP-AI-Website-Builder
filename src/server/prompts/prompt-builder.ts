@@ -1,7 +1,20 @@
 import { AI_CONFIG } from "@/shared/constants/ai";
 import { AppLanguage, HistoryMessage } from "@/shared/types/database";
-import { BASE_CSS } from "./base-css";
-import { APP_KNOWLEDGE, SYSTEM_PROMPT } from "./system-prompt";
+import {
+  PERSONALITY,
+  LANGUAGE_RULES,
+  OUTPUT_FORMAT,
+  APP_KNOWLEDGE,
+  THEMES,
+  DESIGN_SYSTEM,
+  MOBILE_RULES,
+  RTL_RULES,
+  IMAGE_RULES,
+  WEBSITE_STRUCTURE,
+  BUILD_MODE,
+  EDIT_MODE,
+  CHAT_MODE,
+} from "./system-prompt";
 
 export type ChatMessage = {
   role: "system" | "user" | "assistant";
@@ -13,75 +26,73 @@ function mapHistoryToChatMessages(history: HistoryMessage[]): ChatMessage[] {
     .slice(-AI_CONFIG.MAX_HISTORY_TURNS)
     .filter((msg) => msg.role === "user" || msg.role === "assistant")
     .map((msg) => ({
-      role: msg.role,
+      role: msg.role as "user" | "assistant",
       content: msg.content,
     }));
 }
 
-export function buildClassifierMessages(userMessage: string): ChatMessage[] {
-  const systemPrompt = `
-You are an intent classifier.
-
-Return ONLY raw JSON.
-No markdown.
-No explanation.
+export function buildClassifierMessages(
+  userMessage: string,
+  websiteLanguage: AppLanguage = "en"
+): ChatMessage[] {
+  const system = `
+You are an intent and language classifier.
+Return ONLY raw JSON. No markdown. No explanation.
 
 Intent values:
-- "build" -> user wants a new website built
-- "edit" -> user wants changes to an existing website
-- "chat" -> user is asking a question, greeting, discussing the app, or talking without asking for a website build/edit
+- "build" — user wants a new website
+- "edit" — user wants to change an existing website
+- "chat" — user is chatting, asking questions, or greeting
 
-Language values:
-- "en"
-- "ar"
-- "ku"
+Language values: "en", "ar", "ku"
 
-Important rules:
-- If the user is describing a website they want, classify as "build"
-- If the user wants to change an existing website, classify as "edit"
-- If the user is asking about code, files, behavior, setup, export, model, or project structure, classify as "chat"
-- If the message is vague but still asks for a website, classify as "build"
-- If the message is only conversational, classify as "chat"
+Arabic script disambiguation:
+Arabic, Kurdish Sorani, and Persian all use Arabic script.
+Use websiteLanguage hint to disambiguate: "${websiteLanguage}"
+- websiteLanguage "ar" → detectedLanguage "ar"
+- websiteLanguage "ku" → detectedLanguage "ku"
+- websiteLanguage "en" + Arabic script → "ar"
+Gibberish in Arabic script → still classify by script.
 
-Return exactly this shape:
+Return exactly:
 {"intent":"build","detectedLanguage":"en"}
 `.trim();
 
   return [
-    { role: "system", content: systemPrompt },
+    { role: "system", content: system },
     { role: "user", content: userMessage },
   ];
 }
-
 
 export function buildGenerationMessages(
   history: HistoryMessage[],
   websiteLanguage: AppLanguage,
   detectedUserLanguage: AppLanguage
 ): ChatMessage[] {
-  const systemMessage = `
-${SYSTEM_PROMPT}
+  const isRtl = websiteLanguage === "ar" || websiteLanguage === "ku";
 
-Website content language: ${websiteLanguage}
-Conversation reply language: ${detectedUserLanguage}
-`.trim();
-
-  const modeSignal = `
-BUILD MODE:
-- If the request is specific enough, generate the website now
-- If critical design details are missing, ask a few short clarifying questions first
-- Ask about the most important missing preferences such as colors, style, sections, layout, and special features
-- Do not ask too many questions if the request is already clear
-- If generating, return type "website"
-- If asking questions first, return type "questions"
-`.trim();
+  const system = [
+    PERSONALITY,
+    LANGUAGE_RULES,
+    DESIGN_SYSTEM,
+    MOBILE_RULES,
+    IMAGE_RULES,
+    THEMES,
+    isRtl ? RTL_RULES : "",
+    WEBSITE_STRUCTURE,
+    BUILD_MODE,
+    OUTPUT_FORMAT,
+    `Website content language: ${websiteLanguage}`,
+    `Conversation reply language: ${detectedUserLanguage}`,
+  ]
+    .filter(Boolean)
+    .join("\n\n");
 
   return [
-    { role: "system", content: `${systemMessage}\n\n${modeSignal}` },
+    { role: "system", content: system },
     ...mapHistoryToChatMessages(history),
   ];
 }
-
 
 export function buildEditMessages(
   history: HistoryMessage[],
@@ -89,51 +100,45 @@ export function buildEditMessages(
   websiteLanguage: AppLanguage,
   detectedUserLanguage: AppLanguage
 ): ChatMessage[] {
-  const systemMessage = `
-${SYSTEM_PROMPT}
+  const isRtl = websiteLanguage === "ar" || websiteLanguage === "ku";
 
-Website content language: ${websiteLanguage}
-Conversation reply language: ${detectedUserLanguage}
-`.trim();
-
-  const modeSignal = `
-EDIT MODE:
-- The current website HTML is provided below
-- Perform a surgical edit only
-- Preserve all unrelated code, structure, styling, and content
-- Do not redesign the whole website unless the user explicitly asks for a redesign
-- If the requested edit is unclear, ask a short clarifying question first
-- Return the complete updated HTML if editing is possible
-
-CURRENT HTML:
-${existingHtml}
-`.trim();
+  const system = [
+    PERSONALITY,
+    LANGUAGE_RULES,
+    EDIT_MODE,
+    DESIGN_SYSTEM,
+    MOBILE_RULES,
+    IMAGE_RULES,
+    isRtl ? RTL_RULES : "",
+    OUTPUT_FORMAT,
+    `Website content language: ${websiteLanguage}`,
+    `Conversation reply language: ${detectedUserLanguage}`,
+    `CURRENT HTML:\n${existingHtml}`,
+  ]
+    .filter(Boolean)
+    .join("\n\n");
 
   return [
-    { role: "system", content: `${systemMessage}\n\n${modeSignal}` },
+    { role: "system", content: system },
     ...mapHistoryToChatMessages(history),
   ];
 }
-
 
 export function buildChatMessages(
   history: HistoryMessage[],
   detectedUserLanguage: AppLanguage
 ): ChatMessage[] {
-  const systemPrompt = `
-You are a helpful assistant inside an AI website builder app.
-
-Always return raw JSON only:
-{"type":"questions","message":"your reply"}
-
-Reply in the same language as the user.
-
-App info:
-${APP_KNOWLEDGE}
-`.trim();
+  const system = [
+    PERSONALITY,
+    LANGUAGE_RULES,
+    APP_KNOWLEDGE,
+    CHAT_MODE,
+    OUTPUT_FORMAT,
+    `Conversation reply language: ${detectedUserLanguage}`,
+  ].join("\n\n");
 
   return [
-    { role: "system", content: systemPrompt },
+    { role: "system", content: system },
     ...mapHistoryToChatMessages(history),
   ];
 }
