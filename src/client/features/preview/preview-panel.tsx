@@ -347,6 +347,7 @@ export default function PreviewPanel({
 
         {onChange && editorMounted ? (
           <div
+            dir="ltr"
             className={`absolute inset-0 transition-opacity duration-150 ${
               activePanel === "editor"
                 ? "opacity-100"

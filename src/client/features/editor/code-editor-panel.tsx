@@ -49,6 +49,7 @@ export default function CodeEditorPanel({
     () => ({
       minimap: { enabled: false },
       fontSize: 13,
+      fontFamily: "Consolas, 'Courier New', monospace",
       automaticLayout: true,
       smoothScrolling: true,
       padding: { top: 12, bottom: 12 },
@@ -178,7 +179,7 @@ export default function CodeEditorPanel({
         : t("saveChanges", language);
 
   return (
-    <div className="flex h-full min-w-0 flex-col border-l border-(--app-border) bg-(--app-panel)">
+    <div dir="ltr" className="flex h-full min-w-0 flex-col border-l border-(--app-border) bg-(--app-panel)">
       <div className="flex h-12 shrink-0 items-center gap-2 border-b border-(--app-border) px-3">
         <div className="flex items-center gap-1.5">
           <svg
@@ -282,6 +283,7 @@ export default function CodeEditorPanel({
 
       <div className="min-h-0 flex-1">
         <Editor
+          key={`code-editor-${language}`}
           language="html"
           theme={theme}
           value={localHtml}

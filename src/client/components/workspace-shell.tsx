@@ -118,7 +118,7 @@ function WorkspaceShellInner({
 
           {/* Sidebar — always visible on md+, overlay drawer on mobile */}
           {/* Desktop sidebar */}
-          <div className="workspace-sidebar-slot hidden md:flex">
+          <div className="workspace-sidebar-slot relative z-40 hidden md:flex">
             {renderSidebar(sidebarCollapsed)}
           </div>
 
@@ -140,13 +140,13 @@ function WorkspaceShellInner({
           )}
 
           {/* Main content — add top padding on mobile for the header bar */}
-          <main className="workspace-main-slot flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden bg-[var(--app-bg)] pt-14 md:pt-0">
+          <main className="workspace-main-slot relative z-0 flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden bg-[var(--app-bg)] pt-14 md:pt-0">
             {children}
           </main>
         </>
       ) : (
         /* Guest mode — no sidebar, no mobile header */
-        <main className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden bg-[var(--app-bg)]">
+        <main className="relative z-0 flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden bg-[var(--app-bg)]">
           {children}
         </main>
       )}

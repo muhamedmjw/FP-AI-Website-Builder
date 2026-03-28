@@ -107,7 +107,7 @@ export default function Sidebar({
   return (
     <aside
       dir="ltr"
-      className={`sidebar relative flex h-screen flex-col bg-[var(--app-panel)]/95 shadow-[var(--app-sidebar-shadow)] backdrop-blur-xl motion-safe:transition-all motion-safe:duration-200 motion-safe:ease-in-out ${
+      className={`sidebar relative z-50 flex h-screen flex-col bg-[var(--app-panel)]/95 shadow-[var(--app-sidebar-shadow)] backdrop-blur-xl motion-safe:transition-all motion-safe:duration-200 motion-safe:ease-in-out ${
         isCollapsed ? "w-16" : "w-80"
       }`}
     >

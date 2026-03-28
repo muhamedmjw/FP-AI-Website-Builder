@@ -155,7 +155,7 @@ export default function ChatInput({
       </form>
 
       {showDisclaimer ? (
-        <p className="relative top-[1px] mx-auto w-fit whitespace-nowrap pb-2 pt-0.5 text-center text-xs text-[var(--app-text-muted)]">
+        <p className="relative top-px mx-auto w-full max-w-full px-4 pb-2 pt-0.5 text-center text-xs text-[var(--app-text-muted)] whitespace-normal wrap-break-word sm:px-5">
           {hasModelPlaceholder ? (
             <>
               {disclaimerPrefix}
