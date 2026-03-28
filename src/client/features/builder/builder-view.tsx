@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Eye, MessageCircle, PanelRightOpen } from "lucide-react";
+import { Eye, MessageCircle } from "lucide-react";
 import { HistoryMessage } from "@/shared/types/database";
 import { sendChatMessage } from "@/client/lib/api/chat-api";
 import { downloadWebsiteZip } from "@/client/lib/zip-download";
@@ -362,6 +362,9 @@ export default function BuilderView({
             chatTitle={chatTitle}
             messages={messages}
             onSend={handleSend}
+            onTogglePreview={() => setPreviewOpen((prev) => !prev)}
+            previewOpen={previewOpen}
+            hasPreview={hasPreview}
             isSending={isSending}
             currentUserAvatarUrl={currentUserAvatarUrl}
             inputErrorMessage={inputErrorMessage}
@@ -409,19 +412,7 @@ export default function BuilderView({
                   />
                 </PreviewErrorBoundary>
               </div>
-            ) : (
-              /* Open preview button when preview is collapsed */
-              <div className="flex shrink-0 items-center px-2">
-                <button
-                  type="button"
-                  onClick={() => setPreviewOpen(true)}
-                  className="flex h-10 w-10 items-center justify-center rounded-xl bg-[var(--app-card-bg)] text-[var(--app-text-tertiary)] shadow-[var(--app-shadow-sm)] transition hover:bg-[var(--app-hover-bg-strong)] hover:text-[var(--app-text-heading)]"
-                  title="Open preview"
-                >
-                  <PanelRightOpen size={18} />
-                </button>
-              </div>
-            )}
+            ) : null}
           </>
         ) : null}
       </div>
@@ -434,6 +425,9 @@ export default function BuilderView({
             chatTitle={chatTitle}
             messages={messages}
             onSend={handleSend}
+            onTogglePreview={() => setPreviewOpen((prev) => !prev)}
+            previewOpen={previewOpen}
+            hasPreview={hasPreview}
             isSending={isSending}
             currentUserAvatarUrl={currentUserAvatarUrl}
             inputErrorMessage={inputErrorMessage}

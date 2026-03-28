@@ -40,6 +40,9 @@ type ChatPanelProps = {
   chatTitle?: string;
   messages: HistoryMessage[];
   onSend: (message: string) => void;
+  onTogglePreview?: () => void;
+  previewOpen?: boolean;
+  hasPreview?: boolean;
   isSending?: boolean;
   currentUserAvatarUrl?: string | null;
   disableInput?: boolean;
@@ -61,6 +64,9 @@ export default function ChatPanel({
   chatTitle,
   messages,
   onSend,
+  onTogglePreview,
+  previewOpen = false,
+  hasPreview = false,
   isSending = false,
   currentUserAvatarUrl = null,
   disableInput = false,
@@ -138,6 +144,9 @@ export default function ChatPanel({
             </div>
             <ChatInput
               onSend={onSend}
+              onTogglePreview={onTogglePreview}
+              previewOpen={previewOpen}
+              hasPreview={hasPreview}
               disabled={isSending || disableInput}
               placeholder={resolvedInputPlaceholder}
               isSticky={false}
@@ -229,6 +238,9 @@ export default function ChatPanel({
             ) : null}
             <ChatInput
               onSend={onSend}
+              onTogglePreview={onTogglePreview}
+              previewOpen={previewOpen}
+              hasPreview={hasPreview}
               disabled={isSending || disableInput}
               placeholder={resolvedInputPlaceholder}
               isSticky
