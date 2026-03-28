@@ -19,6 +19,106 @@ function toSafeFilename(title: string): string {
   return `${safeBase || "website"}.zip`;
 }
 
+function generateReadme(
+  chatTitle: string,
+  language: "en" | "ar" | "ku",
+  generatedAt: string
+): string {
+  if (language === "ar") {
+    return [
+      `# ${chatTitle}`,
+      "",
+      "تم إنشاء هذا الموقع بواسطة AI Website Builder.",
+      "",
+      "## هيكل المشروع",
+      "",
+      "- `index.html` — الملف الرئيسي للموقع",
+      "- `assets/css/styles.css` — ملف التنسيقات",
+      "- `assets/js/main.js` — ملف الجافاسكريبت",
+      "- `assets/images/` — ضع صورك هنا",
+      "",
+      "## كيفية الاستخدام",
+      "",
+      "1. افتح `index.html` في متصفحك",
+      "2. عدّل `assets/css/styles.css` لتغيير التصميم",
+      "3. عدّل `assets/js/main.js` لتغيير السلوك",
+      "4. ضع صورك في مجلد `assets/images/`",
+      "",
+      "## النشر",
+      "",
+      "ارفع مجلد المشروع كاملاً إلى أي استضافة ثابتة:",
+      "",
+      "- **Netlify** — اسحب وأفلت المجلد",
+      "- **GitHub Pages** — ارفع المشروع وفعّل Pages",
+      "- **Vercel** — استورد المشروع",
+      "",
+      `تاريخ الإنشاء: ${generatedAt}`,
+    ].join("\n");
+  }
+
+  if (language === "ku") {
+    return [
+      `# ${chatTitle}`,
+      "",
+      "ئەم وێبسایتە لەلایەن AI Website Builder دروست کراوە.",
+      "",
+      "## پێکهاتەی پرۆژە",
+      "",
+      "- `index.html` — فایلی سەرەکی وێبسایت",
+      "- `assets/css/styles.css` — فایلی ستایل",
+      "- `assets/js/main.js` — فایلی جاڤاسکریپت",
+      "- `assets/images/` — وێنەکانت ئێرە دابنێ",
+      "",
+      "## چۆنیەتی بەکارهێنان",
+      "",
+      "1. `index.html` لە براوزەرەکەت بکەرەوە",
+      "2. `assets/css/styles.css` دەستکاری بکە بۆ گۆڕینی ستایل",
+      "3. `assets/js/main.js` دەستکاری بکە بۆ گۆڕینی ڕەفتار",
+      "4. وێنەکانت لە `assets/images/` دابنێ",
+      "",
+      "## بڵاوکردنەوە",
+      "",
+      "هەموو مجلدی پرۆژە بارکە بۆ هەر هۆستێکی ستاتیک:",
+      "",
+      "- **Netlify** — فۆڵدەرەکە بکێشە و بیخەرێوە",
+      "- **GitHub Pages** — پرۆژە بکە push و Pages چالاک بکە",
+      "- **Vercel** — پرۆژەکە ئیمپۆرت بکە",
+      "",
+      `بەرواری دروستکردن: ${generatedAt}`,
+    ].join("\n");
+  }
+
+  return [
+    `# ${chatTitle}`,
+    "",
+    "Built with AI Website Builder.",
+    "",
+    "## Project Structure",
+    "",
+    "- `index.html` — Main HTML file",
+    "- `assets/css/styles.css` — Stylesheet",
+    "- `assets/js/main.js` — JavaScript",
+    "- `assets/images/` — Add your images here",
+    "",
+    "## How to Use",
+    "",
+    "1. Open `index.html` in your browser",
+    "2. Edit `assets/css/styles.css` to change styles",
+    "3. Edit `assets/js/main.js` to change behaviour",
+    "4. Replace placeholder images in `assets/images/`",
+    "",
+    "## Deploy",
+    "",
+    "Upload the entire project folder to any static host:",
+    "",
+    "- **Netlify** — drag and drop the folder",
+    "- **GitHub Pages** — push to a repo and enable Pages",
+    "- **Vercel** — import the project",
+    "",
+    `Generated: ${generatedAt}`,
+  ].join("\n");
+}
+
 export async function POST(request: NextRequest) {
   try {
     const supabase = await getSupabaseServerClient();
@@ -119,7 +219,8 @@ export async function POST(request: NextRequest) {
 
     // ---------- Build the ZIP with proper folder structure ----------
     const zip = new JSZip();
-    const folder = zip.folder("project")!;
+    const safeFolderName = zipFilename.replace(/\.zip$/i, "");
+    const folder = zip.folder(safeFolderName)!;
 
     folder.file("index.html", processedHtml);
     folder.file("assets/css/styles.css", extractedCss);
@@ -131,35 +232,11 @@ export async function POST(request: NextRequest) {
     );
     folder.file(
       "README.md",
-      [
-        "# AI Generated Website",
-        "",
-        "Built with AI Website Builder",
-        "",
-        "## Project Structure",
-        "",
-        "- `index.html` — Main HTML file",
-        "- `assets/css/` — Stylesheet",
-        "- `assets/js/` — JavaScript",
-        "- `assets/images/` — Add your images here",
-        "",
-        "## How to Use",
-        "",
-        "1. Open `index.html` in your browser",
-        "2. Edit `assets/css/styles.css` to change styles",
-        "3. Edit `assets/js/main.js` to change behavior",
-        "4. Replace placeholder images in `assets/images/`",
-        "",
-        "## Deploy",
-        "",
-        "Upload the entire `project/` folder to any static host:",
-        "",
-        "- **Netlify** — drag and drop the folder",
-        "- **GitHub Pages** — push to a repo and enable Pages",
-        "- **Vercel** — import the project",
-        "",
-        `Generated: ${new Date().toISOString()}`,
-      ].join("\n")
+      generateReadme(
+        chatWithTitle?.title ?? "Website",
+        website.language,
+        new Date().toISOString()
+      )
     );
 
     const zipBuffer = await zip.generateAsync({ type: "arraybuffer" });

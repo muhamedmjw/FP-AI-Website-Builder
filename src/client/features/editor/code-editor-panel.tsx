@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 import Editor, { type OnMount } from "@monaco-editor/react";
-import { Copy, Wand2 } from "lucide-react";
+import { Check, Copy, Save, Wand2, X } from "lucide-react";
 import { useLanguage } from "@/client/lib/language-context";
 import { t } from "@/shared/constants/translations";
 import type * as Monaco from "monaco-editor";
@@ -10,6 +10,9 @@ import type * as Monaco from "monaco-editor";
 type CodeEditorPanelProps = {
   html: string;
   onChange: (html: string) => void;
+  onSave: () => Promise<void>;
+  isSaving?: boolean;
+  hasUnsavedChanges?: boolean;
 };
 
 function toTooltipContent(value: string): string {
@@ -19,11 +22,19 @@ function toTooltipContent(value: string): string {
     .replace(/"/g, '\\"')}"`;
 }
 
-export default function CodeEditorPanel({ html, onChange }: CodeEditorPanelProps) {
+export default function CodeEditorPanel({
+  html,
+  onChange,
+  onSave,
+  isSaving = false,
+  hasUnsavedChanges = false,
+}: CodeEditorPanelProps) {
   const { language } = useLanguage();
   const [localHtml, setLocalHtml] = useState(html);
   const [theme, setTheme] = useState<"vs-dark" | "light">("vs-dark");
   const [copySuccess, setCopySuccess] = useState(false);
+  const [saveStatus, setSaveStatus] = useState<"idle" | "saved" | "error">("idle");
+  const saveResetTimerRef = useRef<number | null>(null);
   const editorRef = useRef<Monaco.editor.IStandaloneCodeEditor | null>(null);
   const formatTooltipText = t("formatTooltip", language);
   const copyTooltipText = t("copyTooltip", language);
@@ -85,6 +96,15 @@ export default function CodeEditorPanel({ html, onChange }: CodeEditorPanelProps
     return () => observer.disconnect();
   }, []);
 
+  useEffect(
+    () => () => {
+      if (saveResetTimerRef.current !== null) {
+        window.clearTimeout(saveResetTimerRef.current);
+      }
+    },
+    []
+  );
+
   const handleMount: OnMount = (editorInstance) => {
     editorRef.current = editorInstance;
   };
@@ -109,13 +129,127 @@ export default function CodeEditorPanel({ html, onChange }: CodeEditorPanelProps
     await formatAction.run();
   }
 
+  async function handleSave() {
+    if (isSaving) {
+      return;
+    }
+
+    if (localHtml !== html) {
+      onChange(localHtml);
+    }
+
+    if (saveResetTimerRef.current !== null) {
+      window.clearTimeout(saveResetTimerRef.current);
+      saveResetTimerRef.current = null;
+    }
+
+    try {
+      await onSave();
+      setSaveStatus("saved");
+      saveResetTimerRef.current = window.setTimeout(() => {
+        setSaveStatus("idle");
+      }, 2000);
+    } catch {
+      setSaveStatus("error");
+      saveResetTimerRef.current = window.setTimeout(() => {
+        setSaveStatus("idle");
+      }, 3000);
+    }
+  }
+
+  const saveButtonTitle = hasUnsavedChanges
+    ? t("unsavedChangesWarning", language)
+    : t("saveChanges", language);
+
+  const saveButtonClassName = isSaving
+    ? "flex h-8 items-center gap-1.5 rounded-lg border border-[var(--app-card-border)] bg-[var(--app-card-bg)] px-2.5 text-xs font-medium text-[var(--app-text-secondary)] opacity-70"
+    : saveStatus === "saved"
+      ? "flex h-8 items-center gap-1.5 rounded-lg border border-emerald-400/40 bg-emerald-500/10 px-2.5 text-xs font-medium text-emerald-400"
+      : saveStatus === "error"
+        ? "flex h-8 items-center gap-1.5 rounded-lg border border-rose-400/40 bg-rose-500/10 px-2.5 text-xs font-medium text-rose-400"
+        : "flex h-8 items-center gap-1.5 rounded-lg border border-[var(--app-card-border)] bg-[var(--app-card-bg)] px-2.5 text-xs font-medium text-[var(--app-text-secondary)] transition hover:bg-[var(--app-hover-bg)] hover:text-[var(--app-text-heading)]";
+
+  const saveLabel = isSaving
+    ? t("savingChanges", language)
+    : saveStatus === "saved"
+      ? t("savedChanges", language)
+      : saveStatus === "error"
+        ? t("saveError", language)
+        : t("saveChanges", language);
+
   return (
     <div className="flex h-full min-w-0 flex-col border-l border-(--app-border) bg-(--app-panel)">
       <div className="flex h-12 shrink-0 items-center gap-2 border-b border-(--app-border) px-3">
-        <p className="text-sm font-semibold text-(--app-text-heading)">
-          {t("editor", language)}
-        </p>
+        <div className="flex items-center gap-1.5">
+          <svg
+            width="22"
+            height="22"
+            viewBox="0 0 24 24"
+            fill="none"
+            xmlns="http://www.w3.org/2000/svg"
+            className="text-(--app-btn-primary-bg) drop-shadow-[0_0_10px_rgba(99,102,241,0.4)]"
+            aria-hidden="true"
+          >
+            <rect
+              x="3.5"
+              y="4.5"
+              width="17"
+              height="15"
+              rx="2.5"
+              stroke="currentColor"
+              strokeWidth="1.8"
+            />
+            <path
+              d="M3.5 9.5H20.5"
+              stroke="currentColor"
+              strokeWidth="1.8"
+              strokeLinecap="round"
+            />
+            <circle cx="7" cy="7" r="0.9" fill="currentColor" />
+            <circle cx="10" cy="7" r="0.9" fill="currentColor" />
+            <path
+              d="M7.8 13.2L5.8 15.2L7.8 17.2"
+              stroke="currentColor"
+              strokeWidth="1.9"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+            <path
+              d="M11.5 17.2H15.8"
+              stroke="currentColor"
+              strokeWidth="1.9"
+              strokeLinecap="round"
+            />
+          </svg>
+          <p className="text-sm font-semibold text-(--app-text-heading)">
+            {t("editor", language)}
+          </p>
+        </div>
         <div className="flex-1" />
+        <button
+          type="button"
+          onClick={() => void handleSave()}
+          disabled={isSaving}
+          title={saveButtonTitle}
+          className={`relative ${saveButtonClassName} ${isSaving ? "cursor-not-allowed" : ""}`}
+        >
+          {hasUnsavedChanges ? (
+            <span
+              className="absolute right-1.5 top-1.5 h-1.5 w-1.5 rounded-full bg-(--prism-2)"
+              aria-hidden="true"
+            />
+          ) : null}
+          {isSaving ? (
+            <span className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-current/30 border-t-current" />
+          ) : saveStatus === "saved" ? (
+            <Check size={13} />
+          ) : saveStatus === "error" ? (
+            <X size={13} />
+          ) : (
+            <Save size={13} />
+          )}
+          {saveLabel}
+        </button>
         <div
           className="group relative inline-flex before:pointer-events-none before:absolute before:bottom-[calc(100%+2px)] before:left-1/2 before:z-50 before:-translate-x-1/2 before:border-x-4 before:border-b-4 before:border-x-transparent before:border-b-(--app-card-border) before:opacity-0 before:transition-opacity before:duration-150 before:delay-400 after:pointer-events-none after:absolute after:bottom-[calc(100%+6px)] after:left-1/2 after:z-50 after:w-max after:max-w-72 after:-translate-x-1/2 after:rounded-lg after:border after:border-(--app-card-border) after:bg-(--app-panel) after:px-2.5 after:py-1.5 after:text-xs after:text-(--app-text-secondary) after:whitespace-pre-line after:opacity-0 after:transition-opacity after:duration-150 after:delay-400 after:content-(--tooltip-content) group-hover:before:opacity-100 group-hover:after:opacity-100"
           style={formatTooltipStyle}

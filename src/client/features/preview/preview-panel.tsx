@@ -26,6 +26,9 @@ type PreviewPanelProps = {
   chatId?: string;
   onHtmlRestored?: (html: string) => void;
   onChange?: (html: string) => void;
+  onSave?: () => Promise<void>;
+  isSaving?: boolean;
+  hasUnsavedChanges?: boolean;
   isAuthenticated?: boolean;
   isPublic?: boolean;
   shareUrl?: string | null;
@@ -46,6 +49,9 @@ export default function PreviewPanel({
   chatId,
   onHtmlRestored,
   onChange,
+  onSave,
+  isSaving = false,
+  hasUnsavedChanges = false,
   isAuthenticated = false,
   isPublic = false,
   shareUrl = null,
@@ -347,7 +353,13 @@ export default function PreviewPanel({
                 : "pointer-events-none opacity-0"
             }`}
           >
-            <CodeEditorPanel html={html} onChange={onChange} />
+            <CodeEditorPanel
+              html={html}
+              onChange={onChange}
+              onSave={onSave ?? (async () => {})}
+              isSaving={isSaving}
+              hasUnsavedChanges={hasUnsavedChanges}
+            />
           </div>
         ) : null}
 

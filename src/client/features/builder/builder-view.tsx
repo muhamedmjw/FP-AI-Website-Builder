@@ -62,7 +62,10 @@ export default function BuilderView({
 
   const [messages, setMessages] = useState<HistoryMessage[]>(initialMessages);
   const [html, setHtml] = useState<string | null>(initialHtml);
+  const currentHtmlRef = useRef<string>(initialHtml ?? "");
+  const lastSavedHtml = useRef<string>(initialHtml ?? "");
   const [isSending, setIsSending] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
   const [inputErrorMessage, setInputErrorMessage] = useState("");
 
   // Preview panel state
@@ -332,9 +335,12 @@ export default function BuilderView({
       if (typeof data.html === "string") {
         const nextHtml = data.html.trim();
         if (nextHtml.length > 0) {
+          currentHtmlRef.current = data.html;
+          lastSavedHtml.current = data.html;
           setHtml(data.html);
           setPreviewOpen(true);
         } else {
+          currentHtmlRef.current = "";
           setHtml(null);
           setPreviewOpen(false);
         }
@@ -361,12 +367,51 @@ export default function BuilderView({
   }
 
   const handleEditorChange = useCallback((nextHtml: string) => {
+    currentHtmlRef.current = nextHtml;
     setHtml(nextHtml);
 
     if (nextHtml.trim().length > 0) {
       setPreviewOpen(true);
     }
   }, []);
+
+  const handleHtmlRestored = useCallback((restoredHtml: string) => {
+    currentHtmlRef.current = restoredHtml;
+    setHtml(restoredHtml);
+    lastSavedHtml.current = restoredHtml;
+    setPreviewOpen(true);
+  }, []);
+
+  const handleSaveEditorChanges = useCallback(async () => {
+    const currentHtml = currentHtmlRef.current;
+
+    setIsSaving(true);
+
+    try {
+      const response = await fetch("/api/website/save", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ chatId, html: currentHtml }),
+      });
+
+      const data = (await response.json().catch(() => null)) as
+        | { success?: boolean; error?: string }
+        | null;
+
+      if (!response.ok) {
+        throw new Error(data?.error ?? t("couldNotSaveChanges", language));
+      }
+
+      lastSavedHtml.current = currentHtml;
+    } finally {
+      setIsSaving(false);
+    }
+  }, [chatId, language]);
+
+  const currentHtml = html ?? "";
+  const hasUnsavedChanges = currentHtml !== lastSavedHtml.current;
 
   return (
     <div
@@ -445,7 +490,10 @@ export default function BuilderView({
                     html={html}
                     chatId={chatId}
                     onChange={handleEditorChange}
-                    onHtmlRestored={(restoredHtml) => setHtml(restoredHtml)}
+                    onSave={handleSaveEditorChanges}
+                    isSaving={isSaving}
+                    hasUnsavedChanges={hasUnsavedChanges}
+                    onHtmlRestored={handleHtmlRestored}
                     isAuthenticated={isAuthenticated}
                     isPublic={isPublic}
                     shareUrl={shareUrl}
@@ -494,7 +542,10 @@ export default function BuilderView({
                 html={html}
                 chatId={chatId}
                 onChange={handleEditorChange}
-                onHtmlRestored={(restoredHtml) => setHtml(restoredHtml)}
+                onSave={handleSaveEditorChanges}
+                isSaving={isSaving}
+                hasUnsavedChanges={hasUnsavedChanges}
+                onHtmlRestored={handleHtmlRestored}
                 isAuthenticated={isAuthenticated}
                 isPublic={isPublic}
                 shareUrl={shareUrl}
