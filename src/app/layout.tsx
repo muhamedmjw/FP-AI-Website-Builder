@@ -1,12 +1,12 @@
 import type { Metadata, Viewport } from "next";
-import { Sora } from "next/font/google";
+import { Bricolage_Grotesque } from "next/font/google";
 import "./globals.css"; // Global styles for the application
 import Providers from "@/client/components/providers";
 
-const sora = Sora({
+const bricolageGrotesque = Bricolage_Grotesque({
   subsets: ["latin"],
-  variable: "--font-ui",
-  weight: ["400", "500", "600", "700"],
+  variable: "--font-latin",
+  weight: ["400", "500", "600", "700", "800"],
 });
 
 export const viewport: Viewport = {
@@ -46,7 +46,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" data-theme="dark" suppressHydrationWarning>
-      <body className={`${sora.variable} antialiased`}>
+      <body className={`${bricolageGrotesque.variable} antialiased`}>
         <script dangerouslySetInnerHTML={{ __html: THEME_INIT_SCRIPT }} />
         <Providers>{children}</Providers>
       </body>

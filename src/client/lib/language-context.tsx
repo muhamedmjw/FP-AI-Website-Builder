@@ -28,8 +28,7 @@ function getUiFontStack(language: AppLanguage): string {
 		return '"Cairo", sans-serif';
 	}
 
-	// For English, include Kurdish and Arabic fonts to support text in those languages
-	return '"KurdishUI", "Noto Sans Arabic", "Cairo", "Tajawal", sans-serif';
+	return 'var(--font-latin), "Segoe UI", "Helvetica Neue", Arial, sans-serif';
 }
 
 type LanguageContextValue = {

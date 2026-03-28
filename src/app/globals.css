@@ -10,6 +10,7 @@
 }
 
 :root {
+  --font-ui: var(--font-latin), "Segoe UI", "Helvetica Neue", Arial, sans-serif;
   --app-bg: #0a0a0a;
   --app-bg-soft: #111111;
   --app-panel: #121212;
@@ -131,7 +132,7 @@ body {
 }
 
 html[lang="en"] body {
-  --font-ui: "KurdishUI", "Noto Sans Arabic", "Cairo", "Tajawal", sans-serif;
+  --font-ui: var(--font-latin), "Segoe UI", "Helvetica Neue", Arial, sans-serif;
 }
 
 html[lang="ku"] body {
