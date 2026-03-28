@@ -259,7 +259,7 @@ export default function CodeEditorPanel({
             type="button"
             onClick={() => void handleFormat()}
             className="flex h-8 items-center gap-1.5 rounded-lg border border-(--app-border) px-2.5 text-xs font-medium text-(--app-text-secondary) transition hover:bg-(--app-hover-bg) hover:text-(--app-text-heading)"
-            title="Auto-indent and format your HTML, CSS, and JavaScript code"
+            title={formatTooltipText}
           >
             <Wand2 size={13} />
             {t("formatHtml", language)}
