@@ -33,6 +33,7 @@ export default function HomePage() {
   const hasModelPlaceholder = disclaimerTemplate.includes("{model}");
   const router = useRouter();
   const inputRef = useRef<HTMLInputElement>(null);
+  const [inputValue, setInputValue] = useState("");
   const [isCreating, setIsCreating] = useState(false);
   const [submittedPrompt, setSubmittedPrompt] = useState("");
   const [errorMessage, setErrorMessage] = useState("");
@@ -123,10 +124,17 @@ export default function HomePage() {
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
 
-    const message = inputRef.current?.value.trim();
+    const message = inputValue.trim();
     if (!message) return;
 
     await startChatWithPrompt(message);
+  }
+
+  function handleSuggestionSelect(prompt: string) {
+    if (isCreating) return;
+
+    setInputValue(prompt);
+    inputRef.current?.focus();
   }
 
   async function startChatWithPrompt(message: string) {
@@ -192,7 +200,7 @@ export default function HomePage() {
         <p className="text-sm text-[var(--app-text-tertiary)] sm:text-sm">
           {t("heroSubtitle", language)}
         </p>
-        <PromptSuggestions onSend={(prompt) => void startChatWithPrompt(prompt)} />
+        <PromptSuggestions onSend={handleSuggestionSelect} />
         {downloadMessage ? (
           <p className="text-sm text-emerald-400">{downloadMessage}</p>
         ) : null}
@@ -232,6 +240,8 @@ export default function HomePage() {
               <input
                 ref={inputRef}
                 type="text"
+                value={inputValue}
+                onChange={(event) => setInputValue(event.target.value)}
                 placeholder={t("inputPlaceholder", language)}
                 disabled={isCreating}
                 aria-busy={isCreating}
