@@ -25,7 +25,7 @@ export default function SidebarHeader({
           title="Expand sidebar"
         >
           <span className="flex items-center justify-center motion-safe:transition-opacity motion-safe:duration-150 group-hover:opacity-0">
-            <Sparkles size={18} strokeWidth={1.7} className="prismatic-icon" />
+            <Sparkles size={28} strokeWidth={1.7} className="prismatic-icon" />
           </span>
           <span className="pointer-events-none absolute inset-0 flex items-center justify-center opacity-0 motion-safe:transition-opacity motion-safe:duration-150 group-hover:opacity-100">
             <PanelLeftOpen size={18} />
