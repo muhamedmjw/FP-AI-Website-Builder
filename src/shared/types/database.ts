@@ -44,6 +44,7 @@ export type Website = {
   chat_id: string;
   business_prompt: string;
   language: AppLanguage;
+  is_public?: boolean;
   created_at: string;
   updated_at: string;
 };
@@ -52,6 +53,16 @@ export type FileRecord = {
   id: string;
   website_id: string;
   file_name: string;
+  content: string;
+  version: number;
+  created_at: string;
+};
+
+export type FileVersionRecord = {
+  id: string;
+  file_id: string;
+  website_id: string;
+  version: number;
   content: string;
   created_at: string;
 };
@@ -64,4 +75,15 @@ export type GuestUsage = {
   last_prompt_at: string | null;
   created_at: string;
   updated_at: string;
+};
+
+export type DeployRecord = {
+  id: string;
+  user_id: string;
+  website_id: string;
+  netlify_site_id: string | null;
+  netlify_deploy_id: string | null;
+  deploy_url: string | null;
+  status: string;
+  created_at: string;
 };

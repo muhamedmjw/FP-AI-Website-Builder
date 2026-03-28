@@ -7,6 +7,7 @@ import { sendChatMessage } from "@/client/lib/api/chat-api";
 import { downloadWebsiteZip } from "@/client/lib/zip-download";
 import { useMobileHeaderTitle } from "@/client/components/mobile-header-title-context";
 import ChatPanel from "@/client/features/chat/chat-panel";
+import PromptSuggestions from "@/client/features/chat/prompt-suggestions";
 import PreviewPanel from "@/client/features/preview/preview-panel";
 import PreviewErrorBoundary from "@/client/features/preview/preview-error-boundary";
 import ResizeHandle from "@/client/features/builder/resize-handle";
@@ -24,6 +25,8 @@ type BuilderViewProps = {
   chatTitle?: string;
   initialMessages: HistoryMessage[];
   initialHtml: string | null;
+  initialIsPublic?: boolean;
+  isAuthenticated?: boolean;
   currentUserAvatarUrl?: string | null;
 };
 
@@ -37,6 +40,8 @@ export default function BuilderView({
   chatTitle = "Untitled",
   initialMessages,
   initialHtml,
+  initialIsPublic = false,
+  isAuthenticated = true,
   currentUserAvatarUrl = null,
 }: BuilderViewProps) {
   const { language } = useLanguage();
@@ -66,6 +71,12 @@ export default function BuilderView({
   // Mobile tab state: "chat" | "preview"
   const [mobileTab, setMobileTab] = useState<"chat" | "preview">("chat");
 
+  useEffect(() => {
+    if (!hasPreview) {
+      setMobileTab("chat");
+    }
+  }, [hasPreview]);
+
   // Initialise preview width lazily from container width
   const getInitialWidth = useCallback((containerWidth: number) => {
     return Math.round(containerWidth * DEFAULT_PREVIEW_FRACTION);
@@ -84,13 +95,30 @@ export default function BuilderView({
         // Moving handle right shrinks preview; left grows preview.
         const next = current - deltaX;
 
-        // Clamp between min and (container - 300px for chat panel).
-        const maxPreview = containerWidth - 300;
+        // Keep enough width for chat.
+        const reservedWidth = 300;
+        const maxPreview = containerWidth - reservedWidth;
         return Math.max(MIN_PREVIEW_WIDTH, Math.min(next, maxPreview));
       });
     },
     [getInitialWidth]
   );
+
+  useEffect(() => {
+    if (!previewOpen) return;
+
+    setPreviewWidth((prev) => {
+      const container = containerRef.current;
+      if (!container) return prev;
+
+      const containerWidth = container.offsetWidth;
+      const current = prev ?? getInitialWidth(containerWidth);
+      const reservedWidth = 300;
+      const maxPreview = containerWidth - reservedWidth;
+
+      return Math.max(MIN_PREVIEW_WIDTH, Math.min(current, maxPreview));
+    });
+  }, [previewOpen, getInitialWidth]);
 
   const handleResizeEnd = useCallback(() => {
     setIsResizing(false);
@@ -98,6 +126,33 @@ export default function BuilderView({
 
   const [isDownloading, setIsDownloading] = useState(false);
   const [downloadSuccess, setDownloadSuccess] = useState(false);
+  const [isPublic, setIsPublic] = useState(initialIsPublic);
+  const [isSharing, setIsSharing] = useState(false);
+  const [shareUrl, setShareUrl] = useState<string | null>(
+    initialIsPublic ? `/preview/${chatId}` : null
+  );
+  const [isDeploying, setIsDeploying] = useState(false);
+  const [deployUrl, setDeployUrl] = useState<string | null>(null);
+  const [deployError, setDeployError] = useState("");
+  const [hasDeployed, setHasDeployed] = useState(false);
+
+  useEffect(() => {
+    try {
+      const storedUrl = window.sessionStorage.getItem(`deploy-url:${chatId}`);
+      if (storedUrl) {
+        setDeployUrl(storedUrl);
+        setHasDeployed(true);
+      }
+    } catch {
+      // Ignore storage access failures.
+    }
+  }, [chatId]);
+
+  useEffect(() => {
+    if (initialIsPublic && !shareUrl) {
+      setShareUrl(`${window.location.origin}/preview/${chatId}`);
+    }
+  }, [chatId, initialIsPublic, shareUrl]);
 
   async function handleDownloadZip() {
     setInputErrorMessage("");
@@ -117,6 +172,88 @@ export default function BuilderView({
           : "Failed to download ZIP. Please try again."
       );
       setIsDownloading(false);
+    }
+  }
+
+  async function handleShareToggle(nextIsPublic: boolean) {
+    setInputErrorMessage("");
+    setIsSharing(true);
+
+    try {
+      const response = await fetch("/api/website/share", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ chatId, isPublic: nextIsPublic }),
+      });
+
+      const data = (await response.json()) as
+        | { shareUrl?: string; error?: string }
+        | null;
+
+      if (!response.ok) {
+        throw new Error(data?.error ?? t("shareUpdateFailed", language));
+      }
+
+      setIsPublic(nextIsPublic);
+      setShareUrl(
+        typeof data?.shareUrl === "string"
+          ? data.shareUrl
+          : nextIsPublic
+            ? `/preview/${chatId}`
+            : null
+      );
+    } catch (error) {
+      setInputErrorMessage(
+        error instanceof Error
+          ? error.message
+          : t("shareUpdateFailed", language)
+      );
+    } finally {
+      setIsSharing(false);
+    }
+  }
+
+  async function handleDeploy() {
+    setInputErrorMessage("");
+    setDeployError("");
+    setIsDeploying(true);
+
+    try {
+      const response = await fetch("/api/website/deploy", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ chatId }),
+      });
+
+      const data = (await response.json()) as
+        | { deployUrl?: string; error?: string }
+        | null;
+
+      if (!response.ok || typeof data?.deployUrl !== "string") {
+        throw new Error(data?.error ?? t("deployFailed", language));
+      }
+
+      setDeployUrl(data.deployUrl);
+      setHasDeployed(true);
+
+      try {
+        window.sessionStorage.setItem(`deploy-url:${chatId}`, data.deployUrl);
+      } catch {
+        // Ignore storage access failures.
+      }
+
+      window.open(data.deployUrl, "_blank", "noopener,noreferrer");
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : t("deployFailed", language);
+      setDeployError(message);
+      setInputErrorMessage(message);
+    } finally {
+      setIsDeploying(false);
     }
   }
 
@@ -172,6 +309,14 @@ export default function BuilderView({
     }
   }
 
+  const handleEditorChange = useCallback((nextHtml: string) => {
+    setHtml(nextHtml);
+
+    if (nextHtml.trim().length > 0) {
+      setPreviewOpen(true);
+    }
+  }, []);
+
   return (
     <div
       ref={containerRef}
@@ -221,6 +366,7 @@ export default function BuilderView({
             currentUserAvatarUrl={currentUserAvatarUrl}
             inputErrorMessage={inputErrorMessage}
             showHeader={false}
+            emptyStateSuggestions={<PromptSuggestions onSend={handleSend} />}
           />
         </div>
 
@@ -243,6 +389,19 @@ export default function BuilderView({
                 <PreviewErrorBoundary>
                   <PreviewPanel
                     html={html}
+                    chatId={chatId}
+                    onChange={handleEditorChange}
+                    onHtmlRestored={(restoredHtml) => setHtml(restoredHtml)}
+                    isAuthenticated={isAuthenticated}
+                    isPublic={isPublic}
+                    shareUrl={shareUrl}
+                    isSharing={isSharing}
+                    onShareToggle={handleShareToggle}
+                    onDeploy={handleDeploy}
+                    isDeploying={isDeploying}
+                    deployUrl={deployUrl}
+                    deployError={deployError}
+                    hasDeployed={hasDeployed}
                     onDownload={() => void handleDownloadZip()}
                     isDownloading={isDownloading}
                     downloadSuccess={downloadSuccess}
@@ -279,6 +438,7 @@ export default function BuilderView({
             currentUserAvatarUrl={currentUserAvatarUrl}
             inputErrorMessage={inputErrorMessage}
             showHeader={false}
+            emptyStateSuggestions={<PromptSuggestions onSend={handleSend} />}
           />
         </div>
 
@@ -288,6 +448,19 @@ export default function BuilderView({
             <PreviewErrorBoundary>
               <PreviewPanel
                 html={html}
+                chatId={chatId}
+                onChange={handleEditorChange}
+                onHtmlRestored={(restoredHtml) => setHtml(restoredHtml)}
+                isAuthenticated={isAuthenticated}
+                isPublic={isPublic}
+                shareUrl={shareUrl}
+                isSharing={isSharing}
+                onShareToggle={handleShareToggle}
+                onDeploy={handleDeploy}
+                isDeploying={isDeploying}
+                deployUrl={deployUrl}
+                deployError={deployError}
+                hasDeployed={hasDeployed}
                 onDownload={() => void handleDownloadZip()}
                 isDownloading={isDownloading}
                 downloadSuccess={downloadSuccess}

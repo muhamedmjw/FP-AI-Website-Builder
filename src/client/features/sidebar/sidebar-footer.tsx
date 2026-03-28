@@ -335,7 +335,7 @@ export default function SidebarFooter({
   const avatarFallbackClass =
     "flex h-9 w-9 items-center justify-center rounded-full bg-[var(--app-hover-bg-strong)] text-sm font-semibold text-[var(--app-text-heading)]";
   const menuPanelClass =
-    "absolute right-0 top-full z-50 mt-2 w-48 overflow-hidden rounded-xl border border-[var(--app-card-border)] bg-[var(--app-dropdown-bg)] shadow-[var(--app-shadow-lg)]";
+    "absolute right-0 top-full z-50 mt-2 w-48 overflow-hidden rounded-xl border border-[var(--app-card-border)] bg-[var(--app-dropdown-bg)] shadow-[var(--app-shadow-lg)] md:bottom-full md:left-0 md:right-auto md:top-auto md:mb-2 md:mt-0";
   const menuItemClass =
     "cursor-pointer flex w-full items-center gap-2.5 px-3.5 py-3 text-sm text-[var(--app-text-secondary)] transition hover:bg-[var(--app-hover-bg)] hover:text-[var(--app-text-heading)]";
   const signOutItemClass =

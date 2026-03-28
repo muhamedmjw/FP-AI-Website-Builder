@@ -48,6 +48,7 @@ type ChatPanelProps = {
   inputBanner?: ReactNode;
   showHeader?: boolean;
   centerInputWhenEmpty?: boolean;
+  emptyStateSuggestions?: ReactNode;
   messageListFooter?: ReactNode;
   inlineAttachments?: Array<{
     id: string;
@@ -68,6 +69,7 @@ export default function ChatPanel({
   inputBanner = null,
   showHeader = true,
   centerInputWhenEmpty = false,
+  emptyStateSuggestions = null,
   messageListFooter = null,
   inlineAttachments = [],
 }: ChatPanelProps) {
@@ -132,6 +134,7 @@ export default function ChatPanel({
               <p className="mt-2 text-sm text-[var(--app-text-tertiary)] sm:text-base">
                 {emptyStateDescription}
               </p>
+              {emptyStateSuggestions}
             </div>
             <ChatInput
               onSend={onSend}
@@ -167,6 +170,7 @@ export default function ChatPanel({
                   <p className="mt-2 text-sm text-[var(--app-text-tertiary)] sm:text-base">
                     {emptyStateDescription}
                   </p>
+                  {emptyStateSuggestions}
                 </div>
               </div>
             ) : (

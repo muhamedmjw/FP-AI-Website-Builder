@@ -5,6 +5,7 @@ import { useState } from "react";
 import { Eye, MessageCircle, Sparkles, X } from "lucide-react";
 import { HistoryMessage } from "@/shared/types/database";
 import ChatPanel from "@/client/features/chat/chat-panel";
+import PromptSuggestions from "@/client/features/chat/prompt-suggestions";
 import PreviewPanel from "@/client/features/preview/preview-panel";
 import PreviewErrorBoundary from "@/client/features/preview/preview-error-boundary";
 import { savePendingGuestZipPrompt } from "@/client/lib/zip-download";
@@ -113,6 +114,11 @@ export default function GuestHomePage() {
     inputErrorMessage === t("guestLimitReached", language) ||
     inputErrorMessage.toLowerCase().includes("limit");
   const displayedInputError = isLimitReached ? "" : inputErrorMessage;
+  const guestInputPlaceholder = isSending
+    ? t("generating", language)
+    : t("inputPlaceholder", language);
+  const shouldShowGeneratingIndicator =
+    isSending && messages.some((message) => message.role === "user");
 
   async function handleSend(content: string) {
     if (isSending) return;
@@ -250,12 +256,13 @@ export default function GuestHomePage() {
           <ChatPanel
             messages={messages}
             onSend={handleSend}
-            isSending={isSending}
+            isSending={shouldShowGeneratingIndicator}
             currentUserAvatarUrl={null}
             showHeader={false}
             centerInputWhenEmpty={!hasPreview}
-            inputPlaceholder={t("inputPlaceholder", language)}
+            inputPlaceholder={guestInputPlaceholder}
             inputErrorMessage={displayedInputError}
+            emptyStateSuggestions={<PromptSuggestions onSend={handleSend} />}
             inputBanner={
               isLimitReached ? (
                 <GuestLimitBanner
@@ -288,12 +295,13 @@ export default function GuestHomePage() {
           <ChatPanel
             messages={messages}
             onSend={handleSend}
-            isSending={isSending}
+            isSending={shouldShowGeneratingIndicator}
             currentUserAvatarUrl={null}
             showHeader={false}
             centerInputWhenEmpty={!hasPreview}
-            inputPlaceholder={t("inputPlaceholder", language)}
+            inputPlaceholder={guestInputPlaceholder}
             inputErrorMessage={displayedInputError}
+            emptyStateSuggestions={<PromptSuggestions onSend={handleSend} />}
             inputBanner={
               isLimitReached ? (
                 <GuestLimitBanner
