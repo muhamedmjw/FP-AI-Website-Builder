@@ -16,6 +16,8 @@ type SidebarProps = {
   userEmail: string | null;
   userAvatarUrl: string | null;
   activeChatId?: string;
+  isCollapsed?: boolean;
+  onToggleCollapse?: () => void;
 };
 
 /**
@@ -28,6 +30,8 @@ export default function Sidebar({
   userEmail: initialUserEmail,
   userAvatarUrl: initialUserAvatarUrl,
   activeChatId,
+  isCollapsed = false,
+  onToggleCollapse = () => {},
 }: SidebarProps) {
   const router = useRouter();
   const pathname = usePathname();
@@ -101,11 +105,23 @@ export default function Sidebar({
   };
 
   return (
-    <aside dir="ltr" className="sidebar relative flex h-screen w-80 flex-col bg-[var(--app-panel)]/95 shadow-[var(--app-sidebar-shadow)] backdrop-blur-xl">
+    <aside
+      dir="ltr"
+      className={`sidebar relative flex h-screen flex-col bg-[var(--app-panel)]/95 shadow-[var(--app-sidebar-shadow)] backdrop-blur-xl motion-safe:transition-all motion-safe:duration-200 motion-safe:ease-in-out ${
+        isCollapsed ? "w-16" : "w-80"
+      }`}
+    >
       <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(380px_180px_at_20%_0%,rgba(167,139,250,0.06),transparent_70%)]" />
       {/* Top: brand + greeting + compact account avatar (mobile only) */}
-      <div className="relative z-20 flex items-start justify-between px-5 pb-2 pt-6">
-        <SidebarHeader />
+      <div
+        className={`relative z-20 flex items-start justify-between pb-2 ${
+          isCollapsed ? "px-2 pt-4" : "px-5 pt-6"
+        }`}
+      >
+        <SidebarHeader
+          isCollapsed={isCollapsed}
+          onToggleCollapse={onToggleCollapse}
+        />
         <div className="md:hidden">
           <SidebarFooter {...footerProps} variant="compact" />
         </div>
@@ -113,27 +129,40 @@ export default function Sidebar({
 
       {/* New website button */}
       <div className="relative z-10">
-        <NewChatButton />
+        <NewChatButton isCollapsed={isCollapsed} />
       </div>
 
       {/* Scrollable chat list */}
       <div className="relative z-10 flex-1 overflow-y-auto">
-        <ChatList
-          chats={chats}
-          activeChatId={resolvedActiveChatId}
-          onRename={handleRename}
-          onDelete={handleDelete}
-        />
-        {actionErrorMessage ? (
-          <p className="px-5 pb-3 text-sm text-rose-400" role="status">
-            {actionErrorMessage}
-          </p>
+        {!isCollapsed ? (
+          <>
+            <ChatList
+              chats={chats}
+              activeChatId={resolvedActiveChatId}
+              onRename={handleRename}
+              onDelete={handleDelete}
+            />
+            {actionErrorMessage ? (
+              <p className="px-5 pb-3 text-sm text-rose-400" role="status">
+                {actionErrorMessage}
+              </p>
+            ) : null}
+          </>
         ) : null}
       </div>
 
       {/* Bottom: account bar (desktop only) */}
-      <div className="relative z-10 hidden md:block">
-        <SidebarFooter {...footerProps} variant="full" />
+      <div
+        className={`relative z-10 hidden ${
+          isCollapsed
+            ? "md:flex md:justify-center md:px-2 md:pb-4"
+            : "md:block"
+        }`}
+      >
+        <SidebarFooter
+          {...footerProps}
+          variant={isCollapsed ? "compact" : "full"}
+        />
       </div>
     </aside>
   );

@@ -47,7 +47,7 @@ export default function ChatInput({
       onSubmit={handleSubmit}
       className={`${isSticky ? "sticky bottom-0 z-10" : ""} bg-transparent px-3 py-3 sm:px-5 sm:py-4`}
     >
-      <div className="mx-auto flex w-full max-w-4xl items-center gap-2 rounded-2xl bg-[var(--app-card-bg)]/80 p-1.5 shadow-[var(--app-shadow-lg)] backdrop-blur-sm sm:p-2">
+      <div className={`mx-auto flex w-full max-w-4xl items-center gap-2 rounded-2xl bg-[var(--app-card-bg)]/80 p-1.5 shadow-[var(--app-shadow-lg)] backdrop-blur-sm transition-opacity sm:p-2 ${disabled ? "opacity-70" : "opacity-100"}`}>
         <div className="flex min-w-0 flex-1 flex-col">
           <input
             type="text"
@@ -56,6 +56,7 @@ export default function ChatInput({
             maxLength={MAX_PROMPT_LENGTH}
             placeholder={resolvedPlaceholder}
             disabled={disabled}
+            aria-busy={disabled}
             autoFocus={autoFocus}
             className="flex-1 rounded-xl bg-transparent px-2.5 py-2 text-sm text-[var(--app-input-text)] placeholder:text-[var(--app-text-tertiary)] focus:outline-none disabled:opacity-50 sm:px-3 sm:py-2.5 sm:text-base"
           />

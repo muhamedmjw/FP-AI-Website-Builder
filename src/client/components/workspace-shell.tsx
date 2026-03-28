@@ -1,10 +1,17 @@
 "use client";
 
-import { ReactNode, useCallback, useState } from "react";
+import { ReactNode, cloneElement, isValidElement, useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Menu, Sparkles } from "lucide-react";
 import { MobileHeaderTitleProvider, useMobileHeaderTitle } from "@/client/components/mobile-header-title-context";
+
+const SIDEBAR_COLLAPSED_STORAGE_KEY = "sidebar-collapsed";
+
+type SidebarControlProps = {
+  isCollapsed: boolean;
+  onToggleCollapse: () => void;
+};
 
 type WorkspaceShellProps = {
   sidebar: ReactNode;
@@ -38,15 +45,52 @@ function WorkspaceShellInner({
   hasSidebar,
 }: WorkspaceShellProps) {
   const [sidebarOpenPath, setSidebarOpenPath] = useState<string | null>(null);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [isSidebarCollapseHydrated, setIsSidebarCollapseHydrated] = useState(false);
   const { title } = useMobileHeaderTitle();
   const pathname = usePathname();
 
   const sidebarOpen = sidebarOpenPath === pathname;
 
+  useEffect(() => {
+    try {
+      const storedValue = window.localStorage.getItem(
+        SIDEBAR_COLLAPSED_STORAGE_KEY
+      );
+      setSidebarCollapsed(storedValue === "true");
+    } finally {
+      setIsSidebarCollapseHydrated(true);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!isSidebarCollapseHydrated) return;
+
+    window.localStorage.setItem(
+      SIDEBAR_COLLAPSED_STORAGE_KEY,
+      String(sidebarCollapsed)
+    );
+  }, [isSidebarCollapseHydrated, sidebarCollapsed]);
+
   const openSidebar = useCallback(() => {
     setSidebarOpenPath(pathname);
   }, [pathname]);
   const closeSidebar = useCallback(() => setSidebarOpenPath(null), []);
+  const toggleSidebarCollapsed = useCallback(() => {
+    setSidebarCollapsed((prev) => !prev);
+  }, []);
+
+  const renderSidebar = useCallback(
+    (isCollapsed: boolean) => {
+      if (!isValidElement(sidebar)) return sidebar;
+
+      return cloneElement(sidebar, {
+        isCollapsed,
+        onToggleCollapse: toggleSidebarCollapsed,
+      } as SidebarControlProps);
+    },
+    [sidebar, toggleSidebarCollapsed]
+  );
 
   return (
     <div className="workspace-shell flex h-screen bg-[var(--app-bg)] text-[var(--app-text-primary)]">
@@ -75,7 +119,7 @@ function WorkspaceShellInner({
           {/* Sidebar — always visible on md+, overlay drawer on mobile */}
           {/* Desktop sidebar */}
           <div className="workspace-sidebar-slot hidden md:flex">
-            {sidebar}
+            {renderSidebar(sidebarCollapsed)}
           </div>
 
           {/* Mobile drawer overlay */}
@@ -90,7 +134,7 @@ function WorkspaceShellInner({
               <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={closeSidebar} />
               {/* Drawer */}
               <div className="absolute left-0 top-0 z-10 h-full w-80 max-w-[85vw] animate-slide-in-left">
-                {sidebar}
+                {renderSidebar(false)}
               </div>
             </div>
           )}
