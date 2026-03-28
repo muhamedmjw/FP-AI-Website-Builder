@@ -31,9 +31,12 @@ type BuilderViewProps = {
 };
 
 /** Minimum preview width in pixels */
-const MIN_PREVIEW_WIDTH = 200;
+const MIN_PREVIEW_WIDTH = 450;
+/** Minimum chat panel width in pixels */
+const MIN_CHAT_WIDTH = 610;
 /** Default preview width as a fraction of the container (0-1) */
-const DEFAULT_PREVIEW_FRACTION = 0.55;
+const DEFAULT_PREVIEW_FRACTION = 0.52;
+const PREVIEW_WIDTH_STORAGE_KEY = "builder-preview-width";
 
 export default function BuilderView({
   chatId,
@@ -77,10 +80,47 @@ export default function BuilderView({
     }
   }, [hasPreview]);
 
+  const clampPreviewWidth = useCallback(
+    (width: number, containerWidth: number) => {
+      const maxPreview = containerWidth - MIN_CHAT_WIDTH;
+      return Math.max(MIN_PREVIEW_WIDTH, Math.min(width, maxPreview));
+    },
+    []
+  );
+
   // Initialise preview width lazily from container width
   const getInitialWidth = useCallback((containerWidth: number) => {
-    return Math.round(containerWidth * DEFAULT_PREVIEW_FRACTION);
+    const initial = Math.round(containerWidth * DEFAULT_PREVIEW_FRACTION);
+    const maxAllowed = containerWidth - MIN_CHAT_WIDTH;
+    return Math.min(initial, maxAllowed);
   }, []);
+
+  useEffect(() => {
+    const container = containerRef.current;
+    if (!container) return;
+
+    const containerWidth = container.offsetWidth;
+    const fallbackWidth = clampPreviewWidth(getInitialWidth(containerWidth), containerWidth);
+
+    try {
+      const saved = window.localStorage.getItem(PREVIEW_WIDTH_STORAGE_KEY);
+      const parsed = saved ? parseInt(saved, 10) : null;
+
+      if (
+        Number.isFinite(parsed) &&
+        parsed !== null &&
+        parsed >= MIN_PREVIEW_WIDTH &&
+        parsed <= containerWidth - MIN_CHAT_WIDTH
+      ) {
+        setPreviewWidth(parsed);
+        return;
+      }
+    } catch {
+      // Ignore storage access failures.
+    }
+
+    setPreviewWidth(fallbackWidth);
+  }, [clampPreviewWidth, getInitialWidth]);
 
   const handleResize = useCallback(
     (deltaX: number) => {
@@ -95,13 +135,10 @@ export default function BuilderView({
         // Moving handle right shrinks preview; left grows preview.
         const next = current - deltaX;
 
-        // Keep enough width for chat.
-        const reservedWidth = 300;
-        const maxPreview = containerWidth - reservedWidth;
-        return Math.max(MIN_PREVIEW_WIDTH, Math.min(next, maxPreview));
+        return clampPreviewWidth(next, containerWidth);
       });
     },
-    [getInitialWidth]
+    [clampPreviewWidth, getInitialWidth]
   );
 
   useEffect(() => {
@@ -113,16 +150,30 @@ export default function BuilderView({
 
       const containerWidth = container.offsetWidth;
       const current = prev ?? getInitialWidth(containerWidth);
-      const reservedWidth = 300;
-      const maxPreview = containerWidth - reservedWidth;
-
-      return Math.max(MIN_PREVIEW_WIDTH, Math.min(current, maxPreview));
+      return clampPreviewWidth(current, containerWidth);
     });
-  }, [previewOpen, getInitialWidth]);
+  }, [previewOpen, clampPreviewWidth, getInitialWidth]);
 
   const handleResizeEnd = useCallback(() => {
     setIsResizing(false);
-  }, []);
+
+    const container = containerRef.current;
+    if (!container) return;
+
+    const containerWidth = container.offsetWidth;
+    const nextWidth = clampPreviewWidth(
+      previewWidth ?? getInitialWidth(containerWidth),
+      containerWidth
+    );
+
+    setPreviewWidth(nextWidth);
+
+    try {
+      window.localStorage.setItem(PREVIEW_WIDTH_STORAGE_KEY, String(nextWidth));
+    } catch {
+      // Ignore storage access failures.
+    }
+  }, [clampPreviewWidth, getInitialWidth, previewWidth]);
 
   const [isDownloading, setIsDownloading] = useState(false);
   const [downloadSuccess, setDownloadSuccess] = useState(false);
