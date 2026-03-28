@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useState } from "react";
+import { FormEvent, useEffect, useRef, useState } from "react";
 import { useLanguage } from "@/client/lib/language-context";
 import { t } from "@/shared/constants/translations";
 import { MAX_PROMPT_LENGTH } from "@/shared/constants/limits";
@@ -34,6 +34,7 @@ export default function ChatInput({
   showDisclaimer = true,
 }: ChatInputProps) {
   const { language } = useLanguage();
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
   const [inputValue, setInputValue] = useState("");
   const resolvedPlaceholder = placeholder ?? t("inputPlaceholder", language);
   const displayModelName = getDisplayModelName(PRIMARY_MODEL);
@@ -45,6 +46,24 @@ export default function ChatInput({
   const shouldShowCounter = charCount > MAX_PROMPT_LENGTH * 0.8;
   const shouldShowPreviewToggle = typeof onTogglePreview === "function" && hasPreview;
 
+  function adjustHeight(el: HTMLTextAreaElement) {
+    el.style.height = "auto";
+    el.style.height = `${el.scrollHeight}px`;
+  }
+
+  function handleKeyDown(event: React.KeyboardEvent<HTMLTextAreaElement>) {
+    if (event.key === "Enter" && !event.shiftKey) {
+      event.preventDefault();
+      event.currentTarget.form?.requestSubmit();
+    }
+  }
+
+  useEffect(() => {
+    if (textareaRef.current) {
+      adjustHeight(textareaRef.current);
+    }
+  }, []);
+
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
 
@@ -53,6 +72,11 @@ export default function ChatInput({
 
     onSend(message);
     setInputValue("");
+    setTimeout(() => {
+      if (textareaRef.current) {
+        adjustHeight(textareaRef.current);
+      }
+    }, 0);
   }
 
   return (
@@ -61,19 +85,29 @@ export default function ChatInput({
         onSubmit={handleSubmit}
         className={`${isSticky ? "sticky bottom-0 z-10" : ""} bg-transparent px-3 py-3 sm:px-5 sm:py-4`}
       >
-        <div className="mx-auto flex w-full max-w-4xl items-center gap-2">
-          <div className={`flex min-w-0 flex-1 items-center gap-2 rounded-2xl bg-[var(--app-card-bg)]/80 p-1.5 shadow-[var(--app-shadow-lg)] backdrop-blur-sm transition-opacity sm:p-2 ${disabled ? "opacity-70" : "opacity-100"}`}>
+        <div className="mx-auto flex w-full max-w-4xl items-end gap-2">
+          <div className={`flex min-w-0 flex-1 items-end gap-2 rounded-2xl bg-[var(--app-card-bg)]/80 p-1.5 shadow-[var(--app-shadow-lg)] backdrop-blur-sm transition-opacity sm:p-2 ${disabled ? "opacity-70" : "opacity-100"}`}>
             <div className="flex min-w-0 flex-1 flex-col">
-              <input
-                type="text"
+              <textarea
+                ref={textareaRef}
+                rows={1}
                 value={inputValue}
-                onChange={(event) => setInputValue(event.target.value)}
+                onChange={(event) => {
+                  setInputValue(event.target.value);
+                  adjustHeight(event.currentTarget);
+                }}
+                onKeyDown={handleKeyDown}
                 maxLength={MAX_PROMPT_LENGTH}
                 placeholder={resolvedPlaceholder}
                 disabled={disabled}
                 aria-busy={disabled}
                 autoFocus={autoFocus}
-                className="flex-1 rounded-xl bg-transparent px-2.5 py-2 text-sm text-[var(--app-input-text)] placeholder:text-[var(--app-text-tertiary)] focus:outline-none disabled:opacity-50 sm:px-3 sm:py-2.5 sm:text-base"
+                className="flex-1 resize-none overflow-hidden rounded-xl bg-transparent px-2.5 py-2.5 text-sm leading-relaxed text-[var(--app-input-text)] placeholder:text-[var(--app-text-tertiary)] focus:outline-none disabled:opacity-50 sm:px-3 sm:py-3 sm:text-base"
+                style={{
+                  height: "auto",
+                  maxHeight: "160px",
+                  overflowY: "auto",
+                }}
               />
               {shouldShowCounter ? (
                 <p className="px-2.5 pb-0.5 text-[10px] text-[var(--app-text-muted)] sm:px-3" aria-live="polite">

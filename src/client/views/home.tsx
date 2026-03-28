@@ -18,6 +18,7 @@ import { useLanguage } from "@/client/lib/language-context";
 import { useElapsedSeconds } from "@/client/lib/hooks/use-elapsed-seconds";
 import { t } from "@/shared/constants/translations";
 import { getDisplayModelName, PRIMARY_MODEL } from "@/shared/constants/ai";
+import { MAX_PROMPT_LENGTH } from "@/shared/constants/limits";
 
 /**
  * Authenticated home screen - centered prompt input.
@@ -32,13 +33,25 @@ export default function HomePage() {
   const [disclaimerPrefix, disclaimerSuffix = ""] = disclaimerTemplate.split("{model}");
   const hasModelPlaceholder = disclaimerTemplate.includes("{model}");
   const router = useRouter();
-  const inputRef = useRef<HTMLInputElement>(null);
+  const inputRef = useRef<HTMLTextAreaElement>(null);
   const [inputValue, setInputValue] = useState("");
   const [isCreating, setIsCreating] = useState(false);
   const [submittedPrompt, setSubmittedPrompt] = useState("");
   const [errorMessage, setErrorMessage] = useState("");
   const [downloadMessage, setDownloadMessage] = useState("");
   const creatingSeconds = useElapsedSeconds(isCreating);
+
+  function adjustHeight(el: HTMLTextAreaElement) {
+    el.style.height = "auto";
+    el.style.height = `${el.scrollHeight}px`;
+  }
+
+  function handleKeyDown(event: React.KeyboardEvent<HTMLTextAreaElement>) {
+    if (event.key === "Enter" && !event.shiftKey) {
+      event.preventDefault();
+      event.currentTarget.form?.requestSubmit();
+    }
+  }
 
   const creatingStatusKey =
     creatingSeconds >= 5
@@ -121,6 +134,12 @@ export default function HomePage() {
     };
   }, [router]);
 
+  useEffect(() => {
+    if (inputRef.current) {
+      adjustHeight(inputRef.current);
+    }
+  }, []);
+
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
 
@@ -134,7 +153,12 @@ export default function HomePage() {
     if (isCreating) return;
 
     setInputValue(prompt);
-    inputRef.current?.focus();
+    setTimeout(() => {
+      if (inputRef.current) {
+        adjustHeight(inputRef.current);
+        inputRef.current.focus();
+      }
+    }, 0);
   }
 
   async function startChatWithPrompt(message: string) {
@@ -184,6 +208,13 @@ export default function HomePage() {
 
       setErrorMessage(friendly);
     } finally {
+      setInputValue("");
+      setTimeout(() => {
+        if (inputRef.current) {
+          adjustHeight(inputRef.current);
+        }
+      }, 0);
+
       if (shouldResetLoadingState) {
         setIsCreating(false);
         setSubmittedPrompt("");
@@ -192,20 +223,23 @@ export default function HomePage() {
   }
 
   return (
-    <div className="flex min-h-0 flex-1 flex-col items-center justify-center px-6 sm:px-8">
-      <div className="w-full max-w-2xl space-y-5 text-center">
-        <h1 className="text-2xl font-semibold leading-snug text-[var(--app-text-heading)] sm:text-3xl">
-          {t("heroTitle", language)}
-        </h1>
-        <p className="text-sm text-[var(--app-text-tertiary)] sm:text-sm">
-          {t("heroSubtitle", language)}
-        </p>
-        <PromptSuggestions onSend={handleSuggestionSelect} />
-        {downloadMessage ? (
-          <p className="text-sm text-emerald-400">{downloadMessage}</p>
-        ) : null}
+    <div className="flex min-h-0 flex-1 flex-col px-6 sm:px-8">
+      <div className="flex flex-1 items-center justify-center">
+        <div className="mx-auto w-full max-w-2xl text-center">
+          <h1 className="text-2xl font-semibold leading-snug text-[var(--app-text-heading)] sm:text-3xl">
+            {t("heroTitle", language)}
+          </h1>
+          <p className="mt-2 text-sm text-[var(--app-text-tertiary)] sm:text-sm">
+            {t("heroSubtitle", language)}
+          </p>
+          <div className="mt-5">
+            <PromptSuggestions onSend={handleSuggestionSelect} />
+          </div>
+          {downloadMessage ? (
+            <p className="mt-3 text-sm text-emerald-400">{downloadMessage}</p>
+          ) : null}
 
-        <form onSubmit={handleSubmit} className="mt-8" aria-busy={isCreating}>
+          <form onSubmit={handleSubmit} className="mx-auto mt-8 w-full max-w-2xl min-h-75" aria-busy={isCreating}>
           {isCreating ? (
             <div className="ui-fade-up rounded-2xl border border-[var(--app-card-border)] bg-[var(--app-card-bg)] p-4 text-left shadow-[var(--app-shadow-md)] sm:p-5">
               <input
@@ -236,38 +270,51 @@ export default function HomePage() {
               </p>
             </div>
           ) : (
-            <div className="flex items-center gap-2 rounded-2xl bg-[var(--app-card-bg)]/80 p-1.5 shadow-[var(--app-shadow-lg)] backdrop-blur-sm sm:p-2">
-              <input
+            <div className="flex w-full flex-col rounded-2xl bg-[var(--app-card-bg)]/80 p-1.5 shadow-[var(--app-shadow-lg)] backdrop-blur-sm sm:p-2">
+              <textarea
                 ref={inputRef}
-                type="text"
+                rows={1}
                 value={inputValue}
-                onChange={(event) => setInputValue(event.target.value)}
+                onChange={(event) => {
+                  setInputValue(event.target.value);
+                  adjustHeight(event.currentTarget);
+                }}
+                onKeyDown={handleKeyDown}
                 placeholder={t("inputPlaceholder", language)}
                 disabled={isCreating}
+                maxLength={MAX_PROMPT_LENGTH}
                 aria-busy={isCreating}
-                className="flex-1 rounded-xl bg-transparent px-2.5 py-2 text-sm text-[var(--app-input-text)] placeholder:text-[var(--app-text-tertiary)] focus:outline-none disabled:opacity-50 sm:px-3 sm:py-2.5 sm:text-base"
+                className="w-full resize-none overflow-hidden rounded-xl bg-transparent px-2.5 py-2.5 text-sm leading-relaxed text-[var(--app-input-text)] placeholder:text-[var(--app-text-tertiary)] focus:outline-none disabled:opacity-50 sm:px-3 sm:py-3 sm:text-base"
+                style={{
+                  height: "auto",
+                  maxHeight: "200px",
+                  overflowY: "auto",
+                }}
               />
-              <button
-                type="submit"
-                disabled={isCreating}
-                className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[var(--app-btn-primary-bg)] text-[var(--app-btn-primary-text)] shadow-[var(--app-shadow-sm)] transition hover:bg-[var(--app-btn-primary-hover)] hover:shadow-[var(--app-shadow-md)] hover:-translate-y-px active:translate-y-0 disabled:opacity-50 sm:h-11 sm:w-11"
-                title={isCreating ? "Creating..." : "Start"}
-              >
-                <svg
-                  viewBox="0 0 24 24"
-                  width="18"
-                  height="18"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2.2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  aria-hidden="true"
+              <div className="flex items-center justify-between px-1 pb-1">
+                <div aria-hidden="true" />
+                <button
+                  type="submit"
+                  disabled={isCreating}
+                  className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[var(--app-btn-primary-bg)] text-[var(--app-btn-primary-text)] shadow-[var(--app-shadow-sm)] transition hover:bg-[var(--app-btn-primary-hover)] hover:shadow-[var(--app-shadow-md)] hover:-translate-y-px active:translate-y-0 disabled:opacity-50 sm:h-11 sm:w-11"
+                  title={isCreating ? "Creating..." : "Start"}
                 >
-                  <path d="M12 19V6" />
-                  <path d="M6.5 11.5L12 6l5.5 5.5" />
-                </svg>
-              </button>
+                  <svg
+                    viewBox="0 0 24 24"
+                    width="18"
+                    height="18"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2.2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    aria-hidden="true"
+                  >
+                    <path d="M12 19V6" />
+                    <path d="M6.5 11.5L12 6l5.5 5.5" />
+                  </svg>
+                </button>
+              </div>
             </div>
           )}
           {errorMessage ? (
@@ -275,19 +322,20 @@ export default function HomePage() {
               {errorMessage}
             </p>
           ) : null}
-          <p className="relative top-[1px] mx-auto w-fit whitespace-nowrap pb-2 pt-0.5 text-center text-xs text-[var(--app-text-muted)]">
-            {hasModelPlaceholder ? (
-              <>
-                {disclaimerPrefix}
-                <span className="font-medium text-[var(--app-text-tertiary)]">{displayModelName}</span>
-                {disclaimerSuffix}
-              </>
-            ) : (
-              disclaimerText
-            )}
-          </p>
-        </form>
+          </form>
+        </div>
       </div>
+      <p className="relative top-[1px] mx-auto w-full max-w-2xl whitespace-normal pb-2 pt-0.5 text-center text-xs text-[var(--app-text-muted)]">
+        {hasModelPlaceholder ? (
+          <>
+            {disclaimerPrefix}
+            <span className="font-medium text-[var(--app-text-tertiary)]">{displayModelName}</span>
+            {disclaimerSuffix}
+          </>
+        ) : (
+          disclaimerText
+        )}
+      </p>
     </div>
   );
 }
