@@ -13,6 +13,8 @@ export const translations: Record<AppLanguage, Record<string, string>> = {
     heroTitle: "What website do you want to build?",
     heroSubtitle: "Describe your website and AI will generate it for you.",
     inputPlaceholder: "Describe the website you want to build...",
+    aiDisclaimer:
+      "This website is powered by {model}. AI can make mistakes — always double-check important content.",
     guestNotice: "Guest chats are temporary and not saved to history.",
     welcomeBack: "Welcome back",
     authSubtitle: "Sign in to continue building AI-powered websites.",
@@ -129,6 +131,8 @@ export const translations: Record<AppLanguage, Record<string, string>> = {
     heroTitle: "ما الموقع الذي تريد بناءه؟",
     heroSubtitle: "صف موقعك وسيقوم الذكاء الاصطناعي بإنشائه لك.",
     inputPlaceholder: "صف الموقع الذي تريد بناءه...",
+    aiDisclaimer:
+      "هذا الموقع مدعوم بـ {model}. قد يُخطئ الذكاء الاصطناعي — تحقق دائماً من المحتوى المهم.",
     guestNotice: "محادثات الزوار مؤقتة ولا تُحفظ في السجل.",
     welcomeBack: "مرحباً بعودتك",
     authSubtitle: "سجّل دخولك لمواصلة بناء مواقع بالذكاء الاصطناعي.",
@@ -245,6 +249,8 @@ export const translations: Record<AppLanguage, Record<string, string>> = {
     heroTitle: "چ وێبسایتێکت دەوێت دروست بکەیت؟",
     heroSubtitle: "وێبسایتەکەت وەسف بکە و زیرەکی دەستکرد دروستی دەکات.",
     inputPlaceholder: "وێبسایتی دەوێت دروست بکەیت وەسفی بکە...",
+    aiDisclaimer:
+      "ئەم وێبسایتە bi {model} هێزدراوە. زیرەکی دەستکرد هەڵە دەکا — هەمیشە naveroka girîng بپشکنەرەوە.",
     guestNotice: "قسەکانی میوان کاتییە و لە مێژوودا نەگیراون.",
     welcomeBack: "بەخێربێیتەوە",
     authSubtitle: "بچوو ژوورەوە بۆ بەردەوام بوون لە دروستکردنی وێبسایت.",

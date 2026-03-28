@@ -17,8 +17,7 @@ import PromptSuggestions from "@/client/features/chat/prompt-suggestions";
 import { useLanguage } from "@/client/lib/language-context";
 import { useElapsedSeconds } from "@/client/lib/hooks/use-elapsed-seconds";
 import { t } from "@/shared/constants/translations";
-
-const AI_PROVIDER_LABEL = "NVIDIA Nemotron";
+import { getDisplayModelName, PRIMARY_MODEL } from "@/shared/constants/ai";
 
 /**
  * Authenticated home screen - centered prompt input.
@@ -27,6 +26,11 @@ const AI_PROVIDER_LABEL = "NVIDIA Nemotron";
  */
 export default function HomePage() {
   const { language } = useLanguage();
+  const displayModelName = getDisplayModelName(PRIMARY_MODEL);
+  const disclaimerTemplate = t("aiDisclaimer", language);
+  const disclaimerText = disclaimerTemplate.replace("{model}", displayModelName);
+  const [disclaimerPrefix, disclaimerSuffix = ""] = disclaimerTemplate.split("{model}");
+  const hasModelPlaceholder = disclaimerTemplate.includes("{model}");
   const router = useRouter();
   const inputRef = useRef<HTMLInputElement>(null);
   const [isCreating, setIsCreating] = useState(false);
@@ -233,9 +237,6 @@ export default function HomePage() {
                 aria-busy={isCreating}
                 className="flex-1 rounded-xl bg-transparent px-2.5 py-2 text-sm text-[var(--app-input-text)] placeholder:text-[var(--app-text-tertiary)] focus:outline-none disabled:opacity-50 sm:px-3 sm:py-2.5 sm:text-base"
               />
-              <span className="shrink-0 select-none rounded-full border border-[var(--app-border)] bg-[var(--app-hover-bg)] px-2 py-0.5 text-[10px] font-medium text-[var(--app-text-muted)]">
-                {AI_PROVIDER_LABEL}
-              </span>
               <button
                 type="submit"
                 disabled={isCreating}
@@ -264,6 +265,17 @@ export default function HomePage() {
               {errorMessage}
             </p>
           ) : null}
+          <p className="mx-auto w-full max-w-4xl px-5 pb-2 pt-0.5 text-center text-xs text-[var(--app-text-muted)]">
+            {hasModelPlaceholder ? (
+              <>
+                {disclaimerPrefix}
+                <span className="font-medium text-[var(--app-text-tertiary)]">{displayModelName}</span>
+                {disclaimerSuffix}
+              </>
+            ) : (
+              disclaimerText
+            )}
+          </p>
         </form>
       </div>
     </div>
