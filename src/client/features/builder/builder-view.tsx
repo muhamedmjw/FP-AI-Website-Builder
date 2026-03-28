@@ -459,7 +459,6 @@ export default function BuilderView({
                     onDownload={() => void handleDownloadZip()}
                     isDownloading={isDownloading}
                     downloadSuccess={downloadSuccess}
-                    onClose={() => setPreviewOpen(false)}
                   />
                 </PreviewErrorBoundary>
               </div>

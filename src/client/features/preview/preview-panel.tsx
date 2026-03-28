@@ -1,11 +1,7 @@
 import { useRef, useState } from "react";
 import {
   Globe,
-  Monitor,
-  Tablet,
-  Smartphone,
   Download,
-  X,
   Check,
   History,
   Eye,
@@ -22,7 +18,7 @@ import VersionHistoryPanel from "@/client/features/preview/version-history-panel
 
 /**
  * Preview panel — renders the generated HTML inside a sandboxed iframe
- * with a single unified toolbar (device toggles + download/close) and a polished empty state.
+ * with a single unified toolbar and a polished empty state.
  */
 
 type PreviewPanelProps = {
@@ -43,15 +39,6 @@ type PreviewPanelProps = {
   onDownload?: () => void;
   isDownloading?: boolean;
   downloadSuccess?: boolean;
-  onClose?: () => void;
-};
-
-type DeviceMode = "desktop" | "tablet" | "mobile";
-
-const DEVICE_WIDTHS: Record<DeviceMode, string | undefined> = {
-  desktop: undefined,
-  tablet: "768px",
-  mobile: "390px",
 };
 
 export default function PreviewPanel({
@@ -72,11 +59,9 @@ export default function PreviewPanel({
   onDownload,
   isDownloading = false,
   downloadSuccess = false,
-  onClose,
 }: PreviewPanelProps) {
   const { language } = useLanguage();
   const shouldFixToolbarOrder = RTL_LANGUAGES.includes(language);
-  const [device, setDevice] = useState<DeviceMode>("desktop");
   const [activePanel, setActivePanel] = useState<"preview" | "editor">("preview");
   const hasMountedEditor = useRef(false);
   const [editorMounted, setEditorMounted] = useState(false);
@@ -142,8 +127,6 @@ export default function PreviewPanel({
     );
   }
 
-  const maxW = DEVICE_WIDTHS[device];
-
   return (
     <div
       className="flex h-full flex-col bg-[var(--app-bg-soft)]"
@@ -188,31 +171,6 @@ export default function PreviewPanel({
             </button>
           </div>
         ) : null}
-
-        {/* Left: device toggles */}
-        {activePanel === "preview"
-          ? (
-              [
-                { mode: "desktop" as const, Icon: Monitor, label: "Desktop" },
-                { mode: "tablet" as const, Icon: Tablet, label: "Tablet" },
-                { mode: "mobile" as const, Icon: Smartphone, label: "Mobile" },
-              ] as const
-            ).map(({ mode, Icon, label }) => (
-              <button
-                key={mode}
-                type="button"
-                onClick={() => setDevice(mode)}
-                title={label}
-                className={`flex h-7 w-7 items-center justify-center rounded-lg transition-colors ${
-                  device === mode
-                    ? "bg-[var(--app-hover-bg-strong)] text-[var(--app-text-heading)]"
-                    : "text-[var(--app-text-muted)] hover:text-[var(--app-text-secondary)] hover:bg-[var(--app-hover-bg)]"
-                }`}
-              >
-                <Icon size={15} />
-              </button>
-            ))
-          : null}
 
         {/* Spacer */}
         <div className="flex-1" />
@@ -339,7 +297,7 @@ export default function PreviewPanel({
           </span>
         ) : null}
 
-        {/* Right: Download ZIP + Close */}
+        {/* Right: Download ZIP */}
         {onDownload && (
           <button
             type="button"
@@ -362,16 +320,6 @@ export default function PreviewPanel({
                 : t("downloadZip", language)}
           </button>
         )}
-        {onClose && (
-          <button
-            type="button"
-            onClick={onClose}
-            className="flex h-8 w-8 items-center justify-center rounded-lg bg-[var(--app-hover-bg)] text-[var(--app-text-tertiary)] transition hover:bg-[var(--app-hover-bg-strong)] hover:text-[var(--app-text-heading)]"
-            title="Close preview"
-          >
-            <X size={15} />
-          </button>
-        )}
       </div>
 
       <div className="relative min-h-0 flex-1">
@@ -382,25 +330,13 @@ export default function PreviewPanel({
               : "pointer-events-none opacity-0"
           }`}
         >
-          <div className="flex h-full items-start justify-center overflow-auto p-3">
-            <div
-              className={`flex h-full flex-col overflow-hidden ${
-                maxW ? "rounded-xl border border-[var(--app-border)] shadow-lg" : "w-full"
-              }`}
-              style={{
-                maxWidth: maxW ?? "100%",
-                width: "100%",
-              }}
-            >
-              <iframe
-                title="Website Preview"
-                srcDoc={html}
-                sandbox="allow-scripts allow-same-origin allow-popups"
-                className="min-h-0 flex-1 border-0 bg-white"
-                style={{ width: "100%" }}
-              />
-            </div>
-          </div>
+          <iframe
+            title="Website Preview"
+            srcDoc={html}
+            sandbox="allow-scripts allow-same-origin allow-popups"
+            className="h-full w-full border-0 bg-white"
+            style={{ width: "100%", height: "100%" }}
+          />
         </div>
 
         {onChange && editorMounted ? (
