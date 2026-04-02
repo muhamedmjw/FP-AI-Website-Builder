@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { Sparkles } from "lucide-react";
 import GradientMesh from "@/client/components/ui/gradient-mesh";
 import LanguageSwitcher from "@/client/components/ui/language-switcher";
 import { useLanguage } from "@/client/lib/language-context";
@@ -21,9 +22,10 @@ export default function AccountPageView() {
         <LanguageSwitcher />
       </div>
       <div className="relative z-10 mx-auto flex min-h-screen w-full max-w-3xl flex-col items-start justify-center gap-5 px-4 sm:gap-6 sm:px-6">
-        <p className="prismatic-text text-xs font-semibold uppercase tracking-[0.3em]">
-          AI Website Builder
-        </p>
+        <div className="prismatic-text inline-flex items-center gap-2.5 text-base font-semibold uppercase tracking-[0.3em] sm:text-lg">
+          <Sparkles size={24} strokeWidth={1.8} className="prismatic-icon" aria-hidden="true" />
+          <span>AI Website Builder</span>
+        </div>
         <h1 className="text-2xl font-semibold text-[var(--app-text-heading)] sm:text-4xl">
           {t("accountHeroTitle", language)}
         </h1>
@@ -42,6 +44,12 @@ export default function AccountPageView() {
             href="/signup"
           >
             {t("signUp", language)}
+          </Link>
+          <Link
+            className="inline-flex h-11 items-center justify-center rounded-xl border-2 border-[var(--app-card-border)] px-6 text-sm font-semibold text-[var(--app-text-secondary)] shadow-[var(--app-shadow-sm)] transition hover:-translate-y-px hover:border-[var(--app-text-tertiary)] hover:text-[var(--app-text-heading)] hover:shadow-[var(--app-shadow-md)]"
+            href="/"
+          >
+            {t("continueAsGuest", language)}
           </Link>
         </div>
       </div>

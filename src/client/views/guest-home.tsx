@@ -188,9 +188,9 @@ export default function GuestHomePage() {
       <header className="border-b border-[var(--app-border)] bg-[var(--app-panel)]/60 px-3 py-3 backdrop-blur sm:px-5 sm:py-4">
         <div className="mx-auto w-full max-w-5xl">
           <div className="flex flex-wrap items-center justify-between gap-2 sm:gap-3">
-            <div className="flex items-center gap-2 sm:gap-2.5">
-              <Sparkles size={17} className="prismatic-icon" />
-              <p className="prismatic-text text-xs font-semibold uppercase tracking-[0.15em] sm:text-sm sm:tracking-[0.2em]">
+            <div className="flex items-center gap-2.5 sm:gap-3">
+              <Sparkles size={24} strokeWidth={1.8} className="prismatic-icon" />
+              <p className="prismatic-text text-sm font-semibold uppercase tracking-[0.2em] sm:text-base sm:tracking-[0.24em]">
                 AI Website Builder
               </p>
             </div>
