@@ -1,213 +1,214 @@
-# AI-Powered Multi-Language Website Builder
+# AI Website Builder
 
-A full-stack web application that generates complete websites from natural language prompts using AI, with multi-language support (English, Arabic, Kurdish) and RTL layout handling.
+A full-stack web app that turns natural-language prompts into complete, editable websites.
 
----
-
-## Built With
-
-![Next.js](https://img.shields.io/badge/Next.js-16-black?style=for-the-badge&logo=next.js)
-![React](https://img.shields.io/badge/React-19-61DAFB?style=for-the-badge&logo=react&logoColor=black)
-![TypeScript](https://img.shields.io/badge/TypeScript-5-3178C6?style=for-the-badge&logo=typescript&logoColor=white)
-![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-4-06B6D4?style=for-the-badge&logo=tailwindcss&logoColor=white)
-![Supabase](https://img.shields.io/badge/Supabase-Auth_%7C_DB_%7C_Storage-3FCF8E?style=for-the-badge&logo=supabase&logoColor=white)
-![Vercel](https://img.shields.io/badge/Vercel-Deployment-000?style=for-the-badge&logo=vercel)
+The app supports English, Arabic, and Kurdish (including RTL), lets users iterate in chat, preview results live, save version history, export ZIPs, and deploy generated sites to Netlify.
 
 ---
 
-## Features
+## Tech Stack
 
-- **AI-powered website generation** — describe what you want in plain language and get a full HTML website back.
-- **Pre-generation clarification questions** — the AI asks about design preferences, color schemes, target audience, and desired features before generating.
-- **Live split-screen preview** — resizable panels let you chat on the left and preview the generated website on the right in real time.
-- **Multi-language interface and output** — supports English, Arabic, and Kurdish with full RTL layout for Arabic and Kurdish.
-- **Conversation history** — all chats are saved with rename and delete support via an interactive sidebar.
-- **Guest mode** — unlimited prompts with no account needed; guest sessions are local and temporary.
-- **Registered user benefits** — cloud-saved conversations, ZIP download of generated websites, and access to advanced AI models.
-- **Profile management** — update your display name, email address, and profile avatar from the sidebar settings modal.
+- Next.js 16 (App Router)
+- React 19 + TypeScript 5
+- Tailwind CSS 4
+- Supabase (Auth + Postgres + RLS)
+- OpenRouter (AI generation)
+
+---
+
+## Key Features
+
+- AI website generation from plain-language prompts
+- Clarification flow before full generation when needed
+- Split chat and live preview workflow
+- Multi-language UI/output: English, Arabic, Kurdish
+- RTL-aware experience for Arabic and Kurdish
+- Authenticated workspaces with persistent chat history
+- Version history (list, restore, label)
+- ZIP export of generated websites
+- One-click deploy of generated website artifacts to Netlify
+- Guest mode with a limit of 3 prompts per day (cookie + DB tracked)
 
 ---
 
 ## Project Structure
 
+```text
+src/
+  app/
+    (auth)/
+    (workspace)/
+    account/
+    api/
+      chat/send/
+      guest/chat/
+      guest/zip/
+      website/deploy/
+      website/restore/
+      website/save/
+      website/version-label/
+      website/versions/
+  client/
+    components/
+    features/
+    lib/
+    views/
+  server/
+    prompts/
+    services/
+    supabase/
+  shared/
+    constants/
+    services/
+    types/
+    utils/
+schema.sql
 ```
-├── src/
-│   ├── middleware.ts                      # Next.js middleware — auth session refresh & route protection
-│   ├── app/                               # Next.js App Router pages and layouts
-│   │   ├── layout.tsx                     # Root layout (font, theme script, metadata)
-│   │   ├── globals.css                    # Global Tailwind CSS styles
-│   │   ├── (auth)/                        # Auth route group (signin, signup, login, register)
-│   │   │   ├── layout.tsx                 # Shared auth layout with PageShell wrapper
-│   │   │   ├── signin/page.tsx            # Sign-in page
-│   │   │   ├── signup/page.tsx            # Sign-up page
-│   │   │   ├── login/page.tsx             # Redirect → /signin
-│   │   │   └── register/page.tsx          # Redirect → /signup
-│   │   ├── (workspace)/                   # Workspace route group (home, chat, builder)
-│   │   │   ├── layout.tsx                 # App shell with sidebar for authenticated users
-│   │   │   ├── page.tsx                   # Home page (guest or authenticated)
-│   │   │   └── chat/
-│   │   │       ├── page.tsx               # Redirect → /
-│   │   │       └── [chatId]/page.tsx      # Chat page with builder split view
-│   │   ├── account/page.tsx               # Account landing page (unauthenticated)
-│   │   └── api/                           # API route handlers
-│   │       ├── chat/send/route.ts         # POST — send a chat message
-│   │       └── guest/zip/route.ts         # POST — generate guest ZIP download
-│   ├── client/                            # Client-side code (React components, hooks, utilities)
-│   │   ├── components/                    # Reusable UI components
-│   │   │   ├── auth-session-sync.tsx      # Syncs Supabase auth state on the client
-│   │   │   ├── forms/                     # Form building blocks (heading, input, link, shell)
-│   │   │   └── ui/                        # Generic UI primitives (gradient mesh, button)
-│   │   ├── features/                      # Feature-scoped components
-│   │   │   ├── builder/                   # Builder split view, resize handle, ZIP card
-│   │   │   ├── chat/                      # Chat panel, chat bubble, chat input
-│   │   │   ├── preview/                   # Live HTML preview iframe panel
-│   │   │   └── sidebar/                   # Sidebar, chat list, header, footer, new-chat button
-│   │   ├── views/                         # Top-level page view components
-│   │   │   ├── home.tsx                   # Authenticated home (prompt input)
-│   │   │   ├── guest-home.tsx             # Guest home (prompt + auth gate)
-│   │   │   ├── account.tsx                # Account landing view
-│   │   │   ├── login-page.tsx             # Login form component
-│   │   │   └── signup-page.tsx            # Signup form component
-│   │   └── lib/                           # Client utilities and API helpers
-│   │       ├── api/                       # API call wrappers
-│   │       │   ├── chat-api.ts            # Chat message send helper
-│   │       │   └── export-api.ts          # ZIP/HTML export helpers (placeholder)
-│   │       ├── supabase-browser.ts        # Supabase browser client singleton
-│   │       ├── guest-chat-handoff.ts      # Guest-to-auth session persistence
-│   │       └── zip-download.ts            # ZIP download trigger utility
-│   ├── server/                            # Server-only code (services, Supabase admin)
-│   │   ├── services/                      # Business logic services
-│   │   │   ├── website-service.ts         # Website CRUD and HTML retrieval
-│   │   │   ├── ai-service.ts             # AI provider communication (placeholder)
-│   │   │   └── zip-service.ts            # ZIP archive generation (placeholder)
-│   │   ├── prompts/                       # AI prompt templates
-│   │   │   ├── system-prompt.ts           # System instruction for the AI
-│   │   │   └── prompt-builder.ts          # Builds the messages array for AI calls
-│   │   └── supabase/
-│   │       └── server-client.ts           # Supabase server client factory
-│   └── shared/                            # Code shared between client and server
-│       ├── services/                      # Shared data-access services
-│       │   ├── chat-service.ts            # Chat and message CRUD
-│       │   └── user-service.ts            # User profile helpers
-│       ├── types/
-│       │   └── database.ts                # TypeScript types for DB tables
-│       ├── constants/                     # App-wide constants
-│       │   ├── limits.ts                  # Guest prompts, file size, session limits
-│       │   ├── languages.ts               # Supported languages and RTL config
-│       │   └── ai.ts                      # AI model names and config
-│       └── utils/
-│           └── auth-errors.ts             # Auth error classification helpers
-├── schema.sql                             # Supabase database schema
-├── package.json
-├── tsconfig.json
-├── next.config.ts
-├── postcss.config.mjs
-├── eslint.config.mjs
-└── README.md
-```
+
+---
+
+## API Routes
+
+| Method | Route | Purpose |
+| --- | --- | --- |
+| POST | `/api/chat/send` | Send authenticated chat prompts and persist history |
+| POST | `/api/guest/chat` | Guest chat generation with daily limit |
+| POST | `/api/guest/zip` | ZIP export for authenticated users |
+| POST | `/api/website/save` | Save generated HTML for a chat website |
+| GET | `/api/website/versions` | Fetch website version history |
+| POST | `/api/website/restore` | Restore a selected version |
+| PATCH | `/api/website/version-label` | Apply/update version labels |
+| POST | `/api/website/deploy` | Deploy generated site to Netlify |
+
+---
+
+## Prerequisites
+
+- Node.js 20+
+- npm
+- A Supabase project
+- An OpenRouter API key
+- A Netlify personal access token (optional, only for deploy feature)
 
 ---
 
 ## Getting Started
 
-### Prerequisites
-
-- **Node.js** 18+ and **npm**
-- A [Supabase](https://supabase.com) account and project
-
-### Installation
+1. Clone and install dependencies:
 
 ```bash
-# 1. Clone the repository
 git clone https://github.com/muhamedmjw/Final-Project.git
 cd Final-Project
-
-# 2. Install dependencies
 npm install
+```
 
-# 3. Create your environment file
-cp .env.local.example .env.local
-# Fill in the values (see Environment Variables below)
+2. Create your environment file:
 
-# 4. Run the database schema
-# Open Supabase SQL Editor and paste the contents of schema.sql
+```bash
+cp .env.example .env
+```
 
-# 5. Start the development server
+PowerShell alternative:
+
+```powershell
+Copy-Item .env.example .env
+```
+
+3. Fill `.env` using the variables in the next section.
+
+4. Set up the database:
+
+- Open Supabase SQL Editor
+- Paste and run the contents of `schema.sql`
+
+5. Start development server:
+
+```bash
 npm run dev
 ```
 
-The app will be available at [http://localhost:3000](http://localhost:3000).
+App URL: `http://localhost:3000`
 
 ---
 
 ## Environment Variables
 
-Create a `.env.local` file in the project root with the following variables:
+Use a root `.env` file.
+
+| Variable | Required | Used For |
+| --- | --- | --- |
+| `NEXT_PUBLIC_SUPABASE_URL` | Yes | Supabase URL for browser/server clients |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Yes | Supabase anon key for app clients |
+| `SUPABASE_SERVICE_ROLE_KEY` | Yes | Guest usage tracking and server-side guest route access |
+| `OPENROUTER_API_KEY` | Yes | AI calls through OpenRouter |
+| `OPENROUTER_MODEL_PRIMARY` | No | Server primary model override |
+| `OPENROUTER_MODEL_FALLBACK` | No | Server fallback model override |
+| `NEXT_PUBLIC_OPENROUTER_MODEL_PRIMARY` | No | Client-side display model override |
+| `NETLIFY_API_TOKEN` | No | Required only for `/api/website/deploy` |
+
+Example:
 
 ```env
-# ── Supabase ──
-NEXT_PUBLIC_SUPABASE_URL=          # Your Supabase project URL (https://xxx.supabase.co)
-NEXT_PUBLIC_SUPABASE_ANON_KEY=     # Supabase anon/public key
-SUPABASE_SERVICE_ROLE_KEY=         # For server-side guest_usage and ai_generations writes
+NEXT_PUBLIC_SUPABASE_URL=
+NEXT_PUBLIC_SUPABASE_ANON_KEY=
+SUPABASE_SERVICE_ROLE_KEY=
 
-# -- AI Provider (OpenRouter) --
-OPENROUTER_API_KEY=                # Required: OpenRouter API key
-# Optional model overrides (defaults are free NVIDIA Nemotron models):
-# OPENROUTER_MODEL_PRIMARY=nvidia/nemotron-3-super-120b-a12b:free
-# OPENROUTER_MODEL_FALLBACK=nvidia/nemotron-3-nano-30b-a3b:free
+OPENROUTER_API_KEY=
+OPENROUTER_MODEL_PRIMARY=nvidia/nemotron-3-super-120b-a12b:free
+OPENROUTER_MODEL_FALLBACK=nvidia/nemotron-3-nano-30b-a3b:free
+NEXT_PUBLIC_OPENROUTER_MODEL_PRIMARY=nvidia/nemotron-3-super-120b-a12b:free
+
+NETLIFY_API_TOKEN=
 ```
 
 ---
 
-## Database Setup
+## Database Notes
 
-1. Open the **SQL Editor** in your Supabase dashboard.
-2. Paste the contents of `schema.sql` and run it.
-3. **Row Level Security (RLS)** is enabled on all tables — users can only access their own data.
-4. An **auto-trigger** creates a row in the `users` table whenever a new user signs up through Supabase Auth.
+- Schema is consolidated in `schema.sql`
+- RLS policies are included
+- `file_versions` and `deploys` tables support version history and deployment flows
 
 ---
 
-## Available Scripts
+## Scripts
 
-| Command         | Description                              |
-| --------------- | ---------------------------------------- |
-| `npm run dev`   | Start the development server             |
-| `npm run build` | Create an optimised production build     |
-| `npm run start` | Serve the production build locally       |
-| `npm run lint`  | Run ESLint across the project            |
+| Command | Description |
+| --- | --- |
+| `npm run dev` | Start development server |
+| `npm run build` | Build for production |
+| `npm run start` | Run production server |
+| `npm run lint` | Run ESLint |
 
 ---
 
 ## Deployment
 
-| Layer      | Platform   | Notes                                                       |
-| ---------- | ---------- | ----------------------------------------------------------- |
-| Frontend   | **Vercel** | Push to `main` branch for automatic deployments             |
-| Backend    | **Supabase** | Auth, Postgres database, and storage are hosted on Supabase |
+### Deploy This App
 
-Set all environment variables in the **Vercel dashboard** under *Settings → Environment Variables* before deploying.
+- Frontend/app hosting: Vercel (recommended)
+- Database/auth: Supabase
+- Add environment variables in your hosting provider settings
+
+### Deploy Generated Websites
+
+- The app deploys generated website artifacts through Netlify API
+- Requires `NETLIFY_API_TOKEN` in app environment
 
 ---
 
-## Roadmap
+## Troubleshooting
 
-- [x] Authentication (register, login, logout)
-- [x] Chat interface and conversation history
-- [x] Sidebar with rename/delete and profile settings
-- [x] Guest mode with local session
-- [x] AI integration and website code generation
-- [x] Live preview panel with generated HTML
-- [x] Multi-language support (AR/KU RTL)
-- [x] ZIP download for registered users
-- [x] Language selector persisted per user
+- If PowerShell blocks `npm` scripts (`npm.ps1` execution policy), run commands with `npm.cmd` instead.
+- If guest chat fails, verify `SUPABASE_SERVICE_ROLE_KEY` is set correctly.
+- If deploy fails, verify `NETLIFY_API_TOKEN` and token permissions.
 
 ---
 
 ## Authors
 
-- **Mohammed Mustafa Jamal**
-- **Aso Yaseen Mohammed**
-- **Supervisor:** Mr. Godar J. Ibrahim
+- Mohammed Mustafa Jamal
+- Aso Yaseen Mohammed
+- Supervisor: Mr. Godar J. Ibrahim
 
-Salahaddin University — Erbil
+Salahaddin University - Erbil
