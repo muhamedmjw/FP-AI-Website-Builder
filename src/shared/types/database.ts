@@ -64,6 +64,7 @@ export type FileVersionRecord = {
   website_id: string;
   version: number;
   content: string;
+  label: string | null;
   created_at: string;
 };
 

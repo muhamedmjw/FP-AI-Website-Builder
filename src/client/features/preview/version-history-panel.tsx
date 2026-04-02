@@ -1,13 +1,14 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Clock3, RotateCcw, X } from "lucide-react";
+import { Check, Clock3, Pencil, RotateCcw, X } from "lucide-react";
 import { useLanguage } from "@/client/lib/language-context";
 import { t } from "@/shared/constants/translations";
 
 type VersionHistoryItem = {
   id: string;
   version: number;
+  label: string | null;
   created_at: string;
 };
 
@@ -34,6 +35,9 @@ export default function VersionHistoryPanel({
   const [currentVersion, setCurrentVersion] = useState<number | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [isRestoringId, setIsRestoringId] = useState<string | null>(null);
+  const [editingVersionId, setEditingVersionId] = useState<string | null>(null);
+  const [editingValue, setEditingValue] = useState("");
+  const [savingLabelId, setSavingLabelId] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState("");
 
   const locale = useMemo(() => {
@@ -83,6 +87,70 @@ export default function VersionHistoryPanel({
       void loadVersions();
     }
   }, [open, loadVersions]);
+
+  function handleStartEditing(item: VersionHistoryItem) {
+    setEditingVersionId(item.id);
+    setEditingValue(item.label ?? "");
+    setErrorMessage("");
+  }
+
+  function handleCancelEditing() {
+    if (savingLabelId) return;
+    setEditingVersionId(null);
+    setEditingValue("");
+  }
+
+  async function handleSaveLabel(item: VersionHistoryItem) {
+    if (savingLabelId) return;
+
+    const trimmedLabel = editingValue.trim();
+
+    if (!trimmedLabel) {
+      handleCancelEditing();
+      return;
+    }
+
+    setSavingLabelId(item.id);
+    setErrorMessage("");
+
+    try {
+      const response = await fetch("/api/website/version-label", {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          versionId: item.id,
+          label: trimmedLabel,
+          chatId,
+        }),
+      });
+
+      const data = (await response.json()) as {
+        success?: boolean;
+        label?: unknown;
+        error?: unknown;
+      };
+
+      if (!response.ok || data.success !== true || typeof data.label !== "string") {
+        const message =
+          typeof data.error === "string" ? data.error : t("saveError", language);
+        throw new Error(message);
+      }
+
+      setVersions((previousVersions) =>
+        previousVersions.map((version) =>
+          version.id === item.id ? { ...version, label: data.label as string } : version
+        )
+      );
+      setEditingVersionId(null);
+      setEditingValue("");
+    } catch (error) {
+      setErrorMessage(error instanceof Error ? error.message : t("saveError", language));
+    } finally {
+      setSavingLabelId(null);
+    }
+  }
 
   async function handleRestore(versionId: string) {
     setIsRestoringId(versionId);
@@ -163,36 +231,118 @@ export default function VersionHistoryPanel({
               {versions.map((item) => {
                 const isCurrent = currentVersion === item.version;
                 const isRestoring = isRestoringId === item.id;
+                const isEditing = editingVersionId === item.id;
+                const isSavingLabel = savingLabelId === item.id;
 
                 return (
                   <li
                     key={item.id}
-                    className="rounded-xl border border-[var(--app-border)] bg-[var(--app-panel-soft)] px-3 py-2.5"
+                    className="group rounded-xl border border-[var(--app-border)] bg-[var(--app-panel-soft)] px-3 py-2.5"
                   >
                     <div className="flex items-start justify-between gap-3">
-                      <div className="min-w-0">
-                        <p className="text-sm font-semibold text-[var(--app-text-heading)]">
-                          {t("version", language)} v{item.version}
-                          {isCurrent ? (
-                            <span className="ml-2 rounded-full bg-[var(--app-hover-bg)] px-2 py-0.5 text-[10px] font-medium text-[var(--app-text-secondary)]">
-                              {t("current", language)}
-                            </span>
-                          ) : null}
-                        </p>
+                      <div className="min-w-0 flex-1">
+                        {isEditing ? (
+                          <div className="flex items-center gap-2">
+                            <input
+                              type="text"
+                              value={editingValue}
+                              onChange={(event) => setEditingValue(event.target.value)}
+                              onKeyDown={(event) => {
+                                if (event.key === "Enter") {
+                                  event.preventDefault();
+                                  void handleSaveLabel(item);
+                                }
+
+                                if (event.key === "Escape") {
+                                  event.preventDefault();
+                                  handleCancelEditing();
+                                }
+                              }}
+                              maxLength={60}
+                              placeholder={t("versionLabelPlaceholder", language)}
+                              autoFocus
+                              disabled={isSavingLabel}
+                              className="w-full rounded-lg border border-[var(--app-input-border)] bg-[var(--app-input-bg)] px-2.5 py-1.5 text-sm text-[var(--app-input-text)] focus:border-[var(--app-input-focus-border)] focus:outline-none"
+                            />
+                            <button
+                              type="button"
+                              onClick={() => void handleSaveLabel(item)}
+                              disabled={isSavingLabel}
+                              className="flex items-center justify-center rounded-lg bg-emerald-500/15 px-2 py-1.5 text-emerald-400 transition hover:bg-emerald-500/20 disabled:pointer-events-none disabled:opacity-60"
+                              title={
+                                isSavingLabel
+                                  ? t("renamingVersion", language)
+                                  : t("saveChanges", language)
+                              }
+                            >
+                              {isSavingLabel ? (
+                                <span className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-current/30 border-t-current" />
+                              ) : (
+                                <Check size={13} />
+                              )}
+                            </button>
+                            <button
+                              type="button"
+                              onClick={handleCancelEditing}
+                              disabled={isSavingLabel}
+                              className="flex items-center justify-center rounded-lg bg-[var(--app-hover-bg)] px-2 py-1.5 text-[var(--app-text-tertiary)] transition hover:text-[var(--app-text-secondary)] disabled:pointer-events-none disabled:opacity-60"
+                              title={t("cancel", language)}
+                            >
+                              <X size={13} />
+                            </button>
+                          </div>
+                        ) : (
+                          <div className="flex items-center gap-1.5">
+                            {item.label ? (
+                              <>
+                                <p className="truncate text-sm font-semibold text-[var(--app-text-heading)]">
+                                  {item.label}
+                                </p>
+                                <span className="rounded-full bg-[var(--app-hover-bg)] px-2 py-0.5 text-[10px] font-medium text-[var(--app-text-tertiary)]">
+                                  v{item.version}
+                                </span>
+                              </>
+                            ) : (
+                              <p className="text-sm text-[var(--app-text-tertiary)]">
+                                {t("version", language)} v{item.version}
+                              </p>
+                            )}
+                            <button
+                              type="button"
+                              onClick={() => handleStartEditing(item)}
+                              className={`flex h-5 w-5 items-center justify-center rounded-md text-[var(--app-text-tertiary)] transition hover:bg-[var(--app-hover-bg)] hover:text-[var(--app-text-heading)] ${
+                                item.label
+                                  ? "opacity-0 group-hover:opacity-100 focus-visible:opacity-100"
+                                  : "opacity-100"
+                              }`}
+                              title={t("rename", language)}
+                              aria-label={t("rename", language)}
+                            >
+                              <Pencil size={12} />
+                            </button>
+                            {isCurrent ? (
+                              <span className="rounded-full bg-[var(--app-hover-bg)] px-2 py-0.5 text-[10px] font-medium text-[var(--app-text-secondary)]">
+                                {t("current", language)}
+                              </span>
+                            ) : null}
+                          </div>
+                        )}
                         <p className="mt-1 flex items-center gap-1 text-xs text-[var(--app-text-tertiary)]">
                           <Clock3 size={12} />
                           {new Date(item.created_at).toLocaleString(locale)}
                         </p>
                       </div>
-                      <button
-                        type="button"
-                        onClick={() => void handleRestore(item.id)}
-                        disabled={isRestoring}
-                        className="flex h-8 items-center gap-1.5 rounded-lg border border-[var(--app-border)] px-2.5 text-xs font-medium text-[var(--app-text-secondary)] transition hover:bg-[var(--app-hover-bg)] hover:text-[var(--app-text-heading)] disabled:pointer-events-none disabled:opacity-60"
-                      >
-                        <RotateCcw size={13} />
-                        {isRestoring ? t("restoring", language) : t("restore", language)}
-                      </button>
+                      {!isEditing ? (
+                        <button
+                          type="button"
+                          onClick={() => void handleRestore(item.id)}
+                          disabled={isRestoring}
+                          className="flex h-8 items-center gap-1.5 rounded-lg border border-[var(--app-border)] px-2.5 text-xs font-medium text-[var(--app-text-secondary)] transition hover:bg-[var(--app-hover-bg)] hover:text-[var(--app-text-heading)] disabled:pointer-events-none disabled:opacity-60"
+                        >
+                          <RotateCcw size={13} />
+                          {isRestoring ? t("restoring", language) : t("restore", language)}
+                        </button>
+                      ) : null}
                     </div>
                   </li>
                 );
