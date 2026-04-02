@@ -6,6 +6,7 @@ import {
   History,
   Eye,
   Code,
+  RefreshCw,
   Rocket,
 } from "lucide-react";
 import { useLanguage } from "@/client/lib/language-context";
@@ -28,10 +29,10 @@ type PreviewPanelProps = {
   isSaving?: boolean;
   hasUnsavedChanges?: boolean;
   isAuthenticated?: boolean;
-  onDeploy?: () => void | Promise<void>;
-  isDeploying?: boolean;
+  onOpenDeployModal?: () => void;
+  isDeployModalOpen?: boolean;
+  isRedeploying?: boolean;
   deployUrl?: string | null;
-  deployError?: string;
   hasDeployed?: boolean;
   onDownload?: () => void;
   isDownloading?: boolean;
@@ -47,10 +48,8 @@ export default function PreviewPanel({
   isSaving = false,
   hasUnsavedChanges = false,
   isAuthenticated = false,
-  onDeploy,
-  isDeploying = false,
+  onOpenDeployModal,
   deployUrl = null,
-  deployError = "",
   hasDeployed = false,
   onDownload,
   isDownloading = false,
@@ -162,46 +161,37 @@ export default function PreviewPanel({
           </button>
         ) : null}
 
-        {isAuthenticated && onDeploy ? (
-          deployUrl && !isDeploying ? (
-            <a
-              href={deployUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex h-8 items-center gap-1.5 rounded-lg border border-[var(--app-border)] px-2.5 text-xs font-medium text-[var(--app-text-secondary)] transition hover:bg-[var(--app-hover-bg)] hover:text-[var(--app-text-heading)]"
-            >
-              <Rocket size={14} />
-              {t("viewSite", language)}
-            </a>
+        {isAuthenticated ? (
+          deployUrl && hasDeployed ? (
+            <>
+              <a
+                href={deployUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex h-8 items-center gap-1.5 rounded-lg border border-[var(--app-border)] px-2.5 text-xs font-medium text-[var(--app-text-secondary)] transition hover:bg-[var(--app-hover-bg)] hover:text-[var(--app-text-heading)]"
+              >
+                <Rocket size={14} />
+                {t("viewSite", language)}
+              </a>
+              <button
+                type="button"
+                onClick={() => onOpenDeployModal?.()}
+                className="flex h-8 items-center gap-1.5 rounded-lg border border-[var(--app-border)] px-2.5 text-xs font-medium text-[var(--app-text-secondary)] transition hover:bg-[var(--app-hover-bg)] hover:text-[var(--app-text-heading)]"
+              >
+                <RefreshCw size={13} />
+                {t("updateSite", language)}
+              </button>
+            </>
           ) : (
             <button
               type="button"
-              onClick={() => void onDeploy()}
-              disabled={isDeploying}
-              className={`flex h-8 items-center gap-1.5 rounded-lg border px-2.5 text-xs font-medium transition ${
-                deployError
-                  ? "border-rose-400/50 text-rose-400"
-                  : "border-[var(--app-border)] text-[var(--app-text-secondary)] hover:bg-[var(--app-hover-bg)] hover:text-[var(--app-text-heading)]"
-              } disabled:pointer-events-none disabled:opacity-70`}
+              onClick={() => onOpenDeployModal?.()}
+              className="flex h-8 items-center gap-1.5 rounded-lg border border-[var(--app-border)] px-2.5 text-xs font-medium text-[var(--app-text-secondary)] transition hover:bg-[var(--app-hover-bg)] hover:text-[var(--app-text-heading)]"
             >
-              {isDeploying ? (
-                <span className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-current/30 border-t-current" />
-              ) : (
-                <Rocket size={14} />
-              )}
-              {isDeploying
-                ? t("deploying", language)
-                : deployError
-                  ? t("deployFailed", language)
-                  : t("deploy", language)}
+              <Rocket size={14} />
+              {t("deploy", language)}
             </button>
           )
-        ) : null}
-
-        {isAuthenticated && hasDeployed ? (
-          <span className="rounded-full bg-emerald-500/15 px-2 py-1 text-[10px] font-semibold text-emerald-400">
-            {t("deployed", language)}
-          </span>
         ) : null}
 
         {/* Right: Download ZIP */}

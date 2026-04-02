@@ -9,6 +9,7 @@ import { useMobileHeaderTitle } from "@/client/components/mobile-header-title-co
 import ChatPanel from "@/client/features/chat/chat-panel";
 import PromptSuggestions from "@/client/features/chat/prompt-suggestions";
 import PreviewPanel from "@/client/features/preview/preview-panel";
+import DeployModal from "@/client/features/preview/deploy-modal";
 import PreviewErrorBoundary from "@/client/features/preview/preview-error-boundary";
 import ResizeHandle from "@/client/features/builder/resize-handle";
 import { useLanguage } from "@/client/lib/language-context";
@@ -30,7 +31,7 @@ type BuilderViewProps = {
 };
 
 /** Minimum preview width in pixels */
-const MIN_PREVIEW_WIDTH = 450;
+const MIN_PREVIEW_WIDTH = 625;
 /** Minimum chat panel width in pixels */
 const MIN_CHAT_WIDTH = 610;
 /** Default preview width as a fraction of the container (0-1) */
@@ -182,6 +183,8 @@ export default function BuilderView({
   const [deployUrl, setDeployUrl] = useState<string | null>(null);
   const [deployError, setDeployError] = useState("");
   const [hasDeployed, setHasDeployed] = useState(false);
+  const [isDeployModalOpen, setIsDeployModalOpen] = useState(false);
+  const isRedeploying = hasDeployed && !isDeploying;
 
   useEffect(() => {
     try {
@@ -216,7 +219,7 @@ export default function BuilderView({
     }
   }
 
-  async function handleDeploy() {
+  async function handleDeploy(siteName?: string) {
     setInputErrorMessage("");
     setDeployError("");
     setIsDeploying(true);
@@ -227,7 +230,7 @@ export default function BuilderView({
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ chatId }),
+        body: JSON.stringify({ chatId, siteName }),
       });
 
       const data = (await response.json()) as
@@ -252,7 +255,6 @@ export default function BuilderView({
       const message =
         error instanceof Error ? error.message : t("deployFailed", language);
       setDeployError(message);
-      setInputErrorMessage(message);
     } finally {
       setIsDeploying(false);
     }
@@ -442,10 +444,10 @@ export default function BuilderView({
                     hasUnsavedChanges={hasUnsavedChanges}
                     onHtmlRestored={handleHtmlRestored}
                     isAuthenticated={isAuthenticated}
-                    onDeploy={handleDeploy}
-                    isDeploying={isDeploying}
+                    onOpenDeployModal={() => setIsDeployModalOpen(true)}
+                    isDeployModalOpen={isDeployModalOpen}
+                    isRedeploying={isRedeploying}
                     deployUrl={deployUrl}
-                    deployError={deployError}
                     hasDeployed={hasDeployed}
                     onDownload={() => void handleDownloadZip()}
                     isDownloading={isDownloading}
@@ -490,10 +492,10 @@ export default function BuilderView({
                 hasUnsavedChanges={hasUnsavedChanges}
                 onHtmlRestored={handleHtmlRestored}
                 isAuthenticated={isAuthenticated}
-                onDeploy={handleDeploy}
-                isDeploying={isDeploying}
+                onOpenDeployModal={() => setIsDeployModalOpen(true)}
+                isDeployModalOpen={isDeployModalOpen}
+                isRedeploying={isRedeploying}
                 deployUrl={deployUrl}
-                deployError={deployError}
                 hasDeployed={hasDeployed}
                 onDownload={() => void handleDownloadZip()}
                 isDownloading={isDownloading}
@@ -503,6 +505,22 @@ export default function BuilderView({
           </div>
         )}
       </div>
+
+      <DeployModal
+        isOpen={isDeployModalOpen}
+        onClose={() => {
+          setIsDeployModalOpen(false);
+          setDeployError("");
+        }}
+        onConfirm={(siteName) => {
+          void handleDeploy(siteName);
+        }}
+        isDeploying={isDeploying}
+        deployUrl={deployUrl}
+        deployError={deployError}
+        hasDeployed={hasDeployed}
+        isRedeploying={isRedeploying}
+      />
     </div>
   );
 }

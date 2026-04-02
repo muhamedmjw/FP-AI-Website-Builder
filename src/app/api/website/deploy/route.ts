@@ -59,13 +59,42 @@ function extractAssetsFromHtml(html: string) {
 }
 
 async function parseErrorMessage(response: Response, fallback: string) {
+  const contentType = response.headers.get("content-type") ?? "";
+  const rawBody = (await response.text().catch(() => "")).trim();
+
+  if (!rawBody) {
+    return fallback;
+  }
+
   try {
-    const data = (await response.json()) as { message?: string; error?: string };
-    if (typeof data.message === "string") return data.message;
-    if (typeof data.error === "string") return data.error;
-    return fallback;
+    if (contentType.includes("application/json")) {
+      const data = JSON.parse(rawBody) as {
+        message?: string;
+        error?: string;
+        code?: string | number;
+        errors?: string[];
+      };
+
+      if (typeof data.message === "string" && data.message.trim()) {
+        return data.message;
+      }
+
+      if (typeof data.error === "string" && data.error.trim()) {
+        return data.error;
+      }
+
+      if (Array.isArray(data.errors) && data.errors.length > 0) {
+        return data.errors.join(" ");
+      }
+
+      if (typeof data.code === "string" && data.code.trim()) {
+        return data.code;
+      }
+    }
+
+    return rawBody;
   } catch {
-    return fallback;
+    return rawBody || fallback;
   }
 }
 
@@ -91,8 +120,31 @@ export async function POST(request: NextRequest) {
         ? body.chatId.trim()
         : "";
 
+    const rawSiteName =
+      body &&
+      typeof body === "object" &&
+      "siteName" in body &&
+      typeof body.siteName === "string"
+        ? body.siteName.trim().toLowerCase()
+        : "";
+
+    const siteName = rawSiteName.replace(/\s+/g, "-");
+
     if (!chatId) {
       return NextResponse.json({ error: "chatId is required." }, { status: 400 });
+    }
+
+    if (
+      siteName &&
+      !/^[a-z0-9](?:[a-z0-9-]{1,61}[a-z0-9])$/.test(siteName)
+    ) {
+      return NextResponse.json(
+        {
+          error:
+            "Invalid site name. Use 3-63 characters: lowercase letters, numbers, and hyphens only, and no hyphen at the start or end.",
+        },
+        { status: 400 }
+      );
     }
 
     const website = await getWebsiteByChatId(supabase, chatId);
@@ -131,20 +183,75 @@ export async function POST(request: NextRequest) {
 
     const authHeader = { Authorization: `Bearer ${token}` };
 
-    const createSiteResponse = await fetch("https://api.netlify.com/api/v1/sites", {
-      method: "POST",
-      headers: authHeader,
-    });
+    const { data: existingDeploy } = await supabase
+      .from("deploys")
+      .select("netlify_site_id, deploy_url")
+      .eq("website_id", website.id)
+      .eq("user_id", user.id)
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
 
-    if (!createSiteResponse.ok) {
-      const message = await parseErrorMessage(
-        createSiteResponse,
-        "Failed to create a Netlify site."
-      );
-      return NextResponse.json({ error: message }, { status: 502 });
+    let site: NetlifySiteResponse;
+
+    if (existingDeploy?.netlify_site_id) {
+      site = {
+        id: existingDeploy.netlify_site_id,
+        ssl_url: existingDeploy.deploy_url ?? undefined,
+        url: existingDeploy.deploy_url ?? undefined,
+      };
+    } else {
+      const createSiteRequestInit: RequestInit = {
+        method: "POST",
+        headers: siteName
+          ? {
+              ...authHeader,
+              "Content-Type": "application/json",
+            }
+          : authHeader,
+      };
+
+      if (siteName) {
+        createSiteRequestInit.body = JSON.stringify({ name: siteName });
+      }
+
+      const createSiteResponse = await fetch("https://api.netlify.com/api/v1/sites", {
+        ...createSiteRequestInit,
+      });
+
+      if (!createSiteResponse.ok) {
+        const message = await parseErrorMessage(
+          createSiteResponse,
+          "Failed to create a Netlify site."
+        );
+
+        if (siteName) {
+          const looksLikeNameConflict =
+            createSiteResponse.status === 409 ||
+            createSiteResponse.status === 422 ||
+            /already|taken|exists|unavailable|in use|name/i.test(message);
+
+          if (looksLikeNameConflict) {
+            return NextResponse.json(
+              {
+                error:
+                  "That Netlify site name is unavailable. Please try a different name.",
+              },
+              { status: 409 }
+            );
+          }
+        }
+
+        const passthroughStatus =
+          createSiteResponse.status >= 400 && createSiteResponse.status < 500
+            ? createSiteResponse.status
+            : 502;
+
+        return NextResponse.json({ error: message }, { status: passthroughStatus });
+      }
+
+      site = (await createSiteResponse.json()) as NetlifySiteResponse;
     }
-
-    const site = (await createSiteResponse.json()) as NetlifySiteResponse;
 
     const deployResponse = await fetch(
       `https://api.netlify.com/api/v1/sites/${site.id}/deploys`,
