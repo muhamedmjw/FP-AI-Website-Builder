@@ -142,7 +142,7 @@ export default function ChatInput({
             <button
               type="button"
               onClick={onTogglePreview}
-              className={`relative flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border transition-all duration-150 sm:h-11 sm:w-11 ${
+              className={`relative flex h-10 w-10 shrink-0 self-center items-center justify-center rounded-xl border transition-all duration-150 sm:h-11 sm:w-11 ${
                 previewOpen
                   ? "bg-[var(--app-hover-bg-strong)] border-[var(--app-text-tertiary)]"
                   : "bg-[var(--app-card-bg)] border-[var(--app-card-border)]"
