@@ -5,7 +5,7 @@
  * generated HTML, and retrieving the latest output for preview/export.
  */
 
-import { createClient, SupabaseClient } from "@supabase/supabase-js";
+import { SupabaseClient } from "@supabase/supabase-js";
 import { Website, FileRecord, FileVersionRecord } from "@/shared/types/database";
 
 /** Create a website record linked to a chat. */
@@ -168,61 +168,3 @@ export async function restoreFileVersion(
   return restoredFile as FileRecord;
 }
 
-/** Update whether a website is publicly shareable. */
-export async function setWebsitePublic(
-  supabase: SupabaseClient,
-  websiteId: string,
-  isPublic: boolean
-): Promise<Website> {
-  const { data, error } = await supabase
-    .from("websites")
-    .update({ is_public: isPublic })
-    .eq("id", websiteId)
-    .select()
-    .single();
-
-  if (error) throw error;
-  return data as Website;
-}
-
-/**
- * Fetch public website HTML via an anonymous client, without requiring auth.
- */
-export async function getPublicWebsiteHtml(
-  _supabase: SupabaseClient,
-  chatId: string
-): Promise<{ website: Website; html: string } | null> {
-  if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
-    throw new Error("Supabase environment variables are not configured.");
-  }
-
-  const anonSupabase = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
-  );
-
-  const { data: website, error: websiteError } = await anonSupabase
-    .from("websites")
-    .select("*")
-    .eq("chat_id", chatId)
-    .eq("is_public", true)
-    .maybeSingle();
-
-  if (websiteError) throw websiteError;
-  if (!website) return null;
-
-  const { data: file, error: fileError } = await anonSupabase
-    .from("files")
-    .select("content")
-    .eq("website_id", website.id)
-    .eq("file_name", "index.html")
-    .maybeSingle();
-
-  if (fileError) throw fileError;
-  if (!file?.content) return null;
-
-  return {
-    website: website as Website,
-    html: file.content,
-  };
-}

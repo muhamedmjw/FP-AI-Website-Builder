@@ -6,8 +6,6 @@ import {
   History,
   Eye,
   Code,
-  Share2,
-  Copy,
   Rocket,
 } from "lucide-react";
 import { useLanguage } from "@/client/lib/language-context";
@@ -30,10 +28,6 @@ type PreviewPanelProps = {
   isSaving?: boolean;
   hasUnsavedChanges?: boolean;
   isAuthenticated?: boolean;
-  isPublic?: boolean;
-  shareUrl?: string | null;
-  isSharing?: boolean;
-  onShareToggle?: (isPublic: boolean) => void | Promise<void>;
   onDeploy?: () => void | Promise<void>;
   isDeploying?: boolean;
   deployUrl?: string | null;
@@ -53,10 +47,6 @@ export default function PreviewPanel({
   isSaving = false,
   hasUnsavedChanges = false,
   isAuthenticated = false,
-  isPublic = false,
-  shareUrl = null,
-  isSharing = false,
-  onShareToggle,
   onDeploy,
   isDeploying = false,
   deployUrl = null,
@@ -72,27 +62,6 @@ export default function PreviewPanel({
   const hasMountedEditor = useRef(false);
   const [editorMounted, setEditorMounted] = useState(false);
   const [isHistoryOpen, setIsHistoryOpen] = useState(false);
-  const [isShareOpen, setIsShareOpen] = useState(false);
-  const [copiedShareUrl, setCopiedShareUrl] = useState(false);
-
-  const resolvedShareUrl = shareUrl ?? (chatId ? `/preview/${chatId}` : "");
-
-  async function handleShareSwitch() {
-    if (!onShareToggle) return;
-    await onShareToggle(!isPublic);
-  }
-
-  async function handleCopyShareUrl() {
-    if (!resolvedShareUrl) return;
-
-    try {
-      await navigator.clipboard.writeText(resolvedShareUrl);
-      setCopiedShareUrl(true);
-      setTimeout(() => setCopiedShareUrl(false), 1400);
-    } catch {
-      setCopiedShareUrl(false);
-    }
-  }
 
   function handlePanelSwitch(nextPanel: "preview" | "editor") {
     if (nextPanel === "editor") {
@@ -191,74 +160,6 @@ export default function PreviewPanel({
             <History size={14} />
             {t("history", language)}
           </button>
-        ) : null}
-
-        {isAuthenticated && onShareToggle ? (
-          <div className="relative">
-            <button
-              type="button"
-              onClick={() => setIsShareOpen((open) => !open)}
-              className="flex h-8 items-center gap-1.5 rounded-lg border border-[var(--app-border)] px-2.5 text-xs font-medium text-[var(--app-text-secondary)] transition hover:bg-[var(--app-hover-bg)] hover:text-[var(--app-text-heading)]"
-              title={t("share", language)}
-            >
-              <Share2 size={14} />
-              {t("share", language)}
-            </button>
-
-            {isShareOpen ? (
-              <div className="absolute right-0 top-10 z-30 w-72 rounded-xl border border-[var(--app-border)] bg-[var(--app-panel)] p-3 shadow-[var(--app-shadow-lg)]">
-                <div className="flex items-center justify-between gap-3">
-                  <p className="text-xs font-medium text-[var(--app-text-secondary)]">
-                    {t("publicSharing", language)}
-                  </p>
-                  <button
-                    type="button"
-                    onClick={() => void handleShareSwitch()}
-                    disabled={isSharing}
-                    className={`relative inline-flex h-6 w-11 items-center rounded-full transition ${
-                      isPublic
-                        ? "bg-[var(--app-btn-primary-bg)]"
-                        : "bg-[var(--app-hover-bg-strong)]"
-                    } disabled:opacity-60`}
-                    title={t("publicSharing", language)}
-                  >
-                    <span
-                      className={`inline-block h-4 w-4 transform rounded-full bg-white transition ${
-                        isPublic ? "translate-x-6" : "translate-x-1"
-                      }`}
-                    />
-                  </button>
-                </div>
-
-                <p className="mt-2 text-xs text-[var(--app-text-tertiary)]">
-                  {isSharing
-                    ? t("saving", language)
-                    : isPublic
-                      ? t("shareEnabledHint", language)
-                      : t("shareDisabledHint", language)}
-                </p>
-
-                {isPublic ? (
-                  <div className="mt-3 space-y-2">
-                    <input
-                      type="text"
-                      readOnly
-                      value={resolvedShareUrl}
-                      className="w-full rounded-lg border border-[var(--app-border)] bg-[var(--app-bg-soft)] px-2.5 py-2 text-xs text-[var(--app-text-secondary)] outline-none"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => void handleCopyShareUrl()}
-                      className="flex h-8 w-full items-center justify-center gap-1.5 rounded-lg border border-[var(--app-border)] text-xs font-medium text-[var(--app-text-secondary)] transition hover:bg-[var(--app-hover-bg)] hover:text-[var(--app-text-heading)]"
-                    >
-                      <Copy size={13} />
-                      {copiedShareUrl ? t("copied", language) : t("copyLink", language)}
-                    </button>
-                  </div>
-                ) : null}
-              </div>
-            ) : null}
-          </div>
         ) : null}
 
         {isAuthenticated && onDeploy ? (

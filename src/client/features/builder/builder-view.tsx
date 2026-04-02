@@ -25,7 +25,6 @@ type BuilderViewProps = {
   chatTitle?: string;
   initialMessages: HistoryMessage[];
   initialHtml: string | null;
-  initialIsPublic?: boolean;
   isAuthenticated?: boolean;
   currentUserAvatarUrl?: string | null;
 };
@@ -43,7 +42,6 @@ export default function BuilderView({
   chatTitle = "Untitled",
   initialMessages,
   initialHtml,
-  initialIsPublic = false,
   isAuthenticated = true,
   currentUserAvatarUrl = null,
 }: BuilderViewProps) {
@@ -180,11 +178,6 @@ export default function BuilderView({
 
   const [isDownloading, setIsDownloading] = useState(false);
   const [downloadSuccess, setDownloadSuccess] = useState(false);
-  const [isPublic, setIsPublic] = useState(initialIsPublic);
-  const [isSharing, setIsSharing] = useState(false);
-  const [shareUrl, setShareUrl] = useState<string | null>(
-    initialIsPublic ? `/preview/${chatId}` : null
-  );
   const [isDeploying, setIsDeploying] = useState(false);
   const [deployUrl, setDeployUrl] = useState<string | null>(null);
   const [deployError, setDeployError] = useState("");
@@ -201,12 +194,6 @@ export default function BuilderView({
       // Ignore storage access failures.
     }
   }, [chatId]);
-
-  useEffect(() => {
-    if (initialIsPublic && !shareUrl) {
-      setShareUrl(`${window.location.origin}/preview/${chatId}`);
-    }
-  }, [chatId, initialIsPublic, shareUrl]);
 
   async function handleDownloadZip() {
     setInputErrorMessage("");
@@ -226,46 +213,6 @@ export default function BuilderView({
           : "Failed to download ZIP. Please try again."
       );
       setIsDownloading(false);
-    }
-  }
-
-  async function handleShareToggle(nextIsPublic: boolean) {
-    setInputErrorMessage("");
-    setIsSharing(true);
-
-    try {
-      const response = await fetch("/api/website/share", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ chatId, isPublic: nextIsPublic }),
-      });
-
-      const data = (await response.json()) as
-        | { shareUrl?: string; error?: string }
-        | null;
-
-      if (!response.ok) {
-        throw new Error(data?.error ?? t("shareUpdateFailed", language));
-      }
-
-      setIsPublic(nextIsPublic);
-      setShareUrl(
-        typeof data?.shareUrl === "string"
-          ? data.shareUrl
-          : nextIsPublic
-            ? `/preview/${chatId}`
-            : null
-      );
-    } catch (error) {
-      setInputErrorMessage(
-        error instanceof Error
-          ? error.message
-          : t("shareUpdateFailed", language)
-      );
-    } finally {
-      setIsSharing(false);
     }
   }
 
@@ -495,10 +442,6 @@ export default function BuilderView({
                     hasUnsavedChanges={hasUnsavedChanges}
                     onHtmlRestored={handleHtmlRestored}
                     isAuthenticated={isAuthenticated}
-                    isPublic={isPublic}
-                    shareUrl={shareUrl}
-                    isSharing={isSharing}
-                    onShareToggle={handleShareToggle}
                     onDeploy={handleDeploy}
                     isDeploying={isDeploying}
                     deployUrl={deployUrl}
@@ -547,10 +490,6 @@ export default function BuilderView({
                 hasUnsavedChanges={hasUnsavedChanges}
                 onHtmlRestored={handleHtmlRestored}
                 isAuthenticated={isAuthenticated}
-                isPublic={isPublic}
-                shareUrl={shareUrl}
-                isSharing={isSharing}
-                onShareToggle={handleShareToggle}
                 onDeploy={handleDeploy}
                 isDeploying={isDeploying}
                 deployUrl={deployUrl}

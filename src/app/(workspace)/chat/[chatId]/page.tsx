@@ -42,7 +42,6 @@ export default async function ChatPage({ params }: ChatPageProps) {
       chatTitle={chat.title ?? "Untitled"}
       initialMessages={messages}
       initialHtml={html}
-      initialIsPublic={website?.is_public ?? false}
       isAuthenticated
       currentUserAvatarUrl={profile?.avatarUrl ?? null}
     />
