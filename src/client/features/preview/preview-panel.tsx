@@ -34,6 +34,7 @@ type PreviewPanelProps = {
   isRedeploying?: boolean;
   deployUrl?: string | null;
   hasDeployed?: boolean;
+  hasPendingDeployUpdate?: boolean;
   onDownload?: () => void;
   isDownloading?: boolean;
   downloadSuccess?: boolean;
@@ -51,6 +52,7 @@ export default function PreviewPanel({
   onOpenDeployModal,
   deployUrl = null,
   hasDeployed = false,
+  hasPendingDeployUpdate = false,
   onDownload,
   isDownloading = false,
   downloadSuccess = false,
@@ -176,11 +178,19 @@ export default function PreviewPanel({
               <button
                 type="button"
                 onClick={() => onOpenDeployModal?.()}
-                className="flex h-8 items-center gap-1.5 rounded-lg border border-[var(--app-border)] px-2.5 text-xs font-medium text-[var(--app-text-secondary)] transition hover:bg-[var(--app-hover-bg)] hover:text-[var(--app-text-heading)]"
+                className="relative flex h-8 items-center gap-1.5 rounded-lg border border-[var(--app-border)] px-2.5 text-xs font-medium text-[var(--app-text-secondary)] transition hover:bg-[var(--app-hover-bg)] hover:text-[var(--app-text-heading)]"
               >
                 <RefreshCw size={13} />
                 {t("updateSite", language)}
+                {hasPendingDeployUpdate ? (
+                  <span className="absolute -right-0.5 -top-0.5 h-1.5 w-1.5 rounded-full bg-sky-400 shadow-[0_0_0_1px_rgba(2,6,23,0.7)]" />
+                ) : null}
               </button>
+              {hasPendingDeployUpdate ? (
+                <span className="inline-flex max-w-20 items-center justify-center rounded-lg border border-sky-400/30 bg-sky-500/10 px-2 py-1 text-center text-[10px] font-semibold leading-[1.15] text-sky-300 break-words">
+                  {t("deployUpdateNeeded", language)}
+                </span>
+              ) : null}
             </>
           ) : (
             <button

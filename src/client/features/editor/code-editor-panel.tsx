@@ -236,7 +236,7 @@ export default function CodeEditorPanel({
         >
           {hasUnsavedChanges ? (
             <span
-              className="absolute right-1.5 top-1.5 h-1.5 w-1.5 rounded-full bg-(--prism-2)"
+              className="absolute -right-0.5 -top-0.5 h-1.5 w-1.5 rounded-full bg-sky-400 shadow-[0_0_0_1px_rgba(2,6,23,0.7)]"
               aria-hidden="true"
             />
           ) : null}

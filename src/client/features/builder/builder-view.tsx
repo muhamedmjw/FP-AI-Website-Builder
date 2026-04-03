@@ -185,6 +185,7 @@ export default function BuilderView({
   const [deployUrl, setDeployUrl] = useState<string | null>(initialDeployUrl);
   const [deployError, setDeployError] = useState("");
   const [hasDeployed, setHasDeployed] = useState(Boolean(initialDeployUrl));
+  const [hasPendingDeployUpdate, setHasPendingDeployUpdate] = useState(false);
   const [isDeployModalOpen, setIsDeployModalOpen] = useState(false);
   const isRedeploying = hasDeployed && !isDeploying;
 
@@ -199,6 +200,8 @@ export default function BuilderView({
     } catch {
       // Ignore storage access failures.
     }
+
+    setHasPendingDeployUpdate(false);
 
     if (resolvedUrl) {
       setDeployUrl(resolvedUrl);
@@ -255,6 +258,7 @@ export default function BuilderView({
 
       setDeployUrl(data.deployUrl);
       setHasDeployed(true);
+      setHasPendingDeployUpdate(false);
 
       try {
         window.sessionStorage.setItem(`deploy-url:${chatId}`, data.deployUrl);
@@ -366,10 +370,14 @@ export default function BuilderView({
       }
 
       lastSavedHtml.current = currentHtml;
+
+      if (hasDeployed) {
+        setHasPendingDeployUpdate(true);
+      }
     } finally {
       setIsSaving(false);
     }
-  }, [chatId, language]);
+  }, [chatId, hasDeployed, language]);
 
   const currentHtml = html ?? "";
   const hasUnsavedChanges = currentHtml !== lastSavedHtml.current;
@@ -461,6 +469,7 @@ export default function BuilderView({
                     isRedeploying={isRedeploying}
                     deployUrl={deployUrl}
                     hasDeployed={hasDeployed}
+                    hasPendingDeployUpdate={hasPendingDeployUpdate}
                     onDownload={() => void handleDownloadZip()}
                     isDownloading={isDownloading}
                     downloadSuccess={downloadSuccess}
@@ -509,6 +518,7 @@ export default function BuilderView({
                 isRedeploying={isRedeploying}
                 deployUrl={deployUrl}
                 hasDeployed={hasDeployed}
+                hasPendingDeployUpdate={hasPendingDeployUpdate}
                 onDownload={() => void handleDownloadZip()}
                 isDownloading={isDownloading}
                 downloadSuccess={downloadSuccess}

@@ -4,11 +4,16 @@
 import { ChangeEvent, FormEvent, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import {
+  Check,
   ChevronDown,
   ChevronUp,
+  ExternalLink,
+  Globe,
   Github,
   LogOut,
   Moon,
+  PencilLine,
+  RefreshCw,
   Settings,
   Sun,
   Upload,
@@ -47,6 +52,40 @@ type SidebarFooterProps = {
   }) => void;
 };
 
+type DeploymentRow = {
+  websiteId: string;
+  chatId: string | null;
+  websiteName: string;
+  deployUrl: string | null;
+  status: string;
+  deployCount: number;
+  firstDeployedAt: string;
+  lastDeployedAt: string;
+  updatedAt: string;
+  netlifySiteId: string | null;
+};
+
+type DeployRecordRow = {
+  id: string;
+  website_id: string;
+  deploy_url: string | null;
+  status: string | null;
+  created_at: string;
+  netlify_site_id: string | null;
+};
+
+type WebsiteSummaryRow = {
+  id: string;
+  chat_id: string;
+  updated_at: string;
+};
+
+type ChatSummaryRow = {
+  id: string;
+  title: string;
+  updated_at: string;
+};
+
 /**
  * Bottom sidebar account area.
  * Provides account menu actions and a centered settings modal.
@@ -69,9 +108,16 @@ export default function SidebarFooter({
 
   const [menuOpen, setMenuOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [deploymentsOpen, setDeploymentsOpen] = useState(false);
   const [isSigningOut, setIsSigningOut] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
+  const [deploymentsError, setDeploymentsError] = useState("");
+  const [deployments, setDeployments] = useState<DeploymentRow[]>([]);
+  const [isDeploymentsLoading, setIsDeploymentsLoading] = useState(false);
+  const [editingWebsiteId, setEditingWebsiteId] = useState<string | null>(null);
+  const [editingWebsiteName, setEditingWebsiteName] = useState("");
+  const [renamingWebsiteId, setRenamingWebsiteId] = useState<string | null>(null);
   const [theme, setTheme] = useState<Theme>("dark");
   const [isLanguageMenuOpen, setIsLanguageMenuOpen] = useState(false);
   const [languageMenuPosition, setLanguageMenuPosition] = useState({
@@ -139,6 +185,7 @@ export default function SidebarFooter({
       if (event.key === "Escape") {
         setMenuOpen(false);
         setSettingsOpen(false);
+        setDeploymentsOpen(false);
         setIsLanguageMenuOpen(false);
       }
     }
@@ -156,6 +203,13 @@ export default function SidebarFooter({
       setIsLanguageMenuOpen(false);
     }
   }, [settingsOpen]);
+
+  useEffect(() => {
+    if (!deploymentsOpen) {
+      setEditingWebsiteId(null);
+      setEditingWebsiteName("");
+    }
+  }, [deploymentsOpen]);
 
   useEffect(() => {
     if (!isLanguageMenuOpen) return;
@@ -317,6 +371,232 @@ export default function SidebarFooter({
     }
   }
 
+  function formatDateTime(value: string): string {
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return "-";
+
+    const locale =
+      language === "ar" ? "ar" : language === "ku" ? "ku-Arab-IQ" : "en";
+
+    return date.toLocaleString(locale, {
+      year: "numeric",
+      month: "short",
+      day: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+  }
+
+  function getDeploymentStatusClass(status: string): string {
+    const normalized = status.trim().toLowerCase();
+
+    if (normalized === "ready" || normalized === "published") {
+      return "bg-emerald-500/15 text-emerald-400";
+    }
+
+    if (normalized === "error" || normalized === "failed") {
+      return "bg-rose-500/15 text-rose-400";
+    }
+
+    return "bg-amber-500/15 text-amber-300";
+  }
+
+  async function loadDeployments() {
+    setIsDeploymentsLoading(true);
+    setDeploymentsError("");
+
+    try {
+      const supabase = getSupabaseBrowserClient();
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+
+      if (!user) {
+        throw new Error(t("sessionExpiredPleaseSignInAgain", language));
+      }
+
+      const { data: deployData, error: deployError } = await supabase
+        .from("deploys")
+        .select("id, website_id, deploy_url, status, created_at, netlify_site_id")
+        .eq("user_id", user.id)
+        .order("created_at", { ascending: false });
+
+      if (deployError) throw deployError;
+
+      const deployRecords = (deployData ?? []) as DeployRecordRow[];
+
+      if (deployRecords.length === 0) {
+        setDeployments([]);
+        return;
+      }
+
+      const groupedByWebsite = new Map<
+        string,
+        {
+          latest: DeployRecordRow;
+          firstDeployedAt: string;
+          deployCount: number;
+        }
+      >();
+
+      for (const record of deployRecords) {
+        if (!record.website_id) continue;
+
+        const existing = groupedByWebsite.get(record.website_id);
+        if (!existing) {
+          groupedByWebsite.set(record.website_id, {
+            latest: record,
+            firstDeployedAt: record.created_at,
+            deployCount: 1,
+          });
+          continue;
+        }
+
+        existing.deployCount += 1;
+        existing.firstDeployedAt = record.created_at;
+      }
+
+      const websiteIds = [...groupedByWebsite.keys()];
+      if (websiteIds.length === 0) {
+        setDeployments([]);
+        return;
+      }
+
+      const { data: websitesData, error: websitesError } = await supabase
+        .from("websites")
+        .select("id, chat_id, updated_at")
+        .in("id", websiteIds);
+
+      if (websitesError) throw websitesError;
+
+      const websites = (websitesData ?? []) as WebsiteSummaryRow[];
+      const websiteById = new Map(websites.map((website) => [website.id, website]));
+
+      const chatIds = websites.map((website) => website.chat_id).filter(Boolean);
+      const uniqueChatIds = [...new Set(chatIds)];
+
+      let chatsById = new Map<string, ChatSummaryRow>();
+
+      if (uniqueChatIds.length > 0) {
+        const { data: chatsData, error: chatsError } = await supabase
+          .from("chats")
+          .select("id, title, updated_at")
+          .in("id", uniqueChatIds);
+
+        if (chatsError) throw chatsError;
+
+        chatsById = new Map(
+          ((chatsData ?? []) as ChatSummaryRow[]).map((chat) => [chat.id, chat])
+        );
+      }
+
+      const nextRows = websiteIds
+        .map((websiteId) => {
+          const grouped = groupedByWebsite.get(websiteId);
+          if (!grouped) return null;
+
+          const website = websiteById.get(websiteId);
+          const chat = website?.chat_id ? chatsById.get(website.chat_id) : null;
+
+          const websiteName =
+            chat?.title?.trim() || t("untitledWebsite", language);
+
+          const updatedAt =
+            website?.updated_at ?? chat?.updated_at ?? grouped.latest.created_at;
+
+          return {
+            websiteId,
+            chatId: website?.chat_id ?? null,
+            websiteName,
+            deployUrl: grouped.latest.deploy_url,
+            status: grouped.latest.status ?? "unknown",
+            deployCount: grouped.deployCount,
+            firstDeployedAt: grouped.firstDeployedAt,
+            lastDeployedAt: grouped.latest.created_at,
+            updatedAt,
+            netlifySiteId: grouped.latest.netlify_site_id,
+          } satisfies DeploymentRow;
+        })
+        .filter((row): row is DeploymentRow => row !== null)
+        .sort(
+          (a, b) =>
+            new Date(b.lastDeployedAt).getTime() -
+            new Date(a.lastDeployedAt).getTime()
+        );
+
+      setDeployments(nextRows);
+    } catch (error) {
+      console.error("Failed to load deployed websites:", error);
+      setDeploymentsError(
+        error instanceof Error
+          ? error.message
+          : t("deploymentsLoadFailed", language)
+      );
+    } finally {
+      setIsDeploymentsLoading(false);
+    }
+  }
+
+  function handleOpenDeployments() {
+    setMenuOpen(false);
+    setDeploymentsOpen(true);
+    setDeploymentsError("");
+    void loadDeployments();
+  }
+
+  function handleStartRename(row: DeploymentRow) {
+    if (!row.chatId) return;
+    setEditingWebsiteId(row.websiteId);
+    setEditingWebsiteName(row.websiteName);
+  }
+
+  async function handleSaveWebsiteName(row: DeploymentRow) {
+    if (!row.chatId) return;
+
+    const nextName = editingWebsiteName.trim();
+    if (!nextName) {
+      setDeploymentsError(t("websiteNameRequired", language));
+      return;
+    }
+
+    setRenamingWebsiteId(row.websiteId);
+    setDeploymentsError("");
+
+    try {
+      const supabase = getSupabaseBrowserClient();
+      const { error } = await supabase
+        .from("chats")
+        .update({ title: nextName })
+        .eq("id", row.chatId);
+
+      if (error) throw error;
+
+      setDeployments((prev) =>
+        prev.map((entry) =>
+          entry.websiteId === row.websiteId
+            ? {
+                ...entry,
+                websiteName: nextName,
+                updatedAt: new Date().toISOString(),
+              }
+            : entry
+        )
+      );
+
+      setEditingWebsiteId(null);
+      setEditingWebsiteName("");
+    } catch (error) {
+      console.error("Failed to rename deployed website:", error);
+      setDeploymentsError(
+        error instanceof Error
+          ? error.message
+          : t("couldNotSaveChanges", language)
+      );
+    } finally {
+      setRenamingWebsiteId(null);
+    }
+  }
+
   const accountLabel = userName?.trim() || userEmail?.trim() || t("account", language);
   const initials =
     accountLabel.length > 0 ? accountLabel.charAt(0).toUpperCase() : "A";
@@ -344,6 +624,8 @@ export default function SidebarFooter({
     "fixed inset-0 z-50 flex items-end justify-center bg-black/50 p-0 backdrop-blur-sm sm:items-center sm:p-4";
   const settingsModalClass =
     "w-full max-h-[90vh] overflow-y-auto rounded-t-2xl border border-[var(--app-card-border)] bg-[var(--app-panel)] shadow-[var(--app-shadow-lg)] sm:max-w-xl sm:rounded-2xl";
+  const deploymentsModalClass =
+    "w-full max-h-[90vh] overflow-hidden rounded-t-2xl border border-[var(--app-card-border)] bg-[var(--app-panel)] shadow-[var(--app-shadow-lg)] sm:max-w-6xl sm:rounded-2xl";
   const settingsTitleClass =
     "text-lg font-semibold text-[var(--app-text-heading)]";
   const settingsSubtitleClass =
@@ -441,6 +723,16 @@ export default function SidebarFooter({
             >
               <Settings size={15} />
               {t("settings", language)}
+            </button>
+
+            <button
+              type="button"
+              onClick={handleOpenDeployments}
+              role="menuitem"
+              className={menuItemClass}
+            >
+              <Globe size={15} />
+              {t("deployedWebsites", language)}
             </button>
 
             <a
@@ -617,6 +909,208 @@ export default function SidebarFooter({
         </div>,
         document.body
       )}
+
+      {deploymentsOpen &&
+        createPortal(
+          <div
+            className={settingsOverlayClass}
+            onClick={(event) => {
+              if (event.target === event.currentTarget) {
+                setDeploymentsOpen(false);
+              }
+            }}
+          >
+            <div className={deploymentsModalClass}>
+              <div className="flex items-center justify-between gap-3 border-b border-[var(--app-card-border)] px-6 py-4">
+                <div>
+                  <h3 className={settingsTitleClass}>
+                    {t("deployedWebsitesTitle", language)}
+                  </h3>
+                  <p className={settingsSubtitleClass}>
+                    {t("deployedWebsitesSubtitle", language)}
+                  </p>
+                </div>
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => void loadDeployments()}
+                    className="inline-flex items-center gap-1.5 rounded-lg bg-[var(--app-hover-bg)] px-3 py-2 text-xs font-medium text-[var(--app-text-secondary)] transition hover:bg-[var(--app-hover-bg-strong)]"
+                  >
+                    <RefreshCw size={14} />
+                    {t("refresh", language)}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setDeploymentsOpen(false)}
+                    className={closeButtonClass}
+                    title="Close deployments"
+                  >
+                    <X size={16} />
+                  </button>
+                </div>
+              </div>
+
+              <div className="max-h-[calc(90vh-90px)] overflow-y-auto px-6 py-5">
+                {isDeploymentsLoading ? (
+                  <p className="text-sm text-[var(--app-text-secondary)]">
+                    {t("loadingDeployedWebsites", language)}
+                  </p>
+                ) : deployments.length === 0 ? (
+                  <div className="rounded-xl border border-[var(--app-card-border)] bg-[var(--app-card-bg)] p-6 text-center text-sm text-[var(--app-text-secondary)]">
+                    {t("noDeployedWebsites", language)}
+                  </div>
+                ) : (
+                  <div className="overflow-x-auto rounded-xl border border-[var(--app-card-border)] bg-[var(--app-card-bg)]">
+                    <table className="min-w-full text-sm">
+                      <thead className="border-b border-[var(--app-card-border)] bg-[var(--app-hover-bg)]/70 text-left text-xs uppercase tracking-wide text-[var(--app-text-tertiary)]">
+                        <tr>
+                          <th className="px-4 py-3">{t("websiteName", language)}</th>
+                          <th className="px-4 py-3">{t("deploymentDomain", language)}</th>
+                          <th className="px-4 py-3">{t("lastUpdated", language)}</th>
+                          <th className="px-4 py-3">{t("deployedAt", language)}</th>
+                          <th className="px-4 py-3">{t("deployStatus", language)}</th>
+                          <th className="px-4 py-3">{t("deployCount", language)}</th>
+                          <th className="px-4 py-3">{t("netlifySiteId", language)}</th>
+                          <th className="px-4 py-3">{t("actions", language)}</th>
+                        </tr>
+                      </thead>
+
+                      <tbody>
+                        {deployments.map((row) => {
+                          const isEditing = editingWebsiteId === row.websiteId;
+                          const isRenaming = renamingWebsiteId === row.websiteId;
+
+                          return (
+                            <tr
+                              key={row.websiteId}
+                              className="border-b border-[var(--app-card-border)]/70 text-[var(--app-text-secondary)] last:border-b-0"
+                            >
+                              <td className="px-4 py-3 align-top">
+                                {isEditing ? (
+                                  <div className="space-y-2">
+                                    <input
+                                      type="text"
+                                      value={editingWebsiteName}
+                                      onChange={(event) =>
+                                        setEditingWebsiteName(event.target.value)
+                                      }
+                                      className="w-full rounded-lg border border-[var(--app-input-border)] bg-[var(--app-input-bg)] px-3 py-2 text-sm text-[var(--app-input-text)] focus:border-[var(--app-input-focus-border)] focus:outline-none"
+                                    />
+                                    <div className="flex items-center gap-2">
+                                      <button
+                                        type="button"
+                                        onClick={() => void handleSaveWebsiteName(row)}
+                                        disabled={isRenaming}
+                                        className="inline-flex items-center gap-1.5 rounded-md bg-[var(--app-btn-primary-bg)] px-2.5 py-1.5 text-xs font-semibold text-[var(--app-btn-primary-text)] transition hover:bg-[var(--app-btn-primary-hover)] disabled:opacity-60"
+                                      >
+                                        <Check size={12} />
+                                        {isRenaming
+                                          ? `${t("saveChanges", language)}...`
+                                          : t("saveChanges", language)}
+                                      </button>
+                                      <button
+                                        type="button"
+                                        onClick={() => {
+                                          setEditingWebsiteId(null);
+                                          setEditingWebsiteName("");
+                                        }}
+                                        className="rounded-md bg-[var(--app-hover-bg)] px-2.5 py-1.5 text-xs text-[var(--app-text-secondary)] transition hover:bg-[var(--app-hover-bg-strong)]"
+                                      >
+                                        {t("cancel", language)}
+                                      </button>
+                                    </div>
+                                  </div>
+                                ) : (
+                                  <>
+                                    <p className="font-semibold text-[var(--app-text-heading)]">
+                                      {row.websiteName}
+                                    </p>
+                                    <p className="mt-1 text-xs text-[var(--app-text-muted)]">
+                                      {t("firstDeployed", language)}: {formatDateTime(row.firstDeployedAt)}
+                                    </p>
+                                  </>
+                                )}
+                              </td>
+
+                              <td className="px-4 py-3">
+                                {row.deployUrl ? (
+                                  <a
+                                    href={row.deployUrl}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="inline-flex max-w-[220px] items-center gap-1.5 truncate text-[var(--app-text-heading)] hover:underline"
+                                  >
+                                    <span className="truncate">{row.deployUrl}</span>
+                                    <ExternalLink size={12} className="shrink-0" />
+                                  </a>
+                                ) : (
+                                  <span className="text-[var(--app-text-muted)]">-</span>
+                                )}
+                              </td>
+
+                              <td className="px-4 py-3 text-xs">
+                                {formatDateTime(row.updatedAt)}
+                              </td>
+                              <td className="px-4 py-3 text-xs">
+                                {formatDateTime(row.lastDeployedAt)}
+                              </td>
+                              <td className="px-4 py-3">
+                                <span
+                                  className={`inline-flex rounded-full px-2 py-1 text-[10px] font-semibold uppercase tracking-wide ${getDeploymentStatusClass(
+                                    row.status
+                                  )}`}
+                                >
+                                  {row.status}
+                                </span>
+                              </td>
+                              <td className="px-4 py-3 text-center font-medium text-[var(--app-text-heading)]">
+                                {row.deployCount}
+                              </td>
+                              <td className="px-4 py-3 font-mono text-xs text-[var(--app-text-muted)]">
+                                {row.netlifySiteId ? `${row.netlifySiteId.slice(0, 8)}...` : "-"}
+                              </td>
+                              <td className="px-4 py-3">
+                                <div className="flex items-center gap-2">
+                                  {row.chatId ? (
+                                    <button
+                                      type="button"
+                                      onClick={() => handleStartRename(row)}
+                                      className="inline-flex items-center gap-1 rounded-md bg-[var(--app-hover-bg)] px-2.5 py-1.5 text-xs text-[var(--app-text-secondary)] transition hover:bg-[var(--app-hover-bg-strong)]"
+                                    >
+                                      <PencilLine size={12} />
+                                      {t("rename", language)}
+                                    </button>
+                                  ) : null}
+
+                                  {row.deployUrl ? (
+                                    <a
+                                      href={row.deployUrl}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      className="inline-flex items-center gap-1 rounded-md bg-[var(--app-btn-primary-bg)] px-2.5 py-1.5 text-xs font-semibold text-[var(--app-btn-primary-text)] transition hover:bg-[var(--app-btn-primary-hover)]"
+                                    >
+                                      <ExternalLink size={12} />
+                                      {t("open", language)}
+                                    </a>
+                                  ) : null}
+                                </div>
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+
+                {deploymentsError ? (
+                  <p className="mt-4 text-sm text-rose-400">{deploymentsError}</p>
+                ) : null}
+              </div>
+            </div>
+          </div>,
+          document.body
+        )}
 
       {settingsOpen &&
         isLanguageMenuOpen &&

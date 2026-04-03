@@ -151,7 +151,10 @@ export default function ChatInput({
               aria-label={previewOpen ? "Hide preview" : "Show preview"}
             >
               {previewOpen ? (
-                <span className="absolute right-1.5 top-1.5 h-1.5 w-1.5 rounded-full bg-[var(--prism-2)]" aria-hidden="true" />
+                <span
+                  className="absolute right-1.5 top-1.5 h-2 w-2 rounded-full bg-sky-400 shadow-[0_0_0_1px_rgba(56,189,248,0.35),0_0_10px_rgba(56,189,248,0.55)]"
+                  aria-hidden="true"
+                />
               ) : null}
               <svg
                 width="18"
