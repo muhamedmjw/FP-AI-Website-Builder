@@ -35,6 +35,24 @@ export default async function ChatPage({ params }: ChatPageProps) {
 
   const chat = chatResult.data;
   const html = website ? await getGeneratedHtml(supabase, website.id) : null;
+  let initialDeployUrl: string | null = null;
+
+  if (website && user) {
+    const { data: latestDeploy, error: latestDeployError } = await supabase
+      .from("deploys")
+      .select("deploy_url")
+      .eq("website_id", website.id)
+      .eq("user_id", user.id)
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    if (latestDeployError) {
+      console.error("Failed to load latest deploy record:", latestDeployError);
+    } else if (typeof latestDeploy?.deploy_url === "string") {
+      initialDeployUrl = latestDeploy.deploy_url;
+    }
+  }
 
   return (
     <BuilderView
@@ -42,6 +60,7 @@ export default async function ChatPage({ params }: ChatPageProps) {
       chatTitle={chat.title ?? "Untitled"}
       initialMessages={messages}
       initialHtml={html}
+      initialDeployUrl={initialDeployUrl}
       isAuthenticated
       currentUserAvatarUrl={profile?.avatarUrl ?? null}
     />

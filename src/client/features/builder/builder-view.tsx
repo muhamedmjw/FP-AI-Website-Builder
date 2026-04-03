@@ -26,6 +26,7 @@ type BuilderViewProps = {
   chatTitle?: string;
   initialMessages: HistoryMessage[];
   initialHtml: string | null;
+  initialDeployUrl?: string | null;
   isAuthenticated?: boolean;
   currentUserAvatarUrl?: string | null;
 };
@@ -43,6 +44,7 @@ export default function BuilderView({
   chatTitle = "Untitled",
   initialMessages,
   initialHtml,
+  initialDeployUrl = null,
   isAuthenticated = true,
   currentUserAvatarUrl = null,
 }: BuilderViewProps) {
@@ -180,23 +182,33 @@ export default function BuilderView({
   const [isDownloading, setIsDownloading] = useState(false);
   const [downloadSuccess, setDownloadSuccess] = useState(false);
   const [isDeploying, setIsDeploying] = useState(false);
-  const [deployUrl, setDeployUrl] = useState<string | null>(null);
+  const [deployUrl, setDeployUrl] = useState<string | null>(initialDeployUrl);
   const [deployError, setDeployError] = useState("");
-  const [hasDeployed, setHasDeployed] = useState(false);
+  const [hasDeployed, setHasDeployed] = useState(Boolean(initialDeployUrl));
   const [isDeployModalOpen, setIsDeployModalOpen] = useState(false);
   const isRedeploying = hasDeployed && !isDeploying;
 
   useEffect(() => {
+    let resolvedUrl: string | null = initialDeployUrl;
+
     try {
       const storedUrl = window.sessionStorage.getItem(`deploy-url:${chatId}`);
       if (storedUrl) {
-        setDeployUrl(storedUrl);
-        setHasDeployed(true);
+        resolvedUrl = storedUrl;
       }
     } catch {
       // Ignore storage access failures.
     }
-  }, [chatId]);
+
+    if (resolvedUrl) {
+      setDeployUrl(resolvedUrl);
+      setHasDeployed(true);
+      return;
+    }
+
+    setDeployUrl(null);
+    setHasDeployed(false);
+  }, [chatId, initialDeployUrl]);
 
   async function handleDownloadZip() {
     setInputErrorMessage("");
