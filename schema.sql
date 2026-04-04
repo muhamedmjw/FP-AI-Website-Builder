@@ -85,12 +85,17 @@ create table if not exists public.chats (
   user_id uuid not null references public.users(id) on delete cascade,
   title text not null default 'New Chat',
   model_name text,
+  archived_at timestamptz,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
 
+alter table public.chats
+add column if not exists archived_at timestamptz;
+
 create index if not exists chats_user_id_idx on public.chats(user_id);
 create index if not exists chats_updated_at_idx on public.chats(updated_at desc);
+create index if not exists chats_archived_at_idx on public.chats(archived_at desc);
 
 -- 4) History (chat messages)
 create table if not exists public.history (

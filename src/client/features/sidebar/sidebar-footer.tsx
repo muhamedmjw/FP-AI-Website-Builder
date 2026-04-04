@@ -4,6 +4,7 @@
 import { ChangeEvent, FormEvent, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import {
+  Archive,
   Check,
   ChevronDown,
   ChevronUp,
@@ -86,6 +87,13 @@ type ChatSummaryRow = {
   updated_at: string;
 };
 
+type ArchivedChatRow = {
+  id: string;
+  title: string;
+  updated_at: string;
+  archived_at: string | null;
+};
+
 /**
  * Bottom sidebar account area.
  * Provides account menu actions and a centered settings modal.
@@ -109,12 +117,17 @@ export default function SidebarFooter({
   const [menuOpen, setMenuOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [deploymentsOpen, setDeploymentsOpen] = useState(false);
+  const [archivedChatsOpen, setArchivedChatsOpen] = useState(false);
   const [isSigningOut, setIsSigningOut] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
   const [deploymentsError, setDeploymentsError] = useState("");
+  const [archivedChatsError, setArchivedChatsError] = useState("");
   const [deployments, setDeployments] = useState<DeploymentRow[]>([]);
   const [isDeploymentsLoading, setIsDeploymentsLoading] = useState(false);
+  const [archivedChats, setArchivedChats] = useState<ArchivedChatRow[]>([]);
+  const [isArchivedChatsLoading, setIsArchivedChatsLoading] = useState(false);
+  const [restoringChatId, setRestoringChatId] = useState<string | null>(null);
   const [editingWebsiteId, setEditingWebsiteId] = useState<string | null>(null);
   const [editingWebsiteName, setEditingWebsiteName] = useState("");
   const [renamingWebsiteId, setRenamingWebsiteId] = useState<string | null>(null);
@@ -186,6 +199,7 @@ export default function SidebarFooter({
         setMenuOpen(false);
         setSettingsOpen(false);
         setDeploymentsOpen(false);
+        setArchivedChatsOpen(false);
         setIsLanguageMenuOpen(false);
       }
     }
@@ -210,6 +224,12 @@ export default function SidebarFooter({
       setEditingWebsiteName("");
     }
   }, [deploymentsOpen]);
+
+  useEffect(() => {
+    if (!archivedChatsOpen) {
+      setRestoringChatId(null);
+    }
+  }, [archivedChatsOpen]);
 
   useEffect(() => {
     if (!isLanguageMenuOpen) return;
@@ -544,6 +564,86 @@ export default function SidebarFooter({
     void loadDeployments();
   }
 
+  async function loadArchivedChats() {
+    setIsArchivedChatsLoading(true);
+    setArchivedChatsError("");
+
+    try {
+      const supabase = getSupabaseBrowserClient();
+      const { data, error } = await supabase
+        .from("chats")
+        .select("id, title, updated_at, archived_at")
+        .not("archived_at", "is", null)
+        .order("archived_at", { ascending: false });
+
+      if (error) {
+        const maybeMissingArchivedColumn =
+          typeof error.message === "string" &&
+          error.message.toLowerCase().includes("archived_at") &&
+          error.message.toLowerCase().includes("column");
+
+        if (maybeMissingArchivedColumn) {
+          throw new Error(
+            "Archive support is not available yet. Run migration_archived_chats.sql first."
+          );
+        }
+
+        throw error;
+      }
+
+      setArchivedChats(((data ?? []) as ArchivedChatRow[]).sort((a, b) => {
+        const aTime = a.archived_at ? new Date(a.archived_at).getTime() : 0;
+        const bTime = b.archived_at ? new Date(b.archived_at).getTime() : 0;
+        return bTime - aTime;
+      }));
+    } catch (error) {
+      console.error("Failed to load archived chats:", error);
+      setArchivedChatsError(
+        error instanceof Error
+          ? error.message
+          : "Could not load archived chats."
+      );
+    } finally {
+      setIsArchivedChatsLoading(false);
+    }
+  }
+
+  function handleOpenArchivedChats() {
+    setMenuOpen(false);
+    setArchivedChatsOpen(true);
+    setArchivedChatsError("");
+    void loadArchivedChats();
+  }
+
+  async function handleRestoreArchivedChat(chatId: string) {
+    setRestoringChatId(chatId);
+    setArchivedChatsError("");
+
+    try {
+      const supabase = getSupabaseBrowserClient();
+      const { error } = await supabase
+        .from("chats")
+        .update({ archived_at: null })
+        .eq("id", chatId);
+
+      if (error) {
+        throw error;
+      }
+
+      setArchivedChats((prev) => prev.filter((chat) => chat.id !== chatId));
+      router.refresh();
+    } catch (error) {
+      console.error("Failed to restore archived chat:", error);
+      setArchivedChatsError(
+        error instanceof Error
+          ? error.message
+          : "Could not restore this chat."
+      );
+    } finally {
+      setRestoringChatId(null);
+    }
+  }
+
   function handleStartRename(row: DeploymentRow) {
     if (!row.chatId) return;
     setEditingWebsiteId(row.websiteId);
@@ -733,6 +833,16 @@ export default function SidebarFooter({
             >
               <Globe size={15} />
               {t("deployedWebsites", language)}
+            </button>
+
+            <button
+              type="button"
+              onClick={handleOpenArchivedChats}
+              role="menuitem"
+              className={menuItemClass}
+            >
+              <Archive size={15} />
+              Archived chats
             </button>
 
             <a
@@ -1105,6 +1215,119 @@ export default function SidebarFooter({
 
                 {deploymentsError ? (
                   <p className="mt-4 text-sm text-rose-400">{deploymentsError}</p>
+                ) : null}
+              </div>
+            </div>
+          </div>,
+          document.body
+        )}
+
+      {archivedChatsOpen &&
+        createPortal(
+          <div
+            className={settingsOverlayClass}
+            onClick={(event) => {
+              if (event.target === event.currentTarget) {
+                setArchivedChatsOpen(false);
+              }
+            }}
+          >
+            <div className="w-full max-h-[90vh] overflow-hidden rounded-t-2xl border border-[var(--app-card-border)] bg-[var(--app-panel)] shadow-[var(--app-shadow-lg)] sm:max-w-4xl sm:rounded-2xl">
+              <div className="flex items-center justify-between gap-3 border-b border-[var(--app-card-border)] px-6 py-4">
+                <div>
+                  <h3 className={settingsTitleClass}>Archived chats</h3>
+                  <p className={settingsSubtitleClass}>
+                    Restore chats back to your sidebar anytime.
+                  </p>
+                </div>
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => void loadArchivedChats()}
+                    className="inline-flex items-center gap-1.5 rounded-lg bg-[var(--app-hover-bg)] px-3 py-2 text-xs font-medium text-[var(--app-text-secondary)] transition hover:bg-[var(--app-hover-bg-strong)]"
+                  >
+                    <RefreshCw size={14} />
+                    {t("refresh", language)}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setArchivedChatsOpen(false)}
+                    className={closeButtonClass}
+                    title="Close archived chats"
+                  >
+                    <X size={16} />
+                  </button>
+                </div>
+              </div>
+
+              <div className="max-h-[calc(90vh-90px)] overflow-y-auto px-6 py-5">
+                {isArchivedChatsLoading ? (
+                  <p className="text-sm text-[var(--app-text-secondary)]">
+                    Loading archived chats...
+                  </p>
+                ) : archivedChats.length === 0 ? (
+                  <div className="rounded-xl border border-[var(--app-card-border)] bg-[var(--app-card-bg)] p-6 text-center text-sm text-[var(--app-text-secondary)]">
+                    No archived chats.
+                  </div>
+                ) : (
+                  <div className="overflow-x-auto rounded-xl border border-[var(--app-card-border)] bg-[var(--app-card-bg)]">
+                    <table className="min-w-full text-sm">
+                      <thead className="border-b border-[var(--app-card-border)] bg-[var(--app-hover-bg)]/70 text-left text-xs uppercase tracking-wide text-[var(--app-text-tertiary)]">
+                        <tr>
+                          <th className="px-4 py-3">Chat</th>
+                          <th className="px-4 py-3">Archived at</th>
+                          <th className="px-4 py-3">Last updated</th>
+                          <th className="px-4 py-3">Actions</th>
+                        </tr>
+                      </thead>
+
+                      <tbody>
+                        {archivedChats.map((chat) => {
+                          const isRestoring = restoringChatId === chat.id;
+
+                          return (
+                            <tr
+                              key={chat.id}
+                              className="border-b border-[var(--app-card-border)]/70 text-[var(--app-text-secondary)] last:border-b-0"
+                            >
+                              <td className="px-4 py-3">
+                                <p className="font-semibold text-[var(--app-text-heading)]">
+                                  {chat.title?.trim() || t("untitledWebsite", language)}
+                                </p>
+                              </td>
+                              <td className="px-4 py-3 text-xs">
+                                {chat.archived_at ? formatDateTime(chat.archived_at) : "-"}
+                              </td>
+                              <td className="px-4 py-3 text-xs">
+                                {formatDateTime(chat.updated_at)}
+                              </td>
+                              <td className="px-4 py-3">
+                                <button
+                                  type="button"
+                                  onClick={() => void handleRestoreArchivedChat(chat.id)}
+                                  disabled={isRestoring}
+                                  className="inline-flex items-center gap-1 rounded-md bg-[var(--app-btn-primary-bg)] px-2.5 py-1.5 text-xs font-semibold text-[var(--app-btn-primary-text)] transition hover:bg-[var(--app-btn-primary-hover)] disabled:opacity-60"
+                                >
+                                  {isRestoring ? (
+                                    <>
+                                      <RefreshCw size={12} className="animate-spin" />
+                                      Restoring...
+                                    </>
+                                  ) : (
+                                    "Restore chat"
+                                  )}
+                                </button>
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+
+                {archivedChatsError ? (
+                  <p className="mt-4 text-sm text-rose-400">{archivedChatsError}</p>
                 ) : null}
               </div>
             </div>

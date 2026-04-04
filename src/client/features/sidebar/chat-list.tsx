@@ -14,13 +14,18 @@ type ChatListProps = {
   chats: Chat[];
   activeChatId?: string;
   onRename: (chatId: string, newTitle: string) => Promise<void>;
-  onDelete: (chatId: string) => Promise<void>;
+  onArchive: (chatId: string) => Promise<void>;
+  onDelete: (
+    chatId: string,
+    options?: { unpublishLiveSite?: boolean }
+  ) => Promise<void>;
 };
 
 export default function ChatList({
   chats,
   activeChatId,
   onRename,
+  onArchive,
   onDelete,
 }: ChatListProps) {
   const { language } = useLanguage();
@@ -44,6 +49,7 @@ export default function ChatList({
           chat={chat}
           isActive={chat.id === activeChatId}
           onRename={onRename}
+          onArchive={onArchive}
           onDelete={onDelete}
         />
       ))}

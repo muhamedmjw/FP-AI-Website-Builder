@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { Chat } from "@/shared/types/database";
 import { getSupabaseBrowserClient } from "@/client/lib/supabase-browser";
-import { renameChat, deleteChat } from "@/shared/services/chat-service";
+import { archiveChat, renameChat, deleteChat } from "@/shared/services/chat-service";
 import SidebarHeader from "@/client/features/sidebar/sidebar-header";
 import SidebarFooter from "@/client/features/sidebar/sidebar-footer";
 import NewChatButton from "@/client/features/sidebar/new-chat-button";
@@ -75,10 +75,49 @@ export default function Sidebar({
     }
   }
 
-  async function handleDelete(chatId: string) {
+  async function handleArchive(chatId: string) {
     try {
       const supabase = getSupabaseBrowserClient();
-      await deleteChat(supabase, chatId);
+      await archiveChat(supabase, chatId);
+      setActionErrorMessage("");
+
+      setChats((prev) => prev.filter((c) => c.id !== chatId));
+
+      if (chatId === resolvedActiveChatId) {
+        router.push("/");
+      }
+    } catch (error) {
+      console.error("Failed to archive chat:", error);
+      setActionErrorMessage("Could not archive this project. Please try again.");
+    }
+  }
+
+  async function handleDelete(
+    chatId: string,
+    options?: { unpublishLiveSite?: boolean }
+  ) {
+    try {
+      if (options?.unpublishLiveSite) {
+        const response = await fetch("/api/chat/delete", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ chatId, unpublishLiveSite: true }),
+        });
+
+        const data = (await response.json().catch(() => null)) as
+          | { error?: string }
+          | null;
+
+        if (!response.ok) {
+          throw new Error(data?.error ?? "Could not delete this project.");
+        }
+      } else {
+        const supabase = getSupabaseBrowserClient();
+        await deleteChat(supabase, chatId);
+      }
+
       setActionErrorMessage("");
 
       setChats((prev) => prev.filter((c) => c.id !== chatId));
@@ -140,6 +179,7 @@ export default function Sidebar({
               chats={chats}
               activeChatId={resolvedActiveChatId}
               onRename={handleRename}
+              onArchive={handleArchive}
               onDelete={handleDelete}
             />
             {actionErrorMessage ? (
