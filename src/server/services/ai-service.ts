@@ -338,7 +338,8 @@ export async function generateAIResponse(
   chatId: string,
   history: HistoryMessage[],
   language: "en" | "ar" | "ku" = "en",
-  existingHtml: string | null = null
+  existingHtml: string | null = null,
+  userImages: Array<{ fileName: string; dataUri: string }> = []
 ): Promise<AIResponse> {
   const startTime = Date.now();
 
@@ -356,7 +357,12 @@ export async function generateAIResponse(
   let temperature: number;
 
   if (intent === "build") {
-    messages = buildGenerationMessages(history, language, detectedLanguage) as AIMessage[];
+    messages = buildGenerationMessages(
+      history,
+      language,
+      detectedLanguage,
+      userImages
+    ) as AIMessage[];
     maxTokens = AI_CONFIG.MAX_TOKENS;
     temperature = 0.4;
   } else if (intent === "edit") {
@@ -365,12 +371,18 @@ export async function generateAIResponse(
         history,
         existingHtml,
         language,
-        detectedLanguage
+        detectedLanguage,
+        userImages
       ) as AIMessage[];
       maxTokens = AI_CONFIG.MAX_TOKENS;
       temperature = 0.2;
     } else {
-      messages = buildGenerationMessages(history, language, detectedLanguage) as AIMessage[];
+      messages = buildGenerationMessages(
+        history,
+        language,
+        detectedLanguage,
+        userImages
+      ) as AIMessage[];
       maxTokens = AI_CONFIG.MAX_TOKENS;
       temperature = 0.4;
     }
@@ -436,7 +448,8 @@ export async function generateAIResponse(
 
 export async function generateGuestAIResponse(
   history: Array<{ role: "user" | "assistant"; content: string }>,
-  language: AppLanguage = "en"
+  language: AppLanguage = "en",
+  userImages: Array<{ fileName: string; dataUri: string }> = []
 ): Promise<AIResponse> {
   const historyMessages: HistoryMessage[] = history.map((msg, i) => ({
     id: `guest-${i}`,
@@ -460,7 +473,12 @@ export async function generateGuestAIResponse(
   let temperature: number;
 
   if (intent === "build") {
-    messages = buildGenerationMessages(historyMessages, language, detectedLanguage) as AIMessage[];
+    messages = buildGenerationMessages(
+      historyMessages,
+      language,
+      detectedLanguage,
+      userImages
+    ) as AIMessage[];
     maxTokens = AI_CONFIG.MAX_TOKENS;
     temperature = 0.4;
   } else if (intent === "chat") {
@@ -468,7 +486,12 @@ export async function generateGuestAIResponse(
     maxTokens = 300;
     temperature = 0.7;
   } else {
-    messages = buildGenerationMessages(historyMessages, language, detectedLanguage) as AIMessage[];
+    messages = buildGenerationMessages(
+      historyMessages,
+      language,
+      detectedLanguage,
+      userImages
+    ) as AIMessage[];
     maxTokens = AI_CONFIG.MAX_TOKENS;
     temperature = 0.4;
   }

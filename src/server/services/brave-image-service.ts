@@ -210,6 +210,20 @@ function buildImageSearchQuery(context: string, alt: string): string {
   return "business website professional photography";
 }
 
+function buildShortContextQuery(context: string): string {
+  const words = normalizeQueryTerms(context)
+    .split(" ")
+    .map((word) => word.trim())
+    .filter(Boolean)
+    .slice(0, 3);
+
+  if (words.length === 0) {
+    return "";
+  }
+
+  return normalizeWhitespace(words.join(" "));
+}
+
 function asString(value: unknown): string {
   return typeof value === "string" ? value.trim() : "";
 }
@@ -329,6 +343,7 @@ export async function enrichHtmlWithBraveImages(
   options: EnrichHtmlImageOptions
 ): Promise<string> {
   if (!isBraveImageSearchEnabled()) {
+    console.warn("Brave image enrichment skipped: BRAVE_SEARCH_API_KEY is missing.");
     return html;
   }
 
@@ -345,15 +360,35 @@ export async function enrichHtmlWithBraveImages(
   const usedUrls = new Set<string>();
   const replacements: HtmlImageReplacement[] = [];
 
-  for (const match of matches) {
-    const query = buildImageSearchQuery(context, match.alt);
-
+  const getQueryResults = async (query: string) => {
     if (!resultCache.has(query)) {
       resultCache.set(query, searchBraveImages(query, DEFAULT_RESULTS_PER_QUERY));
     }
 
     const results = await resultCache.get(query);
-    if (!results || results.length === 0) {
+    return results ?? [];
+  };
+
+  const shortContextQuery = buildShortContextQuery(context);
+
+  for (const match of matches) {
+    const query = buildImageSearchQuery(context, match.alt);
+
+    let results = await getQueryResults(query);
+
+    if (results.length < 3 && shortContextQuery && shortContextQuery !== query) {
+      const retryResults = await getQueryResults(shortContextQuery);
+      if (retryResults.length > 0) {
+        results = Array.from(new Set([...results, ...retryResults]));
+      }
+    }
+
+    if (results.length === 0) {
+      const failedQuery =
+        shortContextQuery && shortContextQuery !== query
+          ? `${query} (retry: ${shortContextQuery})`
+          : query;
+      console.warn(`Brave image enrichment skipped: no results for query \"${failedQuery}\".`);
       continue;
     }
 

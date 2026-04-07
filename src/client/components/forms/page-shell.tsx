@@ -28,10 +28,10 @@ export default function PageShell({ children }: PageShellProps) {
           <section className={`space-y-3 text-center sm:space-y-4 ${isRtl ? "lg:text-right" : "lg:text-left"}`}>
             <Link
               href="/account"
-              className="prismatic-text inline-flex items-center gap-2.5 text-base font-semibold uppercase tracking-[0.3em] transition-opacity hover:opacity-80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/50 focus-visible:ring-offset-2 focus-visible:ring-offset-transparent sm:text-lg"
+              className="prismatic-text inline-flex items-center gap-2.5 text-lg font-semibold uppercase tracking-[0.3em] transition-opacity hover:opacity-80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/50 focus-visible:ring-offset-2 focus-visible:ring-offset-transparent sm:text-xl"
             >
               <Sparkles size={24} strokeWidth={1.8} className="prismatic-icon" aria-hidden="true" />
-              <span>AI Website Builder</span>
+              <span style={{ fontFamily: "var(--font-logo)" }}>AI Website Builder</span>
             </Link>
             <h1 className="text-2xl font-semibold leading-tight text-[var(--app-text-heading)] sm:text-4xl">{t("welcomeBackTitle", language)}</h1>
             <p className="text-sm text-[var(--app-text-secondary)] sm:text-base">{t("welcomeBackSubtitle", language)}</p>

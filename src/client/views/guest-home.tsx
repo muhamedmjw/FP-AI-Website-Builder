@@ -5,7 +5,6 @@ import { useState } from "react";
 import { Eye, MessageCircle, Sparkles, X } from "lucide-react";
 import { HistoryMessage } from "@/shared/types/database";
 import ChatPanel from "@/client/features/chat/chat-panel";
-import PromptSuggestions from "@/client/features/chat/prompt-suggestions";
 import PreviewPanel from "@/client/features/preview/preview-panel";
 import PreviewErrorBoundary from "@/client/features/preview/preview-error-boundary";
 import { savePendingGuestZipPrompt } from "@/client/lib/zip-download";
@@ -14,6 +13,7 @@ import LanguageSwitcher from "@/client/components/ui/language-switcher";
 import { useLanguage } from "@/client/lib/language-context";
 import { t } from "@/shared/constants/translations";
 import { localizeGuestChatErrorMessage } from "@/shared/utils/localized-errors";
+import { MAX_GUEST_PROMPTS } from "@/shared/constants/limits";
 import type { AppLanguage } from "@/shared/types/database";
 
 function createGuestMessage(
@@ -74,7 +74,7 @@ function GuestLimitBanner({
   return (
     <div className="mx-auto mb-2 w-full max-w-4xl rounded-2xl border border-[var(--app-card-border)] bg-[var(--app-card-bg)] p-4">
       <h3 className="font-semibold text-[var(--app-text-heading)]">
-        You've used your 3 free prompts
+        You&apos;ve used your 3 free prompts
       </h3>
       <p className="mt-1 text-sm text-[var(--app-text-secondary)]">
         Create a free account to keep building - no credit card required.
@@ -109,12 +109,14 @@ export default function GuestHomePage() {
   const [authGateOpen, setAuthGateOpen] = useState(false);
   const [pendingDownloadPrompt, setPendingDownloadPrompt] = useState("");
   const [mobileTab, setMobileTab] = useState<"chat" | "preview">("chat");
+  const [promptsUsed, setPromptsUsed] = useState(0);
 
   const hasPreview = typeof html === "string" && html.trim().length > 0;
-  const isLimitReached =
+  const hasLimitErrorMessage =
     inputErrorMessage === t("guestLimitReached", language) ||
     inputErrorMessage.toLowerCase().includes("limit");
-  const displayedInputError = isLimitReached ? "" : inputErrorMessage;
+  const isLimitReached = promptsUsed >= MAX_GUEST_PROMPTS;
+  const displayedInputError = hasLimitErrorMessage ? "" : inputErrorMessage;
   const guestInputPlaceholder = isSending
     ? t("generating", language)
     : t("inputPlaceholder", language);
@@ -147,9 +149,17 @@ export default function GuestHomePage() {
           setHtml(aiResponse.html);
         }
       }
+
+      setPromptsUsed((previousCount) =>
+        Math.min(previousCount + 1, MAX_GUEST_PROMPTS)
+      );
     } catch (error) {
       const raw = error instanceof Error ? error.message : "";
       setInputErrorMessage(localizeGuestChatErrorMessage(raw, language));
+
+      if (raw.includes("429") || raw.toLowerCase().includes("limit")) {
+        setPromptsUsed(MAX_GUEST_PROMPTS);
+      }
 
       // Remove the optimistic user message on error
       setMessages((prev) => prev.filter((m) => m.id !== userMessage.id));
@@ -193,8 +203,8 @@ export default function GuestHomePage() {
           <div className="flex flex-wrap items-center justify-between gap-2 sm:gap-3">
             <div className="flex items-center gap-2.5 sm:gap-3">
               <Sparkles size={24} strokeWidth={1.8} className="prismatic-icon" />
-              <p className="prismatic-text text-sm font-semibold uppercase tracking-[0.2em] sm:text-base sm:tracking-[0.24em]">
-                AI Website Builder
+              <p className="prismatic-text text-base font-semibold uppercase tracking-[0.2em] sm:text-lg sm:tracking-[0.24em]">
+                <span style={{ fontFamily: "var(--font-logo)" }}>AI Website Builder</span>
               </p>
             </div>
             <div className="flex items-center gap-1.5 sm:gap-2">
@@ -266,7 +276,6 @@ export default function GuestHomePage() {
             centerInputWhenEmpty={!hasPreview}
             inputPlaceholder={guestInputPlaceholder}
             inputErrorMessage={displayedInputError}
-            emptyStateSuggestions={<PromptSuggestions onSend={handleSend} />}
             inputBanner={
               isLimitReached ? (
                 <GuestLimitBanner
@@ -306,7 +315,6 @@ export default function GuestHomePage() {
             centerInputWhenEmpty={!hasPreview}
             inputPlaceholder={guestInputPlaceholder}
             inputErrorMessage={displayedInputError}
-            emptyStateSuggestions={<PromptSuggestions onSend={handleSend} />}
             inputBanner={
               isLimitReached ? (
                 <GuestLimitBanner

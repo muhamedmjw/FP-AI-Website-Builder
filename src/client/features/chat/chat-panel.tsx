@@ -7,7 +7,7 @@ import ChatBubble from "@/client/features/chat/chat-bubble";
 import ChatInput from "@/client/features/chat/chat-input";
 import { useLanguage } from "@/client/lib/language-context";
 import { t } from "@/shared/constants/translations";
-import type { AppLanguage } from "@/shared/types/database";
+import type { AppLanguage, UserImage } from "@/shared/types/database";
 
 function formatElapsedTimer(seconds: number, language: AppLanguage) {
   if (language === "ar") {
@@ -37,9 +37,11 @@ function GeneratingDots() {
  */
 
 type ChatPanelProps = {
+  chatId?: string;
   chatTitle?: string;
   messages: HistoryMessage[];
   onSend: (message: string) => void;
+  onImagesChange?: (images: UserImage[]) => void;
   onTogglePreview?: () => void;
   previewOpen?: boolean;
   hasPreview?: boolean;
@@ -62,9 +64,11 @@ type ChatPanelProps = {
 };
 
 export default function ChatPanel({
+  chatId,
   chatTitle,
   messages,
   onSend,
+  onImagesChange,
   onTogglePreview,
   previewOpen = false,
   hasPreview = false,
@@ -170,6 +174,8 @@ export default function ChatPanel({
               onTogglePreview={onTogglePreview}
               previewOpen={previewOpen}
               hasPreview={hasPreview}
+              chatId={chatId}
+              onImagesChange={onImagesChange}
               disabled={isSending || disableInput}
               placeholder={resolvedInputPlaceholder}
               isSticky={false}
@@ -264,6 +270,8 @@ export default function ChatPanel({
               onTogglePreview={onTogglePreview}
               previewOpen={previewOpen}
               hasPreview={hasPreview}
+              chatId={chatId}
+              onImagesChange={onImagesChange}
               disabled={isSending || disableInput}
               placeholder={resolvedInputPlaceholder}
               isSticky

@@ -47,11 +47,13 @@ export default function SidebarHeader({
           className="prismatic-icon shrink-0"
         />
         <div className="flex flex-col leading-tight">
-          <span className="prismatic-text text-base font-bold uppercase tracking-[0.22em]">
-            AI Website
-          </span>
-          <span className="prismatic-text text-base font-bold uppercase tracking-[0.22em]">
-            Builder
+          <span style={{ fontFamily: "var(--font-logo)" }}>
+            <span className="prismatic-text block text-lg font-bold uppercase tracking-[0.22em]">
+              AI Website
+            </span>
+            <span className="prismatic-text block text-lg font-bold uppercase tracking-[0.22em]">
+              Builder
+            </span>
           </span>
         </div>
       </Link>

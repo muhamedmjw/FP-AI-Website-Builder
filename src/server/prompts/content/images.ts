@@ -4,6 +4,12 @@ IMAGE RULES:
 Use Unsplash Source API for all images:
   https://source.unsplash.com/{width}x{height}/?{keyword}
 
+When BRAVE_SEARCH_API_KEY is configured, your placeholder Unsplash
+URLs will be automatically replaced with real images from Brave Image
+Search after you generate the HTML. So always write meaningful,
+specific alt text and use accurate Unsplash keyword paths — the
+keywords drive the search query used to find a replacement.
+
 KEYWORD MAPPING by business type:
 - Dentist/dental: ?dentist,teeth,clinic
 - Restaurant/food: ?restaurant,food,dining

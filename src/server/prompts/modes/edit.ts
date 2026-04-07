@@ -36,4 +36,16 @@ Do not guess and redesign.
 RETURN:
 Complete updated HTML document with only the 
 requested changes applied.
+
+USER-PROVIDED IMAGES:
+The user has uploaded their own images. Their data URIs are listed
+below. You MUST use these images (by their data URI) as the src
+attribute for the most relevant <img> tags in the generated HTML.
+Prefer user images for hero sections and gallery sections.
+Do not use Unsplash or any external URL for image slots that a
+user image fits.
+User-uploaded images always take priority over Brave/Unsplash image
+replacements. Only use Brave/Unsplash for image slots that no user
+image covers.
+{USER_IMAGES_BLOCK}
 `.trim();

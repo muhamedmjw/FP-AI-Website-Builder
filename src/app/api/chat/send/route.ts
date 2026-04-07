@@ -15,6 +15,30 @@ import { AI_CONFIG } from "@/shared/constants/ai";
 import { MAX_PROMPT_LENGTH } from "@/shared/constants/limits";
 import type { AppLanguage } from "@/shared/types/database";
 
+type PostgresLikeError = {
+  code?: string;
+  message?: string;
+  details?: string;
+  hint?: string;
+};
+
+function isMissingUploadColumns(error: unknown): boolean {
+  if (!error || typeof error !== "object") {
+    return false;
+  }
+
+  const pgError = error as PostgresLikeError;
+  const combinedMessage = [pgError.message, pgError.details, pgError.hint]
+    .filter((value): value is string => typeof value === "string")
+    .join(" ")
+    .toLowerCase();
+
+  return (
+    pgError.code === "42703" ||
+    (combinedMessage.includes("is_user_upload") && combinedMessage.includes("column"))
+  );
+}
+
 function isAppLanguage(value: unknown): value is AppLanguage {
   return value === "en" || value === "ar" || value === "ku";
 }
@@ -165,25 +189,64 @@ export async function POST(request: NextRequest) {
       ? await getGeneratedHtml(supabase, existingWebsite.id)
       : null;
 
+    const userImages = existingWebsite
+      ? await (async () => {
+          const { data, error } = await supabase
+            .from("files")
+            .select("file_name, content")
+            .eq("website_id", existingWebsite.id)
+            .eq("is_user_upload", true)
+            .order("created_at", { ascending: true });
+
+          if (error) {
+            if (isMissingUploadColumns(error)) {
+              return [];
+            }
+
+            throw error;
+          }
+
+          return (data ?? []).map((row) => ({
+            fileName: row.file_name,
+            dataUri: row.content,
+          }));
+        })()
+      : [];
+
     // Call DeepSeek AI — pass existingHtml so edit mode activates correctly
     const aiResponse = await generateAIResponse(
       supabase,
       chatId,
       historyForAI,
       effectiveLanguage,
-      existingHtml
+      existingHtml,
+      userImages
     );
 
     // If AI generated a website, save the HTML
     if (aiResponse.type === "website") {
       let website = existingWebsite;
       if (!website) {
-        website = await createWebsite(
-          supabase,
-          chatId,
-          content.trim(),
-          effectiveLanguage
-        );
+        try {
+          website = await createWebsite(
+            supabase,
+            chatId,
+            content.trim(),
+            effectiveLanguage
+          );
+        } catch (error) {
+          const maybePgError = error as PostgresLikeError;
+
+          if (maybePgError.code === "23505") {
+            website = await getWebsiteByChatId(supabase, chatId);
+          } else {
+            throw error;
+          }
+        }
+
+        if (!website) {
+          throw new Error("Failed to resolve website after creation race.");
+        }
       } else if (website.language !== effectiveLanguage) {
         const { error: updateLanguageError } = await supabase
           .from("websites")

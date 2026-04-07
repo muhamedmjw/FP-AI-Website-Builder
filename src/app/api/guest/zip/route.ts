@@ -1,3 +1,4 @@
+import { Buffer } from "node:buffer";
 import JSZip from "jszip";
 import { NextRequest, NextResponse } from "next/server";
 import { getSupabaseServerClient } from "@/server/supabase/server-client";
@@ -7,8 +8,33 @@ import {
   getGeneratedHtml,
 } from "@/server/services/website-service";
 
+type PostgresLikeError = {
+  code?: string;
+  message?: string;
+  details?: string;
+  hint?: string;
+};
+
+function isMissingUploadColumns(error: unknown): boolean {
+  if (!error || typeof error !== "object") {
+    return false;
+  }
+
+  const pgError = error as PostgresLikeError;
+  const combinedMessage = [pgError.message, pgError.details, pgError.hint]
+    .filter((value): value is string => typeof value === "string")
+    .join(" ")
+    .toLowerCase();
+
+  return (
+    pgError.code === "42703" ||
+    (combinedMessage.includes("is_user_upload") && combinedMessage.includes("column")) ||
+    (combinedMessage.includes("mime_type") && combinedMessage.includes("column"))
+  );
+}
+
 function toSafeFilename(title: string): string {
-  const safeBase = title
+  let safeBase = title
     .toLowerCase()
     .replace(/[^a-z0-9\s_]/g, "")
     .trim()
@@ -16,7 +42,21 @@ function toSafeFilename(title: string): string {
     .replace(/_+/g, "_")
     .replace(/^_|_$/g, "");
 
+  if (/^\d/.test(safeBase)) {
+    safeBase = `website-${safeBase}`;
+  }
+
   return `${safeBase || "website"}.zip`;
+}
+
+function extractBase64FromDataUri(dataUri: string): string | null {
+  const match = dataUri.match(/^data:[^;]+;base64,(.+)$/i);
+  if (!match) {
+    return null;
+  }
+
+  const rawBase64 = match[1]?.trim() ?? "";
+  return rawBase64.length > 0 ? rawBase64 : null;
 }
 
 function generateReadme(
@@ -238,6 +278,27 @@ export async function POST(request: NextRequest) {
         new Date().toISOString()
       )
     );
+
+    const { data: uploadedImages, error: uploadedImagesError } = await supabase
+      .from("files")
+      .select("file_name, content")
+      .eq("website_id", website.id)
+      .eq("is_user_upload", true);
+
+    if (uploadedImagesError) {
+      if (!isMissingUploadColumns(uploadedImagesError)) {
+        throw uploadedImagesError;
+      }
+    }
+
+    for (const imageRow of uploadedImages ?? []) {
+      const base64 = extractBase64FromDataUri(imageRow.content);
+      if (!base64) {
+        continue;
+      }
+
+      folder.file(imageRow.file_name, Buffer.from(base64, "base64"));
+    }
 
     const zipBuffer = await zip.generateAsync({ type: "arraybuffer" });
 

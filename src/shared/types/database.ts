@@ -56,7 +56,16 @@ export type FileRecord = {
   file_name: string;
   content: string;
   version: number;
+  mime_type: string | null;
+  is_user_upload: boolean;
   created_at: string;
+};
+
+export type UserImage = {
+  fileId: string;
+  fileName: string;
+  dataUri: string;
+  mimeType: string;
 };
 
 export type FileVersionRecord = {

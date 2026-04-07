@@ -13,7 +13,6 @@ import {
 import {
   consumePendingGuestChatSession,
 } from "@/client/lib/guest-chat-handoff";
-import PromptSuggestions from "@/client/features/chat/prompt-suggestions";
 import { useLanguage } from "@/client/lib/language-context";
 import { useElapsedSeconds } from "@/client/lib/hooks/use-elapsed-seconds";
 import { t } from "@/shared/constants/translations";
@@ -148,18 +147,6 @@ export default function HomePage() {
     await startChatWithPrompt(message);
   }
 
-  function handleSuggestionSelect(prompt: string) {
-    if (isCreating) return;
-
-    setInputValue(prompt);
-    setTimeout(() => {
-      if (inputRef.current) {
-        adjustHeight(inputRef.current);
-        inputRef.current.focus();
-      }
-    }, 0);
-  }
-
   async function startChatWithPrompt(message: string) {
     const trimmedMessage = message.trim();
     if (!trimmedMessage || isCreating) return;
@@ -225,15 +212,12 @@ export default function HomePage() {
     <div className="flex min-h-0 flex-1 flex-col px-6 sm:px-8">
       <div className="flex flex-1 items-center justify-center">
         <div className="mx-auto w-full max-w-2xl text-center">
-          <h1 className="text-2xl font-semibold leading-snug text-[var(--app-text-heading)] sm:text-3xl">
+          <h1 className="text-2xl font-semibold leading-snug text-[var(--app-text-heading)] sm:text-4xl">
             {t("heroTitle", language)}
           </h1>
           <p className="mt-2 text-sm text-[var(--app-text-tertiary)] sm:text-sm">
             {t("heroSubtitle", language)}
           </p>
-          <div className="mt-5">
-            <PromptSuggestions onSend={handleSuggestionSelect} />
-          </div>
           {downloadMessage ? (
             <p className="mt-3 text-sm text-emerald-400">{downloadMessage}</p>
           ) : null}

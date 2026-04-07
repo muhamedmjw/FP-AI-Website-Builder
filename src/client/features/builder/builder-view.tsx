@@ -8,7 +8,6 @@ import { ChatApiError, sendChatMessage } from "@/client/lib/api/chat-api";
 import { downloadWebsiteZip } from "@/client/lib/zip-download";
 import { useMobileHeaderTitle } from "@/client/components/mobile-header-title-context";
 import ChatPanel from "@/client/features/chat/chat-panel";
-import PromptSuggestions from "@/client/features/chat/prompt-suggestions";
 import PreviewPanel from "@/client/features/preview/preview-panel";
 import DeployModal from "@/client/features/preview/deploy-modal";
 import PreviewErrorBoundary from "@/client/features/preview/preview-error-boundary";
@@ -494,6 +493,7 @@ export default function BuilderView({
         {/* Left: Chat panel */}
         <div className="flex min-w-0 flex-1 flex-col">
           <ChatPanel
+            chatId={chatId}
             chatTitle={chatTitle}
             messages={messages}
             onSend={handleSend}
@@ -505,7 +505,6 @@ export default function BuilderView({
             currentUserAvatarUrl={currentUserAvatarUrl}
             inputErrorMessage={inputErrorMessage}
             showHeader={false}
-            emptyStateSuggestions={<PromptSuggestions onSend={handleSend} />}
           />
         </div>
 
@@ -557,6 +556,7 @@ export default function BuilderView({
         {/* Show chat tab or full chat when no preview */}
         <div className={`min-h-0 flex-1 flex-col ${!hasPreview || mobileTab === "chat" ? "flex" : "hidden"}`}>
           <ChatPanel
+            chatId={chatId}
             chatTitle={chatTitle}
             messages={messages}
             onSend={handleSend}
@@ -568,7 +568,6 @@ export default function BuilderView({
             currentUserAvatarUrl={currentUserAvatarUrl}
             inputErrorMessage={inputErrorMessage}
             showHeader={false}
-            emptyStateSuggestions={<PromptSuggestions onSend={handleSend} />}
           />
         </div>
 

@@ -21,6 +21,11 @@ export type ChatMessage = {
   content: string;
 };
 
+type PromptUserImage = {
+  fileName: string;
+  dataUri: string;
+};
+
 function mapHistoryToChatMessages(history: HistoryMessage[]): ChatMessage[] {
   return history
     .slice(-AI_CONFIG.MAX_HISTORY_TURNS)
@@ -29,6 +34,16 @@ function mapHistoryToChatMessages(history: HistoryMessage[]): ChatMessage[] {
       role: msg.role as "user" | "assistant",
       content: msg.content,
     }));
+}
+
+function buildUserImagesBlock(userImages?: PromptUserImage[]): string {
+  if (!userImages || userImages.length === 0) {
+    return "No user-uploaded images were provided.";
+  }
+
+  return userImages
+    .map((image, index) => `${index + 1}. ${image.fileName} — ${image.dataUri}`)
+    .join("\n");
 }
 
 export function buildClassifierMessages(
@@ -67,9 +82,14 @@ Return exactly:
 export function buildGenerationMessages(
   history: HistoryMessage[],
   websiteLanguage: AppLanguage,
-  detectedUserLanguage: AppLanguage
+  detectedUserLanguage: AppLanguage,
+  userImages?: PromptUserImage[]
 ): ChatMessage[] {
   const isRtl = websiteLanguage === "ar" || websiteLanguage === "ku";
+  const buildModeWithImages = BUILD_MODE.replace(
+    "{USER_IMAGES_BLOCK}",
+    buildUserImagesBlock(userImages)
+  );
 
   const system = [
     PERSONALITY,
@@ -80,7 +100,7 @@ export function buildGenerationMessages(
     THEMES,
     isRtl ? RTL_RULES : "",
     WEBSITE_STRUCTURE,
-    BUILD_MODE,
+    buildModeWithImages,
     OUTPUT_FORMAT,
     `Website content language: ${websiteLanguage}`,
     `Conversation reply language: ${detectedUserLanguage}`,
@@ -98,14 +118,19 @@ export function buildEditMessages(
   history: HistoryMessage[],
   existingHtml: string,
   websiteLanguage: AppLanguage,
-  detectedUserLanguage: AppLanguage
+  detectedUserLanguage: AppLanguage,
+  userImages?: PromptUserImage[]
 ): ChatMessage[] {
   const isRtl = websiteLanguage === "ar" || websiteLanguage === "ku";
+  const editModeWithImages = EDIT_MODE.replace(
+    "{USER_IMAGES_BLOCK}",
+    buildUserImagesBlock(userImages)
+  );
 
   const system = [
     PERSONALITY,
     LANGUAGE_RULES,
-    EDIT_MODE,
+    editModeWithImages,
     DESIGN_SYSTEM,
     MOBILE_RULES,
     IMAGE_RULES,

@@ -1,12 +1,19 @@
 import type { Metadata, Viewport } from "next";
-import { Bricolage_Grotesque } from "next/font/google";
+import { Geist_Mono } from "next/font/google";
+import { Bungee } from "next/font/google";
 import "./globals.css"; // Global styles for the application
 import Providers from "@/client/components/providers";
 
-const bricolageGrotesque = Bricolage_Grotesque({
+const geistMono = Geist_Mono({
   subsets: ["latin"],
   variable: "--font-latin",
-  weight: ["400", "500", "600", "700", "800"],
+  weight: ["400", "500", "600", "700"],
+});
+
+const bungee = Bungee({
+  subsets: ["latin"],
+  variable: "--font-logo",
+  weight: ["400"],
 });
 
 export const viewport: Viewport = {
@@ -46,7 +53,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" data-theme="dark" suppressHydrationWarning>
-      <body className={`${bricolageGrotesque.variable} antialiased`}>
+      <body className={`${geistMono.variable} ${bungee.variable} antialiased`}>
         <script dangerouslySetInnerHTML={{ __html: THEME_INIT_SCRIPT }} />
         <Providers>{children}</Providers>
       </body>

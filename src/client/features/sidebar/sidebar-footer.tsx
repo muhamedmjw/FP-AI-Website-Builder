@@ -1347,7 +1347,7 @@ export default function SidebarFooter({
               left: `${languageMenuPosition.left}px`,
               width: `${languageMenuPosition.width}px`,
             }}
-            className="z-[70] max-h-44 overflow-y-auto overscroll-contain rounded-lg border border-[var(--app-input-border)] bg-[var(--app-panel)] p-1 shadow-[var(--app-shadow-lg)]"
+            className="z-[200] max-h-44 overflow-y-auto overscroll-contain rounded-lg border border-[var(--app-input-border)] bg-[var(--app-panel)] p-1 shadow-[var(--app-shadow-lg)]"
             onWheel={(event) => event.stopPropagation()}
           >
             {LANGUAGE_OPTIONS.map((option) => {

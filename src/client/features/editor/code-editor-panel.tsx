@@ -49,7 +49,7 @@ export default function CodeEditorPanel({
     () => ({
       minimap: { enabled: false },
       fontSize: 13,
-      fontFamily: "Consolas, 'Courier New', monospace",
+      fontFamily: "var(--font-ui), monospace",
       automaticLayout: true,
       smoothScrolling: true,
       padding: { top: 12, bottom: 12 },

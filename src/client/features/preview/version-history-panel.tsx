@@ -37,6 +37,7 @@ export default function VersionHistoryPanel({
   const [isRestoringId, setIsRestoringId] = useState<string | null>(null);
   const [editingVersionId, setEditingVersionId] = useState<string | null>(null);
   const [editingValue, setEditingValue] = useState("");
+  const [labelError, setLabelError] = useState("");
   const [savingLabelId, setSavingLabelId] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState("");
 
@@ -91,6 +92,7 @@ export default function VersionHistoryPanel({
   function handleStartEditing(item: VersionHistoryItem) {
     setEditingVersionId(item.id);
     setEditingValue(item.label ?? "");
+    setLabelError("");
     setErrorMessage("");
   }
 
@@ -98,6 +100,7 @@ export default function VersionHistoryPanel({
     if (savingLabelId) return;
     setEditingVersionId(null);
     setEditingValue("");
+    setLabelError("");
   }
 
   async function handleSaveLabel(item: VersionHistoryItem) {
@@ -106,11 +109,12 @@ export default function VersionHistoryPanel({
     const trimmedLabel = editingValue.trim();
 
     if (!trimmedLabel) {
-      handleCancelEditing();
+      setLabelError("Label cannot be empty");
       return;
     }
 
     setSavingLabelId(item.id);
+    setLabelError("");
     setErrorMessage("");
 
     try {
@@ -246,7 +250,12 @@ export default function VersionHistoryPanel({
                             <input
                               type="text"
                               value={editingValue}
-                              onChange={(event) => setEditingValue(event.target.value)}
+                              onChange={(event) => {
+                                setEditingValue(event.target.value);
+                                if (labelError) {
+                                  setLabelError("");
+                                }
+                              }}
                               onKeyDown={(event) => {
                                 if (event.key === "Enter") {
                                   event.preventDefault();
@@ -327,6 +336,11 @@ export default function VersionHistoryPanel({
                             ) : null}
                           </div>
                         )}
+                        {isEditing && labelError ? (
+                          <p className="mt-1 text-xs text-rose-400" role="alert">
+                            {labelError}
+                          </p>
+                        ) : null}
                         <p className="mt-1 flex items-center gap-1 text-xs text-[var(--app-text-tertiary)]">
                           <Clock3 size={12} />
                           {new Date(item.created_at).toLocaleString(locale)}

@@ -73,6 +73,9 @@ export default function ResizeHandle({ onResize, onResizeEnd }: ResizeHandleProp
       onTouchStart={handleTouchStart}
       onTouchMove={handleTouchMove}
       onTouchEnd={handleTouchEnd}
+      role="separator"
+      aria-orientation="vertical"
+      aria-label="Resize panel"
       className="group flex w-4 shrink-0 cursor-col-resize items-center justify-center hover:bg-[var(--app-hover-bg)]"
       title="Drag to resize"
     >

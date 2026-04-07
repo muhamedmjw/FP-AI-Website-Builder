@@ -17,18 +17,18 @@ const STORAGE_KEY = "app-language";
 const LANGUAGE_SYNC_EVENT = "app-language-change";
 const RTL_FONT_LINK_ID = "rtl-fonts";
 const RTL_FONT_LINK_HREF =
-	"https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800&family=Tajawal:wght@400;500;700&family=Noto+Sans+Arabic:wght@400;500;700&display=swap";
+	"https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800&family=Tajawal:wght@400;500;700&family=Noto+Sans+Arabic:wght@400;500;700&family=Noto+Kufi+Arabic:wght@400;500;700&display=swap";
 
 function getUiFontStack(language: AppLanguage): string {
 	if (language === "ku") {
-		return '"KurdishUI", "Noto Sans Arabic", "Cairo", "Tajawal", sans-serif';
+		return '"KurdishUI", "Noto Kufi Arabic", "Cairo", sans-serif';
 	}
 
 	if (language === "ar") {
-		return '"Cairo", sans-serif';
+		return '"Cairo", "Noto Sans Arabic", sans-serif';
 	}
 
-	return 'var(--font-latin), "Segoe UI", "Helvetica Neue", Arial, sans-serif';
+	return 'var(--font-latin), "Segoe UI", monospace';
 }
 
 type LanguageContextValue = {
@@ -85,13 +85,6 @@ function ensureRtlFontLink(language: AppLanguage) {
 	document.head.appendChild(link);
 }
 
-function removeRtlFontLink() {
-	const existing = document.getElementById(RTL_FONT_LINK_ID);
-	if (existing) {
-		existing.remove();
-	}
-}
-
 export function LanguageProvider({
 	children,
 	initialLanguage,
@@ -113,12 +106,8 @@ export function LanguageProvider({
 		document.documentElement.setAttribute("lang", nextLanguage);
 		document.documentElement.setAttribute("dir", isRtl ? "rtl" : "ltr");
 
-		// Always apply fonts to support text in all languages
+		// Always ensure RTL-capable fonts, even when the UI language is English.
 		ensureRtlFontLink(nextLanguage);
-
-		if (!isRtl) {
-			removeRtlFontLink();
-		}
 	}, []);
 
 	useEffect(() => {

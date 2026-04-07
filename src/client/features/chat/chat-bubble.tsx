@@ -36,7 +36,10 @@ function renderMarkdown(text: string): string {
   html = html.replace(
     /\[([^\]]+)\]\(([^)]+)\)/g,
     (_, text, url) => {
-      const safeUrl = /^https?:\/\//i.test(url) ? url : "#";
+      const safeUrl = /^https?:\/\//i.test(url) &&
+        !/javascript:|data:|vbscript:/i.test(url)
+        ? url
+        : "#";
       const blockedAttribute = safeUrl === "#" ? ' data-blocked="true"' : "";
       return `<a href="${safeUrl}"${blockedAttribute} target="_blank" rel="noopener noreferrer" class="underline text-[var(--app-link-text,#67e8f9)] hover:opacity-80">${text}</a>`;
     }
