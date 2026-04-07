@@ -17,6 +17,7 @@ import { t } from "@/shared/constants/translations";
 type ChatListItemProps = {
   chat: Chat;
   isActive: boolean;
+  isPendingGeneration?: boolean;
   onRename: (chatId: string, newTitle: string) => Promise<void>;
   onArchive: (chatId: string) => Promise<void>;
   onDelete: (
@@ -28,6 +29,7 @@ type ChatListItemProps = {
 export default function ChatListItem({
   chat,
   isActive,
+  isPendingGeneration = false,
   onRename,
   onArchive,
   onDelete,
@@ -244,6 +246,12 @@ export default function ChatListItem({
           <p className="mt-0.5 truncate text-xs uppercase tracking-[0.08em] text-[var(--app-text-muted)]">
             {new Date(chat.updated_at).toLocaleDateString()}
           </p>
+          {isPendingGeneration ? (
+            <p className="mt-1 inline-flex items-center gap-1 text-[11px] font-medium text-[var(--app-text-tertiary)]">
+              <Loader2 size={11} className="animate-spin" />
+              {t("generating", language)}
+            </p>
+          ) : null}
         </Link>
 
         {/* Actions button - visible on hover or when menu is open */}

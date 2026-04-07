@@ -1,9 +1,10 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
 import { Eye, MessageCircle } from "lucide-react";
 import { HistoryMessage } from "@/shared/types/database";
-import { sendChatMessage } from "@/client/lib/api/chat-api";
+import { ChatApiError, sendChatMessage } from "@/client/lib/api/chat-api";
 import { downloadWebsiteZip } from "@/client/lib/zip-download";
 import { useMobileHeaderTitle } from "@/client/components/mobile-header-title-context";
 import ChatPanel from "@/client/features/chat/chat-panel";
@@ -12,6 +13,12 @@ import PreviewPanel from "@/client/features/preview/preview-panel";
 import DeployModal from "@/client/features/preview/deploy-modal";
 import PreviewErrorBoundary from "@/client/features/preview/preview-error-boundary";
 import ResizeHandle from "@/client/features/builder/resize-handle";
+import {
+  getPendingChatGeneration,
+  markChatGenerationPending,
+  resolveChatGeneration,
+  subscribePendingChatGenerations,
+} from "@/client/lib/chat-pending-generations";
 import { useLanguage } from "@/client/lib/language-context";
 import { t } from "@/shared/constants/translations";
 
@@ -48,6 +55,7 @@ export default function BuilderView({
   isAuthenticated = true,
   currentUserAvatarUrl = null,
 }: BuilderViewProps) {
+  const router = useRouter();
   const { language } = useLanguage();
   const hasInitialPreview =
     typeof initialHtml === "string" && initialHtml.trim().length > 0;
@@ -65,9 +73,16 @@ export default function BuilderView({
   const [html, setHtml] = useState<string | null>(initialHtml);
   const currentHtmlRef = useRef<string>(initialHtml ?? "");
   const lastSavedHtml = useRef<string>(initialHtml ?? "");
-  const [isSending, setIsSending] = useState(false);
+  const [isRequestInFlight, setIsRequestInFlight] = useState(false);
+  const [pendingGenerationStartedAt, setPendingGenerationStartedAt] = useState<
+    number | null
+  >(null);
   const [isSaving, setIsSaving] = useState(false);
   const [inputErrorMessage, setInputErrorMessage] = useState("");
+  const isSending = isRequestInFlight || pendingGenerationStartedAt !== null;
+  const hasOptimisticMessage = messages.some((message) =>
+    message.id.startsWith("temp-")
+  );
 
   // Preview panel state
   const [previewOpen, setPreviewOpen] = useState(hasInitialPreview);
@@ -77,6 +92,30 @@ export default function BuilderView({
 
   // Mobile tab state: "chat" | "preview"
   const [mobileTab, setMobileTab] = useState<"chat" | "preview">("chat");
+
+  useEffect(() => {
+    if (hasOptimisticMessage) {
+      return;
+    }
+
+    setMessages(initialMessages);
+  }, [chatId, hasOptimisticMessage, initialMessages]);
+
+  useEffect(() => {
+    setHtml(initialHtml);
+    currentHtmlRef.current = initialHtml ?? "";
+    lastSavedHtml.current = initialHtml ?? "";
+  }, [chatId, initialHtml]);
+
+  const syncPendingGenerationState = useCallback(() => {
+    const pending = getPendingChatGeneration(chatId);
+    setPendingGenerationStartedAt(pending?.startedAt ?? null);
+  }, [chatId]);
+
+  useEffect(() => {
+    syncPendingGenerationState();
+    return subscribePendingChatGenerations(syncPendingGenerationState);
+  }, [syncPendingGenerationState]);
 
   useEffect(() => {
     if (!hasPreview) {
@@ -286,8 +325,17 @@ export default function BuilderView({
       created_at: new Date().toISOString(),
     };
 
+    const latestAssistantCreatedAt =
+      [...messages]
+        .reverse()
+        .find((message) => message.role === "assistant")
+        ?.created_at ?? null;
+
     setMessages((prev) => [...prev, tempUserMessage]);
-    setIsSending(true);
+    const startedAt = Date.now();
+    markChatGenerationPending(chatId, startedAt, latestAssistantCreatedAt);
+    setPendingGenerationStartedAt(startedAt);
+    setIsRequestInFlight(true);
     setInputErrorMessage("");
 
     try {
@@ -310,24 +358,46 @@ export default function BuilderView({
           setPreviewOpen(false);
         }
       }
+
+      resolveChatGeneration(chatId);
+      setPendingGenerationStartedAt(null);
+      router.refresh();
     } catch (error) {
+      const status = error instanceof ChatApiError ? error.status : null;
       const raw = error instanceof Error ? error.message : "";
+      const normalizedRaw = raw.toLowerCase();
+      const isAbortLikeError =
+        normalizedRaw.includes("abort") || normalizedRaw.includes("aborted");
+
+      if (!isAbortLikeError) {
+        resolveChatGeneration(chatId);
+        setPendingGenerationStartedAt(null);
+      }
 
       let friendly = "Failed to send message. Please try again.";
-      if (raw.includes("429") || raw.includes("rate limit") || raw.includes("Rate limit")) {
+      if (
+        status === 429 ||
+        raw.includes("429") ||
+        raw.includes("rate limit") ||
+        raw.includes("Rate limit")
+      ) {
         friendly = "\u23f3 Too many requests. Please wait a moment and try again.";
       } else if (raw.includes("token budget") || raw.includes("Daily token") || raw.includes("500,000")) {
         friendly = "\ud83d\udcc5 You've used your 500,000 daily token budget. Come back tomorrow!";
-      } else if (raw.includes("401") || raw.includes("Unauthorized")) {
+      } else if (status === 401 || raw.includes("401") || raw.includes("Unauthorized")) {
         friendly = "\ud83d\udd12 Session expired. Please sign in again.";
-      } else if (raw.includes("500") || raw.includes("Internal")) {
+      } else if (status === 500 || raw.includes("500") || raw.includes("Internal")) {
         friendly = "\u26a0\ufe0f Something went wrong on our end. Please try again.";
+      } else if (isAbortLikeError) {
+        friendly = "Connection interrupted. Checking if your AI reply finishes in the background...";
       }
 
       setInputErrorMessage(friendly);
-      setMessages((prev) => prev.filter((msg) => msg.id !== tempUserMessage.id));
+      if (!isAbortLikeError) {
+        setMessages((prev) => prev.filter((msg) => msg.id !== tempUserMessage.id));
+      }
     } finally {
-      setIsSending(false);
+      setIsRequestInFlight(false);
     }
   }
 
@@ -431,6 +501,7 @@ export default function BuilderView({
             previewOpen={previewOpen}
             hasPreview={hasPreview}
             isSending={isSending}
+            sendingStartedAtMs={pendingGenerationStartedAt}
             currentUserAvatarUrl={currentUserAvatarUrl}
             inputErrorMessage={inputErrorMessage}
             showHeader={false}
@@ -493,6 +564,7 @@ export default function BuilderView({
             previewOpen={previewOpen}
             hasPreview={hasPreview}
             isSending={isSending}
+            sendingStartedAtMs={pendingGenerationStartedAt}
             currentUserAvatarUrl={currentUserAvatarUrl}
             inputErrorMessage={inputErrorMessage}
             showHeader={false}

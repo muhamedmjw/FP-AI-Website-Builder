@@ -1,6 +1,7 @@
 "use client";
 
 import { LanguageProvider } from "@/client/lib/language-context";
+import PendingChatSync from "@/client/components/pending-chat-sync";
 import type { AppLanguage } from "@/shared/types/database";
 
 type WorkspaceProvidersProps = {
@@ -19,6 +20,7 @@ export default function WorkspaceProviders({
       initialLanguage={language}
       hasInitialLanguagePreference={hasLanguagePreference}
     >
+      <PendingChatSync />
       {children}
     </LanguageProvider>
   );

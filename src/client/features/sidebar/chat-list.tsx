@@ -1,7 +1,12 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { Chat } from "@/shared/types/database";
 import ChatListItem from "@/client/features/sidebar/chat-list-item";
+import {
+  getPendingChatIds,
+  subscribePendingChatGenerations,
+} from "@/client/lib/chat-pending-generations";
 import { useLanguage } from "@/client/lib/language-context";
 import { t } from "@/shared/constants/translations";
 
@@ -29,6 +34,16 @@ export default function ChatList({
   onDelete,
 }: ChatListProps) {
   const { language } = useLanguage();
+  const [pendingChatIds, setPendingChatIds] = useState<string[]>([]);
+
+  useEffect(() => {
+    const syncPendingChats = () => {
+      setPendingChatIds(getPendingChatIds());
+    };
+
+    syncPendingChats();
+    return subscribePendingChatGenerations(syncPendingChats);
+  }, []);
 
   if (chats.length === 0) {
     return (
@@ -48,6 +63,7 @@ export default function ChatList({
           key={chat.id}
           chat={chat}
           isActive={chat.id === activeChatId}
+          isPendingGeneration={pendingChatIds.includes(chat.id)}
           onRename={onRename}
           onArchive={onArchive}
           onDelete={onDelete}

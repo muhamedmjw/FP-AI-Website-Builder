@@ -44,6 +44,7 @@ type ChatPanelProps = {
   previewOpen?: boolean;
   hasPreview?: boolean;
   isSending?: boolean;
+  sendingStartedAtMs?: number | null;
   currentUserAvatarUrl?: string | null;
   disableInput?: boolean;
   inputPlaceholder?: string;
@@ -68,6 +69,7 @@ export default function ChatPanel({
   previewOpen = false,
   hasPreview = false,
   isSending = false,
+  sendingStartedAtMs = null,
   currentUserAvatarUrl = null,
   disableInput = false,
   inputPlaceholder,
@@ -89,7 +91,25 @@ export default function ChatPanel({
   const resolvedInputPlaceholder =
     inputPlaceholder ?? t("inputPlaceholder", language);
   const resolvedChatTitle = chatTitle ?? t("chat", language);
-  const [generatingSeconds, setGeneratingSeconds] = useState(0);
+  const [clockNowMs, setClockNowMs] = useState(0);
+
+  const resolvedSendingStartedAt =
+    typeof sendingStartedAtMs === "number" && Number.isFinite(sendingStartedAtMs)
+      ? sendingStartedAtMs
+      : null;
+
+  const generatingSeconds = isSending
+    ? resolvedSendingStartedAt
+      ? Math.max(
+          0,
+          Math.floor(
+            (Math.max(clockNowMs, resolvedSendingStartedAt) -
+              resolvedSendingStartedAt) /
+              1000
+          )
+        )
+      : 0
+    : 0;
 
   const generatingLabel =
     generatingSeconds >= 60
@@ -107,15 +127,23 @@ export default function ChatPanel({
 
   useEffect(() => {
     if (!isSending) {
-      setGeneratingSeconds(0);
       return;
     }
 
+    const updateClock = () => {
+      setClockNowMs(Date.now());
+    };
+
+    const frameId = window.requestAnimationFrame(updateClock);
+
     const interval = setInterval(() => {
-      setGeneratingSeconds((seconds) => seconds + 1);
+      updateClock();
     }, 1000);
 
-    return () => clearInterval(interval);
+    return () => {
+      window.cancelAnimationFrame(frameId);
+      clearInterval(interval);
+    };
   }, [isSending]);
 
   return (

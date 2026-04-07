@@ -103,6 +103,7 @@ export default function GuestHomePage() {
   const { language } = useLanguage();
   const [messages, setMessages] = useState<HistoryMessage[]>([]);
   const [isSending, setIsSending] = useState(false);
+  const [sendingStartedAtMs, setSendingStartedAtMs] = useState<number | null>(null);
   const [html, setHtml] = useState<string | null>(null);
   const [inputErrorMessage, setInputErrorMessage] = useState("");
   const [authGateOpen, setAuthGateOpen] = useState(false);
@@ -127,6 +128,7 @@ export default function GuestHomePage() {
 
     const userMessage = createGuestMessage("user", trimmed);
     setMessages((prev) => [...prev, userMessage]);
+    setSendingStartedAtMs(Date.now());
     setIsSending(true);
     setInputErrorMessage("");
 
@@ -153,6 +155,7 @@ export default function GuestHomePage() {
       setMessages((prev) => prev.filter((m) => m.id !== userMessage.id));
     } finally {
       setIsSending(false);
+      setSendingStartedAtMs(null);
     }
   }
 
@@ -257,6 +260,7 @@ export default function GuestHomePage() {
             messages={messages}
             onSend={handleSend}
             isSending={shouldShowGeneratingIndicator}
+            sendingStartedAtMs={sendingStartedAtMs}
             currentUserAvatarUrl={null}
             showHeader={false}
             centerInputWhenEmpty={!hasPreview}
@@ -296,6 +300,7 @@ export default function GuestHomePage() {
             messages={messages}
             onSend={handleSend}
             isSending={shouldShowGeneratingIndicator}
+            sendingStartedAtMs={sendingStartedAtMs}
             currentUserAvatarUrl={null}
             showHeader={false}
             centerInputWhenEmpty={!hasPreview}

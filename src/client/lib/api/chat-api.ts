@@ -1,6 +1,16 @@
 import { HistoryMessage } from "@/shared/types/database";
 import type { AppLanguage } from "@/shared/types/database";
 
+export class ChatApiError extends Error {
+  readonly status: number;
+
+  constructor(message: string, status: number) {
+    super(message);
+    this.name = "ChatApiError";
+    this.status = status;
+  }
+}
+
 export type SendChatMessageResponse = {
   userMessage: HistoryMessage;
   assistantMessage: HistoryMessage;
@@ -30,7 +40,7 @@ export async function sendChatMessage(
   if (!response.ok) {
     const message =
       typeof data?.error === "string" ? data.error : "Failed to send message.";
-    throw new Error(message);
+    throw new ChatApiError(message, response.status);
   }
 
   return data as unknown as SendChatMessageResponse;
