@@ -19,8 +19,8 @@ export function getDisplayModelName(modelString: string): string {
 }
 
 export const AI_CONFIG = {
-  MAX_TOKENS: 8000,
-  TEMPERATURE: 0.4,
-  MAX_HISTORY_TURNS: 20,
+  MAX_TOKENS: 32000,
+  TEMPERATURE: 0.1,
+  MAX_HISTORY_TURNS: 50,  
   DAILY_TOKEN_LIMIT: 500_000,
 } as const;
