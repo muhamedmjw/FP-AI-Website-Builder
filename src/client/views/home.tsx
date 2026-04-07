@@ -40,6 +40,7 @@ export default function HomePage() {
   const [errorMessage, setErrorMessage] = useState("");
   const [downloadMessage, setDownloadMessage] = useState("");
   const creatingSeconds = useElapsedSeconds(isCreating);
+  const statusRotationSeconds = 8;
 
   function adjustHeight(el: HTMLTextAreaElement) {
     el.style.height = "auto";
@@ -54,11 +55,9 @@ export default function HomePage() {
   }
 
   const creatingStatusKey =
-    creatingSeconds >= 5
-      ? "generatingWebsite"
-      : creatingSeconds >= 2
-        ? "sendingPrompt"
-        : "creatingWorkspace";
+    Math.floor(creatingSeconds / statusRotationSeconds) % 2 === 0
+      ? "creatingWorkspace"
+      : "sendingPrompt";
 
   useEffect(() => {
     let isCancelled = false;

@@ -111,12 +111,7 @@ export default function ChatPanel({
       : 0
     : 0;
 
-  const generatingLabel =
-    generatingSeconds >= 60
-      ? t("stillWorking", language)
-      : generatingSeconds >= 30
-        ? t("takingLonger", language)
-        : t("generatingCode", language);
+  const generatingLabel = t("generatingCode", language);
 
   // Auto-scroll to bottom when new messages arrive
   useEffect(() => {
