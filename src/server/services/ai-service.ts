@@ -13,6 +13,7 @@ import {
   buildEditMessages,
   buildGenerationMessages,
 } from "@/server/prompts/prompt-builder";
+import { enrichHtmlWithBraveImages } from "@/server/services/brave-image-service";
 
 export type AIResponseQuestions = {
   type: "questions";
@@ -125,6 +126,36 @@ function validateWebsiteHtml(html: string): boolean {
     /<(div|section|main|article|header|nav|footer|h1|h2|p)[^>]*>/i.test(html);
 
   return hasDoctype && hasClosingHtml && hasBody && hasHead && hasSomeContent;
+}
+
+function buildImageSearchContext(history: HistoryMessage[]): string {
+  return history
+    .filter((message) => message.role === "user")
+    .slice(-3)
+    .map((message) => message.content.replace(/[\r\n\t]+/gu, " "))
+    .map((value) => value.replace(/\s+/gu, " ").trim())
+    .filter(Boolean)
+    .join(" ")
+    .slice(0, 280);
+}
+
+async function enrichWebsiteHtmlImages(
+  html: string,
+  history: HistoryMessage[]
+): Promise<string> {
+  const context = buildImageSearchContext(history);
+
+  if (!context) {
+    return html;
+  }
+
+  try {
+    return await enrichHtmlWithBraveImages(html, { context });
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : "Unknown Brave image error";
+    console.warn("Brave image enrichment failed:", errorMessage);
+    return html;
+  }
 }
 
 function parseAIResponse(raw: string): AIResponse {
@@ -356,11 +387,18 @@ export async function generateAIResponse(
       temperature
     );
 
-    if (
-      workerResult.parsed.type === "website" &&
-      !validateWebsiteHtml(workerResult.parsed.html)
-    ) {
-      console.warn("AI returned potentially incomplete HTML — serving anyway.");
+    let parsed = workerResult.parsed;
+
+    if (parsed.type === "website") {
+      const enrichedHtml = await enrichWebsiteHtmlImages(parsed.html, history);
+      parsed = {
+        ...parsed,
+        html: enrichedHtml,
+      };
+
+      if (!validateWebsiteHtml(parsed.html)) {
+        console.warn("AI returned potentially incomplete HTML — serving anyway.");
+      }
     }
 
     const durationMs = Date.now() - startTime;
@@ -375,7 +413,7 @@ export async function generateAIResponse(
       durationMs,
     });
 
-    return workerResult.parsed;
+    return parsed;
   } catch (error) {
     const durationMs = Date.now() - startTime;
     const errorMessage =
@@ -441,14 +479,21 @@ export async function generateGuestAIResponse(
     temperature
   );
 
-  if (
-    workerResult.parsed.type === "website" &&
-    !validateWebsiteHtml(workerResult.parsed.html)
-  ) {
-    console.warn("AI returned potentially incomplete HTML — serving anyway.");
+  let parsed = workerResult.parsed;
+
+  if (parsed.type === "website") {
+    const enrichedHtml = await enrichWebsiteHtmlImages(parsed.html, historyMessages);
+    parsed = {
+      ...parsed,
+      html: enrichedHtml,
+    };
+
+    if (!validateWebsiteHtml(parsed.html)) {
+      console.warn("AI returned potentially incomplete HTML — serving anyway.");
+    }
   }
 
-  return workerResult.parsed;
+  return parsed;
 }
 
 function formatDefaultChatTitle(): string {
