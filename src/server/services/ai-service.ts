@@ -1,6 +1,6 @@
 /**
- * AI Service - handles all communication with the OpenRouter API.
- * Uses Nemotron 3 Super free first, then falls back to Nemotron 3 Nano free.
+ * AI Service - handles all communication with the DeepSeek official API.
+ * Uses DeepSeek V3.2 (deepseek-chat) first, then falls back to deepseek-reasoner.
  */
 
 import OpenAI from "openai";
@@ -51,13 +51,19 @@ type GenerationLog = {
   durationMs: number;
 };
 
-const openrouter = new OpenAI({
-  baseURL: "https://openrouter.ai/api/v1",
-  apiKey: process.env.OPENROUTER_API_KEY!,
+const DEEPSEEK_API_KEY = process.env.DEEPSEEK_API_KEY?.trim();
+
+if (!DEEPSEEK_API_KEY) {
+  throw new Error("DEEPSEEK_API_KEY is required for AI generation.");
+}
+
+const deepseek = new OpenAI({
+  baseURL: "https://api.deepseek.com",
+  apiKey: DEEPSEEK_API_KEY,
 });
 
-const PRIMARY_MODEL = process.env.OPENROUTER_MODEL_PRIMARY?.trim() || AI_MODELS.PRIMARY;
-const FALLBACK_MODEL = process.env.OPENROUTER_MODEL_FALLBACK?.trim() || AI_MODELS.FALLBACK;
+const PRIMARY_MODEL = process.env.DEEPSEEK_MODEL_PRIMARY?.trim() || AI_MODELS.PRIMARY;
+const FALLBACK_MODEL = process.env.DEEPSEEK_MODEL_FALLBACK?.trim() || AI_MODELS.FALLBACK;
 const MODEL_CANDIDATES = Array.from(new Set([PRIMARY_MODEL, FALLBACK_MODEL]));
 const MODEL_NAME = PRIMARY_MODEL;
 
@@ -171,7 +177,7 @@ async function callModelOnce(
   totalTokens: number | null;
   modelUsed: string;
 }> {
-  const response = await openrouter.chat.completions.create({
+  const response = await deepseek.chat.completions.create({
     model,
     messages,
     max_tokens: maxTokens,
@@ -210,7 +216,7 @@ async function callModelOnce(
   };
 }
 
-async function callOpenRouterWithRetry(
+async function callDeepSeekWithRetry(
   messages: AIMessage[],
   maxTokens: number,
   temperature: number
@@ -258,7 +264,7 @@ async function classifyIntent(
 
   for (const model of MODEL_CANDIDATES) {
     try {
-      const response = await openrouter.chat.completions.create({
+      const response = await deepseek.chat.completions.create({
         model,
         messages,
         max_tokens: 60,
@@ -344,7 +350,7 @@ export async function generateAIResponse(
   }
 
   try {
-    let workerResult = await callOpenRouterWithRetry(
+    const workerResult = await callDeepSeekWithRetry(
       messages,
       maxTokens,
       temperature
@@ -429,7 +435,7 @@ export async function generateGuestAIResponse(
     temperature = 0.4;
   }
 
-  let workerResult = await callOpenRouterWithRetry(
+  const workerResult = await callDeepSeekWithRetry(
     messages,
     maxTokens,
     temperature
@@ -591,7 +597,7 @@ export async function generateChatTitle(
 
   for (const model of MODEL_CANDIDATES) {
     try {
-      const response = await openrouter.chat.completions.create({
+      const response = await deepseek.chat.completions.create({
         model,
         messages: [
           {

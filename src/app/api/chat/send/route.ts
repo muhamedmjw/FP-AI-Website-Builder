@@ -165,7 +165,7 @@ export async function POST(request: NextRequest) {
       ? await getGeneratedHtml(supabase, existingWebsite.id)
       : null;
 
-    // Call OpenRouter AI — pass existingHtml so edit mode activates correctly
+    // Call DeepSeek AI — pass existingHtml so edit mode activates correctly
     const aiResponse = await generateAIResponse(
       supabase,
       chatId,

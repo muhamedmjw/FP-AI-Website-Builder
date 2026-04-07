@@ -12,7 +12,7 @@ The app supports English, Arabic, and Kurdish (including RTL), lets users iterat
 - React 19 + TypeScript 5
 - Tailwind CSS 4
 - Supabase (Auth + Postgres + RLS)
-- OpenRouter (AI generation)
+- DeepSeek API (AI generation)
 
 ---
 
@@ -87,7 +87,7 @@ schema.sql
 - Node.js 20+
 - npm
 - A Supabase project
-- An OpenRouter API key
+- A DeepSeek API key
 - A Netlify personal access token (optional, only for deploy feature)
 
 ---
@@ -140,10 +140,10 @@ Use a root `.env` file.
 | `NEXT_PUBLIC_SUPABASE_URL` | Yes | Supabase URL for browser/server clients |
 | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Yes | Supabase anon key for app clients |
 | `SUPABASE_SERVICE_ROLE_KEY` | Yes | Guest usage tracking and server-side guest route access |
-| `OPENROUTER_API_KEY` | Yes | AI calls through OpenRouter |
-| `OPENROUTER_MODEL_PRIMARY` | No | Server primary model override |
-| `OPENROUTER_MODEL_FALLBACK` | No | Server fallback model override |
-| `NEXT_PUBLIC_OPENROUTER_MODEL_PRIMARY` | No | Client-side display model override |
+| `DEEPSEEK_API_KEY` | Yes | AI calls through DeepSeek official API |
+| `DEEPSEEK_MODEL_PRIMARY` | No | Server primary model override |
+| `DEEPSEEK_MODEL_FALLBACK` | No | Server fallback model override |
+| `NEXT_PUBLIC_DEEPSEEK_MODEL_PRIMARY` | No | Client-side display model override |
 | `NETLIFY_API_TOKEN` | No | Required only for `/api/website/deploy` |
 
 Example:
@@ -153,10 +153,10 @@ NEXT_PUBLIC_SUPABASE_URL=
 NEXT_PUBLIC_SUPABASE_ANON_KEY=
 SUPABASE_SERVICE_ROLE_KEY=
 
-OPENROUTER_API_KEY=
-OPENROUTER_MODEL_PRIMARY=nvidia/nemotron-3-super-120b-a12b:free
-OPENROUTER_MODEL_FALLBACK=nvidia/nemotron-3-nano-30b-a3b:free
-NEXT_PUBLIC_OPENROUTER_MODEL_PRIMARY=nvidia/nemotron-3-super-120b-a12b:free
+DEEPSEEK_API_KEY=
+DEEPSEEK_MODEL_PRIMARY=deepseek-chat
+DEEPSEEK_MODEL_FALLBACK=deepseek-reasoner
+NEXT_PUBLIC_DEEPSEEK_MODEL_PRIMARY=deepseek-chat
 
 NETLIFY_API_TOKEN=
 ```

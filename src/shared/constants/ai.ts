@@ -1,15 +1,16 @@
 export const AI_MODELS = {
-  // OpenRouter free NVIDIA models.
-  PRIMARY: "nvidia/nemotron-3-super-120b-a12b:free",
-  FALLBACK: "nvidia/nemotron-3-nano-30b-a3b:free",
+  // DeepSeek official API aliases for the latest DeepSeek V3.2 models.
+  PRIMARY: "deepseek-chat",
+  FALLBACK: "deepseek-reasoner",
 } as const;
 
 export const PRIMARY_MODEL =
-  process.env.NEXT_PUBLIC_OPENROUTER_MODEL_PRIMARY?.trim() || AI_MODELS.PRIMARY;
+  process.env.NEXT_PUBLIC_DEEPSEEK_MODEL_PRIMARY?.trim() || AI_MODELS.PRIMARY;
 
 export function getDisplayModelName(modelString: string): string {
-  if (modelString.includes("nemotron-3-super-120b")) return "Nemotron Super 120B";
-  if (modelString.includes("nemotron-3-nano-30b")) return "Nemotron Nano 30B";
+  if (modelString === "deepseek-chat") return "DeepSeek V3.2";
+  if (modelString === "deepseek-reasoner") return "DeepSeek V3.2 Reasoner";
+  if (modelString.includes("deepseek-v3.2")) return "DeepSeek V3.2";
   if (modelString.includes("gpt-4")) return "GPT-4";
   if (modelString.includes("claude")) return "Claude";
   if (modelString.includes("gemini")) return "Gemini";
@@ -18,7 +19,7 @@ export function getDisplayModelName(modelString: string): string {
 }
 
 export const AI_CONFIG = {
-  MAX_TOKENS: 8192,
+  MAX_TOKENS: 8000,
   TEMPERATURE: 0.4,
   MAX_HISTORY_TURNS: 20,
   DAILY_TOKEN_LIMIT: 500_000,
