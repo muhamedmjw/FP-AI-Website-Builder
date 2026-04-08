@@ -1,6 +1,8 @@
 import { HistoryMessage } from "@/shared/types/database";
 
 const PENDING_GUEST_CHAT_KEY = "pending_guest_chat_session";
+const IMPORTED_GUEST_CHAT_MAP_KEY = "imported_guest_chat_map_v1";
+const MAX_IMPORTED_GUEST_CHAT_ENTRIES = 50;
 
 type PendingGuestMessage = {
   role: "user" | "assistant";
@@ -8,9 +10,17 @@ type PendingGuestMessage = {
 };
 
 type PendingGuestChatSession = {
+  sessionId: string;
   title: string;
   messages: PendingGuestMessage[];
+  html: string | null;
+  websiteGenerated: boolean;
   createdAt: string;
+};
+
+type SavePendingGuestChatSessionOptions = {
+  html?: string | null;
+  websiteGenerated?: boolean;
 };
 
 function buildChatTitle(messages: PendingGuestMessage[]): string {
@@ -27,7 +37,80 @@ function buildChatTitle(messages: PendingGuestMessage[]): string {
   return compact.slice(0, 40).trimEnd() + "...";
 }
 
-export function savePendingGuestChatSession(messages: HistoryMessage[]) {
+function normalizePendingHtml(value: unknown): string | null {
+  if (typeof value !== "string") {
+    return null;
+  }
+
+  const trimmed = value.trim();
+  return trimmed.length > 0 ? value : null;
+}
+
+function buildSessionId(messages: PendingGuestMessage[], html: string | null): string {
+  const seed = JSON.stringify({ messages, html: html ?? "" });
+  let hash = 5381;
+
+  for (let index = 0; index < seed.length; index += 1) {
+    hash = (hash * 33) ^ seed.charCodeAt(index);
+  }
+
+  return `guest-${(hash >>> 0).toString(36)}`;
+}
+
+function readImportedGuestChatMap(): Record<string, string> {
+  if (typeof window === "undefined") {
+    return {};
+  }
+
+  const raw = localStorage.getItem(IMPORTED_GUEST_CHAT_MAP_KEY);
+  if (!raw) {
+    return {};
+  }
+
+  try {
+    const parsed = JSON.parse(raw) as unknown;
+    if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
+      return {};
+    }
+
+    const entries = Object.entries(parsed as Record<string, unknown>).filter(
+      ([sessionId, chatId]) =>
+        typeof sessionId === "string" &&
+        sessionId.trim().length > 0 &&
+        typeof chatId === "string" &&
+        chatId.trim().length > 0
+    );
+
+    return entries.reduce<Record<string, string>>((map, [sessionId, chatId]) => {
+      map[sessionId] = chatId as string;
+      return map;
+    }, {});
+  } catch {
+    return {};
+  }
+}
+
+function writeImportedGuestChatMap(map: Record<string, string>) {
+  if (typeof window === "undefined") {
+    return;
+  }
+
+  const entries = Object.entries(map);
+  const boundedEntries =
+    entries.length > MAX_IMPORTED_GUEST_CHAT_ENTRIES
+      ? entries.slice(entries.length - MAX_IMPORTED_GUEST_CHAT_ENTRIES)
+      : entries;
+
+  localStorage.setItem(
+    IMPORTED_GUEST_CHAT_MAP_KEY,
+    JSON.stringify(Object.fromEntries(boundedEntries))
+  );
+}
+
+export function savePendingGuestChatSession(
+  messages: HistoryMessage[],
+  options: SavePendingGuestChatSessionOptions = {}
+) {
   if (typeof window === "undefined") {
     return;
   }
@@ -47,9 +130,19 @@ export function savePendingGuestChatSession(messages: HistoryMessage[]) {
     return;
   }
 
+  const html = normalizePendingHtml(options.html);
+  const websiteGenerated =
+    typeof options.websiteGenerated === "boolean"
+      ? options.websiteGenerated
+      : html !== null;
+  const sessionId = buildSessionId(normalizedMessages, html);
+
   const payload: PendingGuestChatSession = {
+    sessionId,
     title: buildChatTitle(normalizedMessages),
     messages: normalizedMessages,
+    html,
+    websiteGenerated,
     createdAt: new Date().toISOString(),
   };
 
@@ -68,12 +161,7 @@ export function readPendingGuestChatSession(): PendingGuestChatSession | null {
 
   try {
     const parsed = JSON.parse(raw) as PendingGuestChatSession;
-    if (
-      !parsed ||
-      typeof parsed !== "object" ||
-      typeof parsed.title !== "string" ||
-      !Array.isArray(parsed.messages)
-    ) {
+    if (!parsed || typeof parsed !== "object" || !Array.isArray(parsed.messages)) {
       return null;
     }
 
@@ -91,12 +179,33 @@ export function readPendingGuestChatSession(): PendingGuestChatSession | null {
       return null;
     }
 
+    const html = normalizePendingHtml((parsed as { html?: unknown }).html);
+    const websiteGeneratedValue = (parsed as { websiteGenerated?: unknown }).websiteGenerated;
+    const websiteGenerated =
+      typeof websiteGeneratedValue === "boolean"
+        ? websiteGeneratedValue
+        : html !== null;
+    const parsedSessionId = (parsed as { sessionId?: unknown }).sessionId;
+    const sessionId =
+      typeof parsedSessionId === "string" && parsedSessionId.trim().length > 0
+        ? parsedSessionId
+        : buildSessionId(validMessages, html);
+    const parsedTitle = (parsed as { title?: unknown }).title;
+    const safeTitle =
+      typeof parsedTitle === "string" && parsedTitle.trim().length > 0
+        ? parsedTitle.trim()
+        : "Guest Chat";
+    const parsedCreatedAt = (parsed as { createdAt?: unknown }).createdAt;
+
     return {
-      title: parsed.title.trim() || "Guest Chat",
+      sessionId,
+      title: safeTitle,
       messages: validMessages,
+      html,
+      websiteGenerated,
       createdAt:
-        typeof parsed.createdAt === "string"
-          ? parsed.createdAt
+        typeof parsedCreatedAt === "string"
+          ? parsedCreatedAt
           : new Date().toISOString(),
     };
   } catch {
@@ -120,4 +229,37 @@ export function clearPendingGuestChatSession() {
   }
 
   localStorage.removeItem(PENDING_GUEST_CHAT_KEY);
+}
+
+export function getImportedGuestChatId(sessionId: string): string | null {
+  if (typeof window === "undefined") {
+    return null;
+  }
+
+  const normalizedSessionId = sessionId.trim();
+  if (!normalizedSessionId) {
+    return null;
+  }
+
+  const importedMap = readImportedGuestChatMap();
+  const chatId = importedMap[normalizedSessionId];
+
+  return typeof chatId === "string" && chatId.trim().length > 0 ? chatId : null;
+}
+
+export function markGuestChatSessionImported(sessionId: string, chatId: string) {
+  if (typeof window === "undefined") {
+    return;
+  }
+
+  const normalizedSessionId = sessionId.trim();
+  const normalizedChatId = chatId.trim();
+
+  if (!normalizedSessionId || !normalizedChatId) {
+    return;
+  }
+
+  const importedMap = readImportedGuestChatMap();
+  importedMap[normalizedSessionId] = normalizedChatId;
+  writeImportedGuestChatMap(importedMap);
 }

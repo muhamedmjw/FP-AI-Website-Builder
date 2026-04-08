@@ -13,6 +13,8 @@ import {
 } from "@/client/lib/zip-download";
 import {
   consumePendingGuestChatSession,
+  getImportedGuestChatId,
+  markGuestChatSessionImported,
 } from "@/client/lib/guest-chat-handoff";
 import { useLanguage } from "@/client/lib/language-context";
 import { useElapsedSeconds } from "@/client/lib/hooks/use-elapsed-seconds";
@@ -41,6 +43,8 @@ export default function HomePage() {
   const [downloadMessage, setDownloadMessage] = useState("");
   const creatingSeconds = useElapsedSeconds(isCreating);
   const statusRotationSeconds = 8;
+  const hasProcessedPendingGuestActions = useRef(false);
+  const isProcessingPendingGuestActions = useRef(false);
 
   function adjustHeight(el: HTMLTextAreaElement) {
     el.style.height = "auto";
@@ -61,32 +65,96 @@ export default function HomePage() {
 
   useEffect(() => {
     let isCancelled = false;
+    const supabase = getSupabaseBrowserClient();
 
-    async function restoreGuestSessionAndDownload() {
-      const supabase = getSupabaseBrowserClient();
-      const user = await getCurrentUser(supabase);
-
-      if (!user) {
-        return;
-      }
-
+    async function restoreGuestSessionAndDownloadForUser(userId: string) {
       let restoredChatId: string | null = null;
       const pendingGuestSession = consumePendingGuestChatSession();
 
       if (pendingGuestSession && pendingGuestSession.messages.length > 0) {
         setDownloadMessage("Restoring your guest chat...");
+        let restoredFromExistingImport = false;
 
-        const chat = await createChat(
-          supabase,
-          user.id,
-          pendingGuestSession.title || "Guest Chat"
+        const previouslyImportedChatId = getImportedGuestChatId(
+          pendingGuestSession.sessionId
         );
 
-        for (const message of pendingGuestSession.messages) {
-          await addMessage(supabase, chat.id, message.role, message.content);
+        if (previouslyImportedChatId) {
+          const { data: existingChat } = await supabase
+            .from("chats")
+            .select("id")
+            .eq("id", previouslyImportedChatId)
+            .eq("user_id", userId)
+            .maybeSingle();
+
+          if (existingChat?.id) {
+            restoredChatId = existingChat.id;
+            restoredFromExistingImport = true;
+          }
         }
 
-        restoredChatId = chat.id;
+        if (!restoredChatId) {
+          const chat = await createChat(
+            supabase,
+            userId,
+            pendingGuestSession.title || "Guest Chat"
+          );
+
+          for (const message of pendingGuestSession.messages) {
+            await addMessage(supabase, chat.id, message.role, message.content);
+          }
+
+          restoredChatId = chat.id;
+        }
+
+        let shouldRestoreWebsiteHtml =
+          pendingGuestSession.websiteGenerated &&
+          typeof pendingGuestSession.html === "string" &&
+          pendingGuestSession.html.trim().length > 0;
+
+        if (restoredChatId && shouldRestoreWebsiteHtml && restoredFromExistingImport) {
+          const { data: existingWebsite } = await supabase
+            .from("websites")
+            .select("id")
+            .eq("chat_id", restoredChatId)
+            .maybeSingle();
+
+          if (existingWebsite?.id) {
+            shouldRestoreWebsiteHtml = false;
+          }
+        }
+
+        if (restoredChatId && shouldRestoreWebsiteHtml) {
+          const restoreResponse = await fetch("/api/website/save", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              chatId: restoredChatId,
+              html: pendingGuestSession.html,
+              language,
+            }),
+          });
+
+          if (!restoreResponse.ok) {
+            const restoreData = (await restoreResponse
+              .json()
+              .catch(() => null)) as { error?: unknown } | null;
+            throw new Error(
+              typeof restoreData?.error === "string"
+                ? restoreData.error
+                : "Could not restore your generated website."
+            );
+          }
+        }
+
+        if (restoredChatId) {
+          markGuestChatSessionImported(
+            pendingGuestSession.sessionId,
+            restoredChatId
+          );
+        }
       }
 
       const pendingPrompt = consumePendingGuestZipPrompt();
@@ -112,9 +180,22 @@ export default function HomePage() {
       }
     }
 
-    async function runPendingGuestActions() {
+    async function runPendingGuestActionsIfAuthenticated() {
+      if (isProcessingPendingGuestActions.current || hasProcessedPendingGuestActions.current) {
+        return;
+      }
+
+      isProcessingPendingGuestActions.current = true;
+
       try {
-        await restoreGuestSessionAndDownload();
+        const user = await getCurrentUser(supabase);
+
+        if (!user) {
+          return;
+        }
+
+        await restoreGuestSessionAndDownloadForUser(user.id);
+        hasProcessedPendingGuestActions.current = true;
       } catch (error) {
         console.error("Failed to restore guest session state:", error);
 
@@ -123,15 +204,40 @@ export default function HomePage() {
             "Could not restore guest chat/download. Please try again."
           );
         }
+      } finally {
+        isProcessingPendingGuestActions.current = false;
       }
     }
 
-    void runPendingGuestActions();
+    const retryIntervalId = window.setInterval(() => {
+      if (hasProcessedPendingGuestActions.current || isCancelled) {
+        return;
+      }
+
+      void runPendingGuestActionsIfAuthenticated();
+    }, 750);
+
+    const timeoutId = window.setTimeout(() => {
+      window.clearInterval(retryIntervalId);
+    }, 10000);
+
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === "SIGNED_IN" && session?.user) {
+        void runPendingGuestActionsIfAuthenticated();
+      }
+    });
+
+    void runPendingGuestActionsIfAuthenticated();
 
     return () => {
       isCancelled = true;
+      window.clearInterval(retryIntervalId);
+      window.clearTimeout(timeoutId);
+      subscription.unsubscribe();
     };
-  }, [router]);
+  }, [language, router]);
 
   useEffect(() => {
     if (inputRef.current) {

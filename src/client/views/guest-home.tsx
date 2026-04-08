@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { Sparkles, X } from "lucide-react";
 import { HistoryMessage } from "@/shared/types/database";
 import ChatPanel from "@/client/features/chat/chat-panel";
@@ -11,16 +11,16 @@ import { useLanguage } from "@/client/lib/language-context";
 import { t } from "@/shared/constants/translations";
 import { localizeGuestChatErrorMessage } from "@/shared/utils/localized-errors";
 import { MAX_GUEST_PROMPTS } from "@/shared/constants/limits";
+import { getDisplayModelName, PRIMARY_MODEL } from "@/shared/constants/ai";
 import type { AppLanguage } from "@/shared/types/database";
 
-const GUEST_WEBSITE_WINDOW_MS = 12 * 60 * 60 * 1000;
 const GUEST_SESSION_STORAGE_KEY = "guest_mode_session_v1";
 
 type PersistedGuestSession = {
   messages: HistoryMessage[];
   html: string | null;
+  websiteGenerated: boolean;
   promptsUsed: number;
-  websiteWindowExpiresAtMs: number | null;
 };
 
 function normalizeGuestMessages(value: unknown): HistoryMessage[] {
@@ -62,8 +62,8 @@ function loadInitialGuestSession(): PersistedGuestSession {
   const emptyState: PersistedGuestSession = {
     messages: [],
     html: null,
+    websiteGenerated: false,
     promptsUsed: 0,
-    websiteWindowExpiresAtMs: null,
   };
 
   if (typeof window === "undefined") {
@@ -76,51 +76,33 @@ function loadInitialGuestSession(): PersistedGuestSession {
       return emptyState;
     }
 
-    const parsed = JSON.parse(raw) as Partial<PersistedGuestSession>;
+    const parsed = JSON.parse(raw) as Partial<PersistedGuestSession> & {
+      websiteWindowExpiresAtMs?: unknown;
+    };
     const messages = normalizeGuestMessages(parsed.messages);
-    const html = typeof parsed.html === "string" && parsed.html.trim().length > 0
-      ? parsed.html
-      : null;
+    const html =
+      typeof parsed.html === "string" && parsed.html.trim().length > 0
+        ? parsed.html
+        : null;
     const promptsUsed =
       typeof parsed.promptsUsed === "number" && Number.isFinite(parsed.promptsUsed)
         ? Math.max(0, Math.min(MAX_GUEST_PROMPTS, Math.floor(parsed.promptsUsed)))
         : 0;
-    const websiteWindowExpiresAtMs =
-      typeof parsed.websiteWindowExpiresAtMs === "number" &&
-      Number.isFinite(parsed.websiteWindowExpiresAtMs)
-        ? parsed.websiteWindowExpiresAtMs
-        : null;
-
-    if (
-      websiteWindowExpiresAtMs !== null &&
-      Date.now() >= websiteWindowExpiresAtMs
-    ) {
-      clearPersistedGuestSession();
-      return emptyState;
-    }
+    const websiteGenerated =
+      typeof parsed.websiteGenerated === "boolean"
+        ? parsed.websiteGenerated
+        : html !== null;
 
     return {
       messages,
       html,
+      websiteGenerated,
       promptsUsed,
-      websiteWindowExpiresAtMs,
     };
   } catch {
     clearPersistedGuestSession();
     return emptyState;
   }
-}
-
-function formatRemainingWindow(ms: number): string {
-  const totalSeconds = Math.max(0, Math.floor(ms / 1000));
-  const hours = Math.floor(totalSeconds / 3600);
-  const minutes = Math.floor((totalSeconds % 3600) / 60);
-
-  if (hours > 0) {
-    return `${hours}h ${minutes}m`;
-  }
-
-  return `${minutes}m`;
 }
 
 function createGuestMessage(
@@ -155,8 +137,8 @@ async function sendGuestChat(
       content,
       language,
       history: history
-        .filter((m) => m.role === "user" || m.role === "assistant")
-        .map((m) => ({ role: m.role, content: m.content })),
+        .filter((message) => message.role === "user" || message.role === "assistant")
+        .map((message) => ({ role: message.role, content: message.content })),
     }),
   });
 
@@ -206,53 +188,84 @@ function GuestLimitBanner({
   );
 }
 
+function GuestWebsiteReadyBanner({
+  language,
+  queueChatSessionForAuth,
+}: {
+  language: AppLanguage;
+  queueChatSessionForAuth: () => void;
+}) {
+  return (
+    <div className="mx-auto mb-2 w-[calc(100%-1rem)] max-w-md rounded-xl border border-[var(--app-card-border)] bg-[var(--app-card-bg)] p-3 sm:w-full sm:max-w-4xl sm:rounded-2xl sm:p-4">
+      <h3 className="text-sm font-semibold text-[var(--app-text-heading)] sm:text-base">Your website is ready</h3>
+      <p className="mt-1 text-xs text-[var(--app-text-secondary)] sm:text-sm">
+        Sign in to keep editing, download, or deploy your website.
+      </p>
+      <div className="mt-2.5 grid gap-2 sm:mt-3 sm:grid-cols-2">
+        <Link
+          href="/signin"
+          onClick={queueChatSessionForAuth}
+          className="rounded-lg border border-[var(--app-card-border)] px-3 py-2 text-center text-sm font-medium text-[var(--app-text-secondary)] transition hover:border-[var(--app-text-tertiary)] hover:text-[var(--app-text-heading)] sm:py-2.5"
+        >
+          {t("signIn", language)}
+        </Link>
+        <Link
+          href="/signup"
+          onClick={queueChatSessionForAuth}
+          className="rounded-lg bg-[var(--app-btn-primary-bg)] px-3 py-2 text-center text-sm font-semibold text-[var(--app-btn-primary-text)] shadow-[var(--app-shadow-sm)] transition hover:bg-[var(--app-btn-primary-hover)] hover:-translate-y-px active:translate-y-0 sm:py-2.5"
+        >
+          {t("signUp", language)}
+        </Link>
+      </div>
+    </div>
+  );
+}
+
 export default function GuestHomePage() {
   const { language } = useLanguage();
-  const initialSession = useMemo(loadInitialGuestSession, []);
-  const [messages, setMessages] = useState<HistoryMessage[]>(initialSession.messages);
+  const providerName = getDisplayModelName(PRIMARY_MODEL);
+  const [messages, setMessages] = useState<HistoryMessage[]>([]);
   const [isSending, setIsSending] = useState(false);
   const [sendingStartedAtMs, setSendingStartedAtMs] = useState<number | null>(null);
-  const [html, setHtml] = useState<string | null>(initialSession.html);
+  const [html, setHtml] = useState<string | null>(null);
+  const [websiteGenerated, setWebsiteGenerated] = useState(false);
+  const [previewOpen, setPreviewOpen] = useState(false);
   const [inputErrorMessage, setInputErrorMessage] = useState("");
-  const [previewGateOpen, setPreviewGateOpen] = useState(false);
-  const [promptsUsed, setPromptsUsed] = useState(initialSession.promptsUsed);
-  const [websiteWindowExpiresAtMs, setWebsiteWindowExpiresAtMs] = useState<number | null>(
-    initialSession.websiteWindowExpiresAtMs
-  );
-  const [windowClockNowMs, setWindowClockNowMs] = useState<number>(Date.now());
+  const [promptsUsed, setPromptsUsed] = useState(0);
+  const [sessionHydrated, setSessionHydrated] = useState(false);
 
   const hasPreview = typeof html === "string" && html.trim().length > 0;
   const hasLimitErrorMessage =
     inputErrorMessage === t("guestLimitReached", language) ||
     inputErrorMessage.toLowerCase().includes("limit");
-  const isWebsiteWindowActive =
-    websiteWindowExpiresAtMs !== null && windowClockNowMs < websiteWindowExpiresAtMs;
-  const websiteWindowRemainingMs =
-    websiteWindowExpiresAtMs !== null
-      ? Math.max(0, websiteWindowExpiresAtMs - windowClockNowMs)
-      : 0;
   const isLimitReached = promptsUsed >= MAX_GUEST_PROMPTS;
-  const isGuestInputLocked = isLimitReached || isWebsiteWindowActive;
+  const isGuestInputLocked = websiteGenerated;
   const displayedInputError = hasLimitErrorMessage ? "" : inputErrorMessage;
   const guestInputPlaceholder = isSending
     ? t("generating", language)
-    : isWebsiteWindowActive
-      ? `Next guest reset in ${formatRemainingWindow(websiteWindowRemainingMs)}`
-      : t("inputPlaceholder", language);
+    : t("inputPlaceholder", language);
   const shouldShowGeneratingIndicator =
     isSending && messages.some((message) => message.role === "user");
 
   useEffect(() => {
+    const initialSession = loadInitialGuestSession();
+    setMessages(initialSession.messages);
+    setHtml(initialSession.html);
+    setWebsiteGenerated(initialSession.websiteGenerated);
+    setPromptsUsed(initialSession.promptsUsed);
+    setSessionHydrated(true);
+  }, []);
+
+  useEffect(() => {
+    if (!sessionHydrated) {
+      return;
+    }
+
     if (typeof window === "undefined") {
       return;
     }
 
-    if (
-      messages.length === 0 &&
-      !html &&
-      promptsUsed === 0 &&
-      websiteWindowExpiresAtMs === null
-    ) {
+    if (messages.length === 0 && !html && !websiteGenerated && promptsUsed === 0) {
       clearPersistedGuestSession();
       return;
     }
@@ -260,48 +273,39 @@ export default function GuestHomePage() {
     const payload: PersistedGuestSession = {
       messages,
       html,
+      websiteGenerated,
       promptsUsed,
-      websiteWindowExpiresAtMs,
     };
 
     window.localStorage.setItem(GUEST_SESSION_STORAGE_KEY, JSON.stringify(payload));
-  }, [messages, html, promptsUsed, websiteWindowExpiresAtMs]);
+  }, [messages, html, websiteGenerated, promptsUsed, sessionHydrated]);
 
   useEffect(() => {
-    if (websiteWindowExpiresAtMs === null) {
+    if (!previewOpen) {
       return;
     }
 
-    const intervalId = window.setInterval(() => {
-      const now = Date.now();
-      setWindowClockNowMs(now);
-
-      if (now < websiteWindowExpiresAtMs) {
-        return;
+    const handleEscape = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        setPreviewOpen(false);
       }
+    };
 
-      window.clearInterval(intervalId);
-      clearPersistedGuestSession();
-      setMessages([]);
-      setHtml(null);
-      setPromptsUsed(0);
-      setWebsiteWindowExpiresAtMs(null);
-      setPreviewGateOpen(false);
-      setInputErrorMessage("");
-    }, 1000);
+    window.addEventListener("keydown", handleEscape);
 
     return () => {
-      window.clearInterval(intervalId);
+      window.removeEventListener("keydown", handleEscape);
     };
-  }, [websiteWindowExpiresAtMs]);
+  }, [previewOpen]);
 
   async function handleSend(content: string) {
-    if (isSending || isGuestInputLocked) return;
+    if (isSending || isGuestInputLocked || isLimitReached) return;
+
     const trimmed = content.trim();
     if (!trimmed) return;
 
     const userMessage = createGuestMessage("user", trimmed);
-    setMessages((prev) => [...prev, userMessage]);
+    setMessages((previousMessages) => [...previousMessages, userMessage]);
     setSendingStartedAtMs(Date.now());
     setIsSending(true);
     setInputErrorMessage("");
@@ -309,39 +313,34 @@ export default function GuestHomePage() {
     try {
       const aiResponse = await sendGuestChat(trimmed, messages, language);
 
-      const assistantMessage = createGuestMessage(
-        "assistant",
-        aiResponse.message
-      );
-      setMessages((prev) => [...prev, assistantMessage]);
+      const assistantMessage = createGuestMessage("assistant", aiResponse.message);
+      setMessages((previousMessages) => [...previousMessages, assistantMessage]);
 
-      if (aiResponse.type === "website" && aiResponse.html) {
-        const nextHtml = aiResponse.html.trim();
+      if (aiResponse.type === "website") {
+        const nextHtml =
+          typeof aiResponse.html === "string" ? aiResponse.html.trim() : "";
+
         if (nextHtml.length > 0) {
-          setHtml(aiResponse.html);
-          setWebsiteWindowExpiresAtMs((previousValue) => {
-            if (previousValue && previousValue > Date.now()) {
-              return previousValue;
-            }
-
-            return Date.now() + GUEST_WEBSITE_WINDOW_MS;
-          });
+          setHtml(aiResponse.html ?? null);
         }
+
+        setWebsiteGenerated(true);
       }
 
       setPromptsUsed((previousCount) =>
         Math.min(previousCount + 1, MAX_GUEST_PROMPTS)
       );
     } catch (error) {
-      const raw = error instanceof Error ? error.message : "";
-      setInputErrorMessage(localizeGuestChatErrorMessage(raw, language));
+      const rawMessage = error instanceof Error ? error.message : "";
+      setInputErrorMessage(localizeGuestChatErrorMessage(rawMessage, language));
 
-      if (raw.includes("429") || raw.toLowerCase().includes("limit")) {
+      if (rawMessage.includes("429") || rawMessage.toLowerCase().includes("limit")) {
         setPromptsUsed(MAX_GUEST_PROMPTS);
       }
 
-      // Remove the optimistic user message on error
-      setMessages((prev) => prev.filter((m) => m.id !== userMessage.id));
+      setMessages((previousMessages) =>
+        previousMessages.filter((message) => message.id !== userMessage.id)
+      );
     } finally {
       setIsSending(false);
       setSendingStartedAtMs(null);
@@ -349,7 +348,10 @@ export default function GuestHomePage() {
   }
 
   function queueChatSessionForAuth() {
-    savePendingGuestChatSession(messages);
+    savePendingGuestChatSession(messages, {
+      html,
+      websiteGenerated,
+    });
   }
 
   function handlePreviewRequest() {
@@ -357,41 +359,12 @@ export default function GuestHomePage() {
       return;
     }
 
-    setPreviewGateOpen(true);
+    setPreviewOpen(true);
   }
 
-  function closePreviewGate() {
-    setPreviewGateOpen(false);
+  function closePreview() {
+    setPreviewOpen(false);
   }
-
-  const shouldShowWindowLockBanner = isWebsiteWindowActive;
-
-  const windowLockBanner = shouldShowWindowLockBanner ? (
-    <div className="mx-auto mb-2 w-full max-w-4xl rounded-2xl border border-[var(--app-card-border)] bg-[var(--app-card-bg)] p-4">
-      <h3 className="font-semibold text-[var(--app-text-heading)]">
-        Guest website saved for 12 hours
-      </h3>
-      <p className="mt-1 text-sm text-[var(--app-text-secondary)]">
-        Your generated website is kept for {formatRemainingWindow(websiteWindowRemainingMs)}. Sign in to continue building now, or wait for the guest reset.
-      </p>
-      <div className="mt-3 grid gap-2 sm:grid-cols-2">
-        <Link
-          href="/signin"
-          onClick={queueChatSessionForAuth}
-          className="rounded-lg border border-[var(--app-card-border)] px-3 py-2.5 text-center text-sm font-medium text-[var(--app-text-secondary)] transition hover:border-[var(--app-text-tertiary)] hover:text-[var(--app-text-heading)]"
-        >
-          {t("signIn", language)}
-        </Link>
-        <Link
-          href="/signup"
-          onClick={queueChatSessionForAuth}
-          className="rounded-lg bg-[var(--app-btn-primary-bg)] px-3 py-2.5 text-center text-sm font-semibold text-[var(--app-btn-primary-text)] shadow-[var(--app-shadow-sm)] transition hover:bg-[var(--app-btn-primary-hover)] hover:-translate-y-px active:translate-y-0"
-        >
-          {t("signUp", language)}
-        </Link>
-      </div>
-    </div>
-  ) : null;
 
   return (
     <div className="flex min-h-0 flex-1 flex-col bg-[var(--app-bg)]">
@@ -418,14 +391,14 @@ export default function GuestHomePage() {
               <Link
                 href="/signin"
                 onClick={queueChatSessionForAuth}
-                className="rounded-lg border border-[var(--app-card-border)] px-2 py-1 text-xs font-medium text-[var(--app-text-secondary)] transition hover:border-[var(--app-text-tertiary)] hover:text-[var(--app-text-heading)] sm:px-3 sm:py-1.5 sm:text-sm"
+                className="rounded-lg border border-[var(--app-card-border)] bg-[var(--app-card-bg)] px-2 py-2 text-xs font-medium text-[var(--app-text-secondary)] transition hover:border-[var(--app-text-tertiary)] hover:bg-[var(--app-hover-bg)] hover:text-[var(--app-text-heading)] sm:px-3 sm:py-2 sm:text-sm"
               >
                 {t("signIn", language)}
               </Link>
               <Link
                 href="/signup"
                 onClick={queueChatSessionForAuth}
-                className="rounded-lg bg-[var(--app-btn-primary-bg)] px-2 py-1 text-xs font-semibold text-[var(--app-btn-primary-text)] shadow-[var(--app-shadow-sm)] transition hover:bg-[var(--app-btn-primary-hover)] hover:-translate-y-px active:translate-y-0 sm:px-3 sm:py-1.5 sm:text-sm"
+                className="rounded-lg bg-[var(--app-btn-primary-bg)] px-2 py-2 text-xs font-semibold text-[var(--app-btn-primary-text)] shadow-[var(--app-shadow-sm)] transition hover:bg-[var(--app-btn-primary-hover)] hover:-translate-y-px active:translate-y-0 sm:px-3 sm:py-2 sm:text-sm"
               >
                 {t("signUp", language)}
               </Link>
@@ -434,6 +407,9 @@ export default function GuestHomePage() {
         </div>
         <p className="mx-auto mt-1.5 w-full max-w-5xl text-xs text-[var(--app-text-tertiary)] sm:mt-2">
           {t("guestNotice", language)}
+        </p>
+        <p className="mx-auto mt-1 w-full max-w-5xl text-[10px] text-[var(--app-text-tertiary)] sm:text-xs">
+          AI model: {providerName}
         </p>
       </header>
 
@@ -444,6 +420,7 @@ export default function GuestHomePage() {
             onSend={handleSend}
             onPreviewRequest={handlePreviewRequest}
             showPreviewGateButton
+            previewOpen={previewOpen}
             hasPreview={hasPreview}
             isSending={shouldShowGeneratingIndicator}
             sendingStartedAtMs={sendingStartedAtMs}
@@ -454,34 +431,40 @@ export default function GuestHomePage() {
             inputErrorMessage={displayedInputError}
             disableInput={isGuestInputLocked}
             inputBanner={
-              shouldShowWindowLockBanner
-                ? windowLockBanner
-                : isLimitReached ? (
+              websiteGenerated ? (
+                <GuestWebsiteReadyBanner
+                  language={language}
+                  queueChatSessionForAuth={queueChatSessionForAuth}
+                />
+              ) : isLimitReached ? (
                 <GuestLimitBanner
                   language={language}
                   queueChatSessionForAuth={queueChatSessionForAuth}
                 />
-                ) : null
+              ) : null
             }
             emptyStateMobileTuning
             pinDisclaimerToBottomOnMobile
+            showInputDisclaimer={false}
           />
         </div>
       </div>
 
-      {previewGateOpen ? (
+      {previewOpen && hasPreview ? (
         <div
           className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 p-4 backdrop-blur-sm"
           onClick={(event) => {
             if (event.target === event.currentTarget) {
-              closePreviewGate();
+              closePreview();
             }
           }}
+          role="dialog"
+          aria-modal="true"
         >
-          <div className="w-full max-w-md rounded-2xl border border-[var(--app-card-border)] bg-[var(--app-panel)] p-6 shadow-[var(--app-shadow-lg)]">
-            <div className="flex items-start justify-between gap-4">
+          <div className="w-[calc(100%-1rem)] max-w-md rounded-2xl border border-[var(--app-card-border)] bg-[var(--app-panel)] p-4 shadow-[var(--app-shadow-lg)] sm:w-full sm:p-6">
+            <div className="flex items-start justify-between gap-3">
               <div>
-                <h3 className="text-lg font-semibold text-[var(--app-text-heading)]">
+                <h3 className="text-base font-semibold text-[var(--app-text-heading)]">
                   {t("previewGateTitle", language)}
                 </h3>
                 <p className="mt-1 text-sm text-[var(--app-text-secondary)]">
@@ -490,20 +473,21 @@ export default function GuestHomePage() {
               </div>
               <button
                 type="button"
-                onClick={closePreviewGate}
+                onClick={closePreview}
                 className="rounded-lg p-2 text-[var(--app-text-tertiary)] transition hover:bg-[var(--app-hover-bg-strong)] hover:text-[var(--app-text-heading)]"
                 title={t("close", language)}
+                aria-label={t("close", language)}
               >
-                <X size={16} />
+                <X size={18} />
               </button>
             </div>
 
-            <div className="mt-5 grid gap-2.5 sm:grid-cols-2">
+            <div className="mt-5 grid gap-2 sm:grid-cols-2">
               <Link
                 href="/signin"
                 onClick={() => {
                   queueChatSessionForAuth();
-                  closePreviewGate();
+                  closePreview();
                 }}
                 className="rounded-lg border border-[var(--app-card-border)] px-3 py-2.5 text-center text-sm font-medium text-[var(--app-text-secondary)] transition hover:border-[var(--app-text-tertiary)] hover:text-[var(--app-text-heading)]"
               >
@@ -513,7 +497,7 @@ export default function GuestHomePage() {
                 href="/signup"
                 onClick={() => {
                   queueChatSessionForAuth();
-                  closePreviewGate();
+                  closePreview();
                 }}
                 className="rounded-lg bg-[var(--app-btn-primary-bg)] px-3 py-2.5 text-center text-sm font-semibold text-[var(--app-btn-primary-text)] shadow-[var(--app-shadow-sm)] transition hover:bg-[var(--app-btn-primary-hover)] hover:-translate-y-px active:translate-y-0"
               >

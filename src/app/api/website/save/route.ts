@@ -3,8 +3,18 @@ import { getSupabaseServerClient } from "@/server/supabase/server-client";
 import { getCurrentUser } from "@/shared/services/user-service";
 import {
   getWebsiteByChatId,
+  createWebsite,
   saveGeneratedHtml,
 } from "@/server/services/website-service";
+import type { AppLanguage } from "@/shared/types/database";
+
+type PostgresLikeError = {
+  code?: string;
+};
+
+function isAppLanguage(value: unknown): value is AppLanguage {
+  return value === "en" || value === "ar" || value === "ku";
+}
 
 export async function POST(request: NextRequest) {
   try {
@@ -30,6 +40,13 @@ export async function POST(request: NextRequest) {
       typeof body.html === "string"
         ? body.html
         : "";
+    const preferredLanguage: AppLanguage =
+      body &&
+      typeof body === "object" &&
+      "language" in body &&
+      isAppLanguage(body.language)
+        ? body.language
+        : "en";
     const trimmedHtml = rawHtml.trim();
 
     if (!chatId || !trimmedHtml || trimmedHtml.length < 100) {
@@ -44,7 +61,7 @@ export async function POST(request: NextRequest) {
 
     const { data: ownedChat, error: chatLookupError } = await supabase
       .from("chats")
-      .select("id")
+      .select("id, title")
       .eq("id", chatId)
       .eq("user_id", user.id)
       .single();
@@ -53,10 +70,49 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Forbidden." }, { status: 403 });
     }
 
-    const website = await getWebsiteByChatId(supabase, chatId);
+    let website = await getWebsiteByChatId(supabase, chatId);
 
     if (!website) {
-      return NextResponse.json({ error: "Website not found." }, { status: 404 });
+      const { data: firstUserMessage } = await supabase
+        .from("history")
+        .select("content")
+        .eq("chat_id", chatId)
+        .eq("role", "user")
+        .order("created_at", { ascending: true })
+        .limit(1)
+        .maybeSingle();
+
+      const firstUserPrompt =
+        typeof firstUserMessage?.content === "string"
+          ? firstUserMessage.content.trim()
+          : "";
+
+      const fallbackPrompt =
+        firstUserPrompt || ownedChat.title?.trim() || "Imported guest website";
+
+      try {
+        website = await createWebsite(
+          supabase,
+          chatId,
+          fallbackPrompt,
+          preferredLanguage
+        );
+      } catch (error) {
+        const maybePgError = error as PostgresLikeError;
+
+        if (maybePgError.code === "23505") {
+          website = await getWebsiteByChatId(supabase, chatId);
+        } else {
+          throw error;
+        }
+      }
+
+      if (!website) {
+        return NextResponse.json(
+          { error: "Failed to create website record." },
+          { status: 500 }
+        );
+      }
     }
 
     await saveGeneratedHtml(supabase, website.id, rawHtml);

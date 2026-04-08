@@ -71,6 +71,7 @@ type ChatPanelProps = {
   }>;
   emptyStateMobileTuning?: boolean;
   pinDisclaimerToBottomOnMobile?: boolean;
+  showInputDisclaimer?: boolean;
 };
 
 export default function ChatPanel({
@@ -99,6 +100,7 @@ export default function ChatPanel({
   inlineAttachments = [],
   emptyStateMobileTuning = false,
   pinDisclaimerToBottomOnMobile = false,
+  showInputDisclaimer = true,
 }: ChatPanelProps) {
   const { language } = useLanguage();
   const isRtlLanguage = language === "ar" || language === "ku";
@@ -203,6 +205,7 @@ export default function ChatPanel({
               placeholder={resolvedInputPlaceholder}
               isSticky={false}
               autoFocus
+              showDisclaimer={showInputDisclaimer}
               pinDisclaimerToBottomOnMobile={pinDisclaimerToBottomOnMobile}
             />
             {inputBanner}
@@ -306,6 +309,7 @@ export default function ChatPanel({
               disabled={isSending || disableInput}
               placeholder={resolvedInputPlaceholder}
               isSticky
+              showDisclaimer={showInputDisclaimer}
               pinDisclaimerToBottomOnMobile={pinDisclaimerToBottomOnMobile}
             />
           </div>

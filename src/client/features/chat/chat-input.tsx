@@ -105,9 +105,9 @@ export default function ChatInput({
   const shouldShowPreviewToggle = typeof onTogglePreview === "function" && hasPreview;
   const shouldShowPreviewGateAction =
     showPreviewGateButton && typeof onPreviewRequest === "function";
-  const isPreviewGateInteractive = hasPreview && !disabled;
+  const isPreviewGateInteractive = hasPreview;
   const previewGateTooltip = hasPreview
-    ? "Sign in to preview your website"
+    ? "Preview website"
     : "Generate a website first";
   const isGuestMode = !chatId;
   const visibleImages = images.slice(0, 6);
@@ -368,11 +368,11 @@ export default function ChatInput({
                         onPreviewRequest();
                       }
                     }}
-                    disabled={disabled || !hasPreview}
-                    className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-[var(--app-card-border)] bg-[var(--app-card-bg)] text-[var(--app-text-secondary)] transition disabled:cursor-default disabled:opacity-50 sm:h-11 sm:w-11 ${
+                    disabled={!hasPreview}
+                    className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-[var(--app-card-border)] bg-[var(--app-card-bg)] text-[var(--app-text-secondary)] transition disabled:cursor-not-allowed disabled:opacity-50 sm:h-11 sm:w-11 ${
                       isPreviewGateInteractive
                         ? "cursor-pointer hover:bg-[var(--app-hover-bg-strong)] hover:text-[var(--app-text-heading)]"
-                        : "cursor-default"
+                        : "cursor-not-allowed"
                     }`}
                     title={previewGateTooltip}
                     aria-label={previewGateTooltip}
