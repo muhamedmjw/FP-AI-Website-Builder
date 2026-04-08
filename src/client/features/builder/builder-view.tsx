@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Eye, MessageCircle } from "lucide-react";
+import { ArrowLeftRight, Eye, MessageCircle } from "lucide-react";
 import { HistoryMessage } from "@/shared/types/database";
 import { ChatApiError, sendChatMessage } from "@/client/lib/api/chat-api";
 import { downloadWebsiteZip } from "@/client/lib/zip-download";
@@ -91,6 +91,7 @@ export default function BuilderView({
 
   // Mobile tab state: "chat" | "preview"
   const [mobileTab, setMobileTab] = useState<"chat" | "preview">("chat");
+  const [mobilePreviewMode, setMobilePreviewMode] = useState<"preview" | "editor">("preview");
 
   useEffect(() => {
     if (hasOptimisticMessage) {
@@ -119,6 +120,7 @@ export default function BuilderView({
   useEffect(() => {
     if (!hasPreview) {
       setMobileTab("chat");
+      setMobilePreviewMode("preview");
     }
   }, [hasPreview]);
 
@@ -476,15 +478,29 @@ export default function BuilderView({
           </button>
           <button
             type="button"
-            onClick={() => setMobileTab("preview")}
+            onClick={() => {
+              if (mobileTab !== "preview") {
+                setMobileTab("preview");
+                setMobilePreviewMode("preview");
+                return;
+              }
+
+              setMobilePreviewMode((prev) =>
+                prev === "preview" ? "editor" : "preview"
+              );
+            }}
             className={`flex flex-1 items-center justify-center gap-2 px-4 py-3 text-sm font-medium transition ${
               mobileTab === "preview"
                 ? "border-b-2 border-[var(--app-btn-primary-bg)] text-[var(--app-text-heading)]"
                 : "text-[var(--app-text-tertiary)] hover:text-[var(--app-text-secondary)]"
             }`}
+            title={`${t("preview", language)} (${t("editor", language)})`}
           >
             <Eye size={16} />
-            {t("preview", language)}
+            {mobileTab === "preview" && mobilePreviewMode === "editor"
+              ? t("editor", language)
+              : t("preview", language)}
+            <ArrowLeftRight size={12} className="opacity-70" aria-hidden="true" />
           </button>
       </div>
 
@@ -593,6 +609,8 @@ export default function BuilderView({
                 onDownload={() => void handleDownloadZip()}
                 isDownloading={isDownloading}
                 downloadSuccess={downloadSuccess}
+                activePanelOverride={mobilePreviewMode}
+                showModeToggle={false}
               />
             </PreviewErrorBoundary>
           </div>

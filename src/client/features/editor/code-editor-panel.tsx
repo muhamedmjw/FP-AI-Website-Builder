@@ -160,7 +160,7 @@ export default function CodeEditorPanel({
 
   const saveButtonTitle = hasUnsavedChanges
     ? t("unsavedChangesWarning", language)
-    : t("saveChanges", language);
+    : "Save";
 
   const saveButtonClassName = isSaving
     ? "flex h-8 items-center gap-1.5 rounded-lg border border-[var(--app-card-border)] bg-[var(--app-card-bg)] px-2.5 text-xs font-medium text-[var(--app-text-secondary)] opacity-70"
@@ -176,56 +176,11 @@ export default function CodeEditorPanel({
       ? t("savedChanges", language)
       : saveStatus === "error"
         ? t("saveError", language)
-        : t("saveChanges", language);
+        : "Save";
 
   return (
     <div dir="ltr" className="flex h-full min-w-0 flex-col border-l border-(--app-border) bg-(--app-panel)">
       <div className="flex h-12 shrink-0 items-center gap-2 border-b border-(--app-border) px-3">
-        <div className="flex items-center gap-1.5">
-          <svg
-            width="22"
-            height="22"
-            viewBox="0 0 24 24"
-            fill="none"
-            xmlns="http://www.w3.org/2000/svg"
-            className="text-(--app-btn-primary-bg) drop-shadow-[0_0_10px_rgba(99,102,241,0.4)]"
-            aria-hidden="true"
-          >
-            <rect
-              x="3.5"
-              y="4.5"
-              width="17"
-              height="15"
-              rx="2.5"
-              stroke="currentColor"
-              strokeWidth="1.8"
-            />
-            <path
-              d="M3.5 9.5H20.5"
-              stroke="currentColor"
-              strokeWidth="1.8"
-              strokeLinecap="round"
-            />
-            <circle cx="7" cy="7" r="0.9" fill="currentColor" />
-            <circle cx="10" cy="7" r="0.9" fill="currentColor" />
-            <path
-              d="M7.8 13.2L5.8 15.2L7.8 17.2"
-              stroke="currentColor"
-              strokeWidth="1.9"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            />
-            <path
-              d="M11.5 17.2H15.8"
-              stroke="currentColor"
-              strokeWidth="1.9"
-              strokeLinecap="round"
-            />
-          </svg>
-          <p className="text-sm font-semibold text-(--app-text-heading)">
-            {t("editor", language)}
-          </p>
-        </div>
         <div className="flex-1" />
         <button
           type="button"
@@ -262,7 +217,7 @@ export default function CodeEditorPanel({
             title={formatTooltipText}
           >
             <Wand2 size={13} />
-            {t("formatHtml", language)}
+            Format
           </button>
         </div>
         <div
@@ -276,7 +231,7 @@ export default function CodeEditorPanel({
             title={copyTooltipText}
           >
             <Copy size={14} />
-            {copySuccess ? t("copied", language) : t("copyCode", language)}
+            {copySuccess ? t("copied", language) : "Copy"}
           </button>
         </div>
       </div>

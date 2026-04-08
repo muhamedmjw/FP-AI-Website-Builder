@@ -200,26 +200,35 @@ export default function GuestHomePage() {
     <div className="flex min-h-0 flex-1 flex-col bg-[var(--app-bg)]">
       <header className="border-b border-[var(--app-border)] bg-[var(--app-panel)]/60 px-3 py-3 backdrop-blur sm:px-5 sm:py-4">
         <div className="mx-auto w-full max-w-5xl">
-          <div className="flex flex-wrap items-center justify-between gap-2 sm:gap-3">
-            <div className="flex items-center gap-2.5 sm:gap-3">
-              <Sparkles size={24} strokeWidth={1.8} className="prismatic-icon" />
-              <p className="prismatic-text text-base font-semibold uppercase tracking-[0.2em] sm:text-lg sm:tracking-[0.24em]">
+          <div className="flex items-start justify-between gap-2 sm:items-center sm:gap-3">
+            <Link
+              href="/"
+              className="flex min-w-0 max-w-[48%] items-start gap-2 transition-opacity hover:opacity-85 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/40 focus-visible:ring-offset-2 focus-visible:ring-offset-transparent sm:max-w-none sm:items-center sm:gap-3"
+              aria-label="Go to home"
+            >
+              <Sparkles size={20} strokeWidth={1.8} className="mt-0.5 shrink-0 prismatic-icon sm:mt-0" />
+              <p className="prismatic-text whitespace-normal wrap-break-word text-[0.72rem] font-semibold uppercase leading-[1.15] tracking-[0.14em] sm:text-base sm:tracking-[0.24em]">
                 <span style={{ fontFamily: "var(--font-logo)" }}>AI Website Builder</span>
               </p>
-            </div>
-            <div className="flex items-center gap-1.5 sm:gap-2">
-              <LanguageSwitcher />
+            </Link>
+            <div className="flex shrink-0 items-center gap-1 sm:gap-2">
+              <div className="sm:hidden">
+                <LanguageSwitcher iconOnly />
+              </div>
+              <div className="hidden sm:block">
+                <LanguageSwitcher />
+              </div>
               <Link
                 href="/signin"
                 onClick={queueChatSessionForAuth}
-                className="rounded-lg border border-[var(--app-card-border)] px-3 py-1.5 text-sm font-medium text-[var(--app-text-secondary)] transition hover:border-[var(--app-text-tertiary)] hover:text-[var(--app-text-heading)]"
+                className="rounded-lg border border-[var(--app-card-border)] px-2 py-1 text-xs font-medium text-[var(--app-text-secondary)] transition hover:border-[var(--app-text-tertiary)] hover:text-[var(--app-text-heading)] sm:px-3 sm:py-1.5 sm:text-sm"
               >
                 {t("signIn", language)}
               </Link>
               <Link
                 href="/signup"
                 onClick={queueChatSessionForAuth}
-                className="rounded-lg bg-[var(--app-btn-primary-bg)] px-3 py-1.5 text-sm font-semibold text-[var(--app-btn-primary-text)] shadow-[var(--app-shadow-sm)] transition hover:bg-[var(--app-btn-primary-hover)] hover:-translate-y-px active:translate-y-0"
+                className="rounded-lg bg-[var(--app-btn-primary-bg)] px-2 py-1 text-xs font-semibold text-[var(--app-btn-primary-text)] shadow-[var(--app-shadow-sm)] transition hover:bg-[var(--app-btn-primary-hover)] hover:-translate-y-px active:translate-y-0 sm:px-3 sm:py-1.5 sm:text-sm"
               >
                 {t("signUp", language)}
               </Link>
@@ -323,6 +332,8 @@ export default function GuestHomePage() {
                 />
               ) : null
             }
+            emptyStateMobileTuning
+            pinDisclaimerToBottomOnMobile
           />
         </div>
 

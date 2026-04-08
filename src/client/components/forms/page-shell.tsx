@@ -27,7 +27,7 @@ export default function PageShell({ children }: PageShellProps) {
         <div className="grid w-full gap-8 lg:grid-cols-[1.1fr_0.9fr] lg:gap-10">
           <section className={`space-y-3 text-center sm:space-y-4 ${isRtl ? "lg:text-right" : "lg:text-left"}`}>
             <Link
-              href="/account"
+              href="/"
               className="prismatic-text inline-flex items-center gap-2.5 text-lg font-semibold uppercase tracking-[0.3em] transition-opacity hover:opacity-80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/50 focus-visible:ring-offset-2 focus-visible:ring-offset-transparent sm:text-xl"
             >
               <Sparkles size={24} strokeWidth={1.8} className="prismatic-icon" aria-hidden="true" />

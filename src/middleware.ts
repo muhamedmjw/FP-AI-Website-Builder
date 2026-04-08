@@ -5,7 +5,7 @@ import { NextResponse, type NextRequest } from "next/server";
  * Middleware that runs on every matched route.
  * 1. Refreshes the Supabase auth session (keeps cookies alive).
  * 2. Redirects unauthenticated users away from protected routes
- *    (except the guest-friendly "/").
+ *    (except public routes like "/" and "/guest").
  * 3. Redirects authenticated users away from auth pages.
  */
 export async function middleware(request: NextRequest) {
@@ -38,7 +38,7 @@ export async function middleware(request: NextRequest) {
   const pathname = request.nextUrl.pathname;
 
   // Protected routes - must be logged in
-  // Note: "/" is intentionally public for guest mode.
+  // Note: "/" and "/guest" are intentionally public.
   const protectedRoutes = ["/chat", "/dashboard", "/builder"];
   const isProtected = protectedRoutes.some(
     (route) => pathname === route || pathname.startsWith(route + "/")
@@ -67,6 +67,7 @@ export async function middleware(request: NextRequest) {
 export const config = {
   matcher: [
     "/",
+    "/guest",
     "/chat/:path*",
     "/dashboard/:path*",
     "/builder/:path*",

@@ -27,6 +27,7 @@ type ChatInputProps = {
   isSticky?: boolean;
   autoFocus?: boolean;
   showDisclaimer?: boolean;
+  pinDisclaimerToBottomOnMobile?: boolean;
 };
 
 export default function ChatInput({
@@ -41,6 +42,7 @@ export default function ChatInput({
   isSticky = true,
   autoFocus = false,
   showDisclaimer = true,
+  pinDisclaimerToBottomOnMobile = false,
 }: ChatInputProps) {
   const { language } = useLanguage();
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -289,7 +291,7 @@ export default function ChatInput({
                   <button
                     type="button"
                     onClick={onTogglePreview}
-                    className={`relative flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border transition-all duration-150 sm:h-11 sm:w-11 ${
+                    className={`relative hidden h-10 w-10 shrink-0 items-center justify-center rounded-xl border transition-all duration-150 md:flex sm:h-11 sm:w-11 ${
                       previewOpen
                         ? "bg-[var(--app-hover-bg-strong)] border-[var(--app-text-tertiary)]"
                         : "bg-[var(--app-card-bg)] border-[var(--app-card-border)]"
@@ -365,7 +367,13 @@ export default function ChatInput({
       </form>
 
       {showDisclaimer ? (
-        <p className="relative top-px mx-auto w-full max-w-full px-4 pb-2 pt-0.5 text-center text-xs text-[var(--app-text-muted)] whitespace-normal wrap-break-word sm:px-5">
+        <p
+          className={`mx-auto w-full max-w-full whitespace-normal text-center text-xs wrap-break-word ${
+            pinDisclaimerToBottomOnMobile
+              ? "fixed inset-x-0 bottom-1 z-20 px-4 text-(--app-text-muted) md:relative md:top-px md:bottom-auto md:z-auto md:px-5 md:pb-2 md:pt-0.5"
+              : "relative top-px px-4 pb-2 pt-0.5 text-(--app-text-muted) sm:px-5"
+          }`}
+        >
           {hasModelPlaceholder ? (
             <>
               {disclaimerPrefix}

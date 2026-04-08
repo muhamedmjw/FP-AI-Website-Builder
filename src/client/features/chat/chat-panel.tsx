@@ -61,6 +61,8 @@ type ChatPanelProps = {
     anchorMessageId: string;
     node: ReactNode;
   }>;
+  emptyStateMobileTuning?: boolean;
+  pinDisclaimerToBottomOnMobile?: boolean;
 };
 
 export default function ChatPanel({
@@ -84,6 +86,8 @@ export default function ChatPanel({
   emptyStateSuggestions = null,
   messageListFooter = null,
   inlineAttachments = [],
+  emptyStateMobileTuning = false,
+  pinDisclaimerToBottomOnMobile = false,
 }: ChatPanelProps) {
   const { language } = useLanguage();
   const isRtlLanguage = language === "ar" || language === "ku";
@@ -160,7 +164,11 @@ export default function ChatPanel({
       {shouldCenterInput ? (
         <div className="flex flex-1 items-center justify-center px-3 py-6 sm:px-5 sm:py-8">
           <div className="w-full max-w-4xl">
-            <div className="mx-auto max-w-lg text-center">
+            <div
+              className={`mx-auto max-w-lg text-center ${
+                emptyStateMobileTuning ? "-mt-7 mb-6 sm:-mt-1 sm:mb-3" : ""
+              }`}
+            >
               <p className="text-lg font-semibold text-[var(--app-text-heading)] sm:text-xl">
                 {emptyStateTitle}
               </p>
@@ -180,6 +188,7 @@ export default function ChatPanel({
               placeholder={resolvedInputPlaceholder}
               isSticky={false}
               autoFocus
+              pinDisclaimerToBottomOnMobile={pinDisclaimerToBottomOnMobile}
             />
             {inputBanner}
             {inputErrorMessage ? (
@@ -275,6 +284,7 @@ export default function ChatPanel({
               disabled={isSending || disableInput}
               placeholder={resolvedInputPlaceholder}
               isSticky
+              pinDisclaimerToBottomOnMobile={pinDisclaimerToBottomOnMobile}
             />
           </div>
         </>

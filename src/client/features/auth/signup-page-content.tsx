@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import FormHeading from "@/client/components/forms/form-heading";
 import FormLink from "@/client/components/forms/form-link";
 import { useLanguage } from "@/client/lib/language-context";
@@ -16,11 +17,21 @@ export default function SignUpPageContent() {
         description={t("signUpDesc", language)}
       />
       <SignupForm />
-      <FormLink
-        question={t("alreadyHaveAccount", language)}
-        linkText={t("signIn", language)}
-        href="/signin"
-      />
+      <div className="-mt-2 space-y-2">
+        <FormLink
+          question={t("alreadyHaveAccount", language)}
+          linkText={t("signIn", language)}
+          href="/signin"
+        />
+        <p className="text-sm text-neutral-500">
+          <Link
+            className="prismatic-link-underline prismatic-text font-medium"
+            href="/guest"
+          >
+            {t("continueAsGuest", language)}
+          </Link>
+        </p>
+      </div>
     </div>
   );
 }

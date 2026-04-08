@@ -11,7 +11,7 @@ export default function FormLink({ question, linkText, href }: FormLinkProps) {
     <p className="text-sm text-neutral-500">
       {question}{" "}
       <Link
-        className="prismatic-text font-medium underline-offset-4 hover:underline"
+        className="prismatic-link-underline prismatic-text font-medium"
         href={href}
       >
         {linkText}

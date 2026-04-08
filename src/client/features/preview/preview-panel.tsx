@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   Globe,
   Download,
@@ -38,6 +38,8 @@ type PreviewPanelProps = {
   onDownload?: () => void;
   isDownloading?: boolean;
   downloadSuccess?: boolean;
+  activePanelOverride?: "preview" | "editor";
+  showModeToggle?: boolean;
 };
 
 export default function PreviewPanel({
@@ -56,6 +58,8 @@ export default function PreviewPanel({
   onDownload,
   isDownloading = false,
   downloadSuccess = false,
+  activePanelOverride,
+  showModeToggle = true,
 }: PreviewPanelProps) {
   const { language } = useLanguage();
   const shouldFixToolbarOrder = RTL_LANGUAGES.includes(language);
@@ -64,17 +68,42 @@ export default function PreviewPanel({
   const [editorMounted, setEditorMounted] = useState(false);
   const [isHistoryOpen, setIsHistoryOpen] = useState(false);
 
+  function ensureEditorPanelMounted() {
+    if (!hasMountedEditor.current) {
+      hasMountedEditor.current = true;
+      setEditorMounted(true);
+    }
+  }
+
   function handlePanelSwitch(nextPanel: "preview" | "editor") {
     if (nextPanel === "editor") {
       if (!onChange) return;
-      if (!hasMountedEditor.current) {
-        hasMountedEditor.current = true;
-        setEditorMounted(true);
-      }
+      ensureEditorPanelMounted();
     }
 
     setActivePanel(nextPanel);
   }
+
+  function handlePanelToggle() {
+    if (activePanel === "preview") {
+      handlePanelSwitch("editor");
+      return;
+    }
+
+    handlePanelSwitch("preview");
+  }
+
+  useEffect(() => {
+    if (!activePanelOverride) return;
+    if (activePanelOverride === activePanel) return;
+
+    if (activePanelOverride === "editor") {
+      if (!onChange) return;
+      ensureEditorPanelMounted();
+    }
+
+    setActivePanel(activePanelOverride);
+  }, [activePanel, activePanelOverride, onChange]);
 
   if (!html) {
     return (
@@ -115,37 +144,18 @@ export default function PreviewPanel({
       {/* Single unified toolbar */}
       <div
         dir={shouldFixToolbarOrder ? "ltr" : undefined}
-        className="flex h-12 shrink-0 items-center gap-1.5 border-b border-[var(--app-border)] bg-[var(--app-panel)] px-3"
+        className="flex h-12 shrink-0 items-center gap-1.5 overflow-x-auto border-b border-[var(--app-border)] bg-[var(--app-panel)] px-3"
       >
-        {onChange ? (
-          <div className="mr-1 flex items-center rounded-full bg-[var(--app-hover-bg)] p-0.5">
-            <button
-              type="button"
-              onClick={() => handlePanelSwitch("preview")}
-              className={`flex h-7 items-center gap-1.5 rounded-full px-3 text-xs font-medium transition ${
-                activePanel === "preview"
-                  ? "bg-[var(--app-card-bg)] text-[var(--app-text-heading)] shadow-[var(--app-shadow-sm)]"
-                  : "text-[var(--app-text-tertiary)] hover:text-[var(--app-text-secondary)]"
-              }`}
-              title={t("preview", language)}
-            >
-              <Eye size={13} />
-              {t("preview", language)}
-            </button>
-            <button
-              type="button"
-              onClick={() => handlePanelSwitch("editor")}
-              className={`flex h-7 items-center gap-1.5 rounded-full px-3 text-xs font-medium transition ${
-                activePanel === "editor"
-                  ? "bg-[var(--app-card-bg)] text-[var(--app-text-heading)] shadow-[var(--app-shadow-sm)]"
-                  : "text-[var(--app-text-tertiary)] hover:text-[var(--app-text-secondary)]"
-              }`}
-              title={t("editor", language)}
-            >
-              <Code size={13} />
-              {t("editor", language)}
-            </button>
-          </div>
+        {onChange && showModeToggle ? (
+          <button
+            type="button"
+            onClick={handlePanelToggle}
+            className="mr-1 flex h-8 items-center gap-1.5 rounded-lg border border-[var(--app-border)] px-2.5 text-xs font-medium text-[var(--app-text-secondary)] transition hover:bg-[var(--app-hover-bg)] hover:text-[var(--app-text-heading)]"
+            title={activePanel === "preview" ? t("editor", language) : t("preview", language)}
+          >
+            {activePanel === "preview" ? <Eye size={14} /> : <Code size={14} />}
+            {activePanel === "preview" ? t("preview", language) : t("editor", language)}
+          </button>
         ) : null}
 
         {/* Spacer */}
@@ -157,6 +167,7 @@ export default function PreviewPanel({
             onClick={() => setIsHistoryOpen((open) => !open)}
             className="flex h-8 items-center gap-1.5 rounded-lg border border-[var(--app-border)] px-2.5 text-xs font-medium text-[var(--app-text-secondary)] transition hover:bg-[var(--app-hover-bg)] hover:text-[var(--app-text-heading)]"
             title={t("history", language)}
+            aria-label={t("history", language)}
           >
             <History size={14} />
             {t("history", language)}
@@ -173,7 +184,7 @@ export default function PreviewPanel({
                 className="flex h-8 items-center gap-1.5 rounded-lg border border-[var(--app-border)] px-2.5 text-xs font-medium text-[var(--app-text-secondary)] transition hover:bg-[var(--app-hover-bg)] hover:text-[var(--app-text-heading)]"
               >
                 <Rocket size={14} />
-                {t("viewSite", language)}
+                Visit
               </a>
               <button
                 type="button"

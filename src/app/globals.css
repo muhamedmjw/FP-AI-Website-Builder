@@ -195,6 +195,32 @@ button, [role="button"], a, summary, [type="submit"], [type="reset"], [type="but
   animation: prismatic-shift 6s ease-in-out infinite;
 }
 
+/* Gradient underline that matches prismatic text styling */
+.prismatic-link-underline {
+  position: relative;
+  display: inline-block;
+}
+
+.prismatic-link-underline::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -0.2em;
+  height: 1px;
+  border-radius: 999px;
+  background: linear-gradient(
+    135deg,
+    var(--prism-4) 0%,
+    var(--prism-1) 25%,
+    var(--prism-3) 50%,
+    var(--prism-2) 75%,
+    var(--prism-4) 100%
+  );
+  background-size: 200% 200%;
+  animation: prismatic-shift 6s ease-in-out infinite;
+}
+
 /* ─── Prismatic icon glow ─── */
 .prismatic-icon {
   filter: drop-shadow(0 0 3px rgba(167, 139, 250, 0.4));
