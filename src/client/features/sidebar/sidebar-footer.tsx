@@ -137,6 +137,7 @@ export default function SidebarFooter({
     top: 0,
     left: 0,
     width: 0,
+    maxHeight: 176,
   });
 
   const [nameInput, setNameInput] = useState(userName ?? "");
@@ -238,11 +239,26 @@ export default function SidebarFooter({
       const trigger = languageMenuButtonRef.current;
       if (!trigger) return;
 
+      const VIEWPORT_MARGIN = 8;
+      const MENU_GAP = 6;
+      const MAX_MENU_HEIGHT = 176;
+
       const rect = trigger.getBoundingClientRect();
+      const spaceBelow = window.innerHeight - rect.bottom - VIEWPORT_MARGIN;
+      const maxHeight = Math.max(48, Math.min(MAX_MENU_HEIGHT, spaceBelow));
+      const top = Math.max(
+        VIEWPORT_MARGIN,
+        Math.min(
+          rect.bottom + MENU_GAP,
+          window.innerHeight - VIEWPORT_MARGIN - maxHeight
+        )
+      );
+
       setLanguageMenuPosition({
-        top: rect.bottom + 6,
+        top,
         left: rect.left,
         width: rect.width,
+        maxHeight,
       });
     };
 
@@ -1346,9 +1362,12 @@ export default function SidebarFooter({
               top: `${languageMenuPosition.top}px`,
               left: `${languageMenuPosition.left}px`,
               width: `${languageMenuPosition.width}px`,
+              maxHeight: `${languageMenuPosition.maxHeight}px`,
+              WebkitOverflowScrolling: "touch",
             }}
-            className="z-[200] max-h-44 overflow-y-auto overscroll-contain rounded-lg border border-[var(--app-input-border)] bg-[var(--app-panel)] p-1 shadow-[var(--app-shadow-lg)]"
+            className="z-[200] overflow-y-auto overscroll-contain rounded-lg border border-[var(--app-input-border)] bg-[var(--app-panel)] p-1 shadow-[var(--app-shadow-lg)]"
             onWheel={(event) => event.stopPropagation()}
+            onTouchMove={(event) => event.stopPropagation()}
           >
             {LANGUAGE_OPTIONS.map((option) => {
               const isActive = option.code === language;
