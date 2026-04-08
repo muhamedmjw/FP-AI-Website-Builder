@@ -238,6 +238,7 @@ function GuestWebsiteReadyBanner({
 
 export default function GuestHomePage() {
   const { language } = useLanguage();
+  const shouldWrapBrandOnMobile = language === "en" || language === "ar";
   const providerName = getDisplayModelName(PRIMARY_MODEL);
   const [messages, setMessages] = useState<HistoryMessage[]>([]);
   const [guestSessionId, setGuestSessionId] = useState("");
@@ -397,7 +398,16 @@ export default function GuestHomePage() {
             >
               <Sparkles size={20} strokeWidth={1.8} className="mt-0.5 shrink-0 prismatic-icon sm:mt-0" />
               <p className="prismatic-text whitespace-normal wrap-break-word text-[0.72rem] font-semibold uppercase leading-[1.15] tracking-[0.14em] sm:text-base sm:tracking-[0.24em]">
-                <span style={{ fontFamily: "var(--font-logo)" }}>AI Website Builder</span>
+                <span style={{ fontFamily: "var(--font-logo)" }}>
+                  {shouldWrapBrandOnMobile ? (
+                    <>
+                      <span className="block sm:inline">AI Website</span>
+                      <span className="block sm:inline sm:ml-1">Builder</span>
+                    </>
+                  ) : (
+                    "AI Website Builder"
+                  )}
+                </span>
               </p>
             </Link>
             <div className="flex shrink-0 items-center gap-1 sm:gap-2">
@@ -428,7 +438,7 @@ export default function GuestHomePage() {
           {t("guestNotice", language)}
         </p>
         <p className="mx-auto mt-1 w-full max-w-5xl text-[10px] text-[var(--app-text-tertiary)] sm:text-xs">
-          AI model: {providerName}
+          {t("aiModelLabel", language).replace("{model}", providerName)}
         </p>
       </header>
 

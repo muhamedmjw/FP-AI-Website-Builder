@@ -179,7 +179,7 @@ export default function ChatInput({
 
   function handleOpenImagePicker() {
     if (isGuestMode) {
-      setImageErrorMessage("Sign in to upload images");
+      setImageErrorMessage(t("signInToUploadImages", language));
       return;
     }
 
@@ -331,9 +331,9 @@ export default function ChatInput({
               ) : (
                 <span
                   className="rounded-lg border border-[var(--app-card-border)] px-2 py-1 text-[10px] text-[var(--app-text-tertiary)]"
-                  title="Sign in to upload images"
+                  title={t("signInToUploadImages", language)}
                 >
-                  Sign in to upload images
+                  {t("signInToUploadImages", language)}
                 </span>
               )}
 

@@ -17,6 +17,8 @@ export const translations: Record<AppLanguage, Record<string, string>> = {
     aiDisclaimer:
       "This website is powered by {model}. AI can make mistakes — always double-check important content.",
     guestNotice: "Guest chats are temporary and not saved to history.",
+    aiModelLabel: "AI model: {model}",
+    signInToUploadImages: "Sign in to upload images",
     previewGateTitle: "Sign in to preview",
     previewGateDesc:
       "Create a free account to preview and download your generated website.",
@@ -214,6 +216,8 @@ export const translations: Record<AppLanguage, Record<string, string>> = {
     aiDisclaimer:
       "هذا الموقع مدعوم بـ {model}. قد يُخطئ الذكاء الاصطناعي — تحقق دائماً من المحتوى المهم.",
     guestNotice: "محادثات الزوار مؤقتة ولا تُحفظ في السجل.",
+    aiModelLabel: "نموذج الذكاء الاصطناعي: {model}",
+    signInToUploadImages: "سجّل دخولك لرفع الصور",
     previewGateTitle: "سجّل دخولك للمعاينة",
     previewGateDesc: "أنشئ حساباً مجانياً لمعاينة وتحميل موقعك.",
     welcomeBack: "مرحباً بعودتك",
@@ -410,6 +414,8 @@ export const translations: Record<AppLanguage, Record<string, string>> = {
     aiDisclaimer:
       "ئەم وێبسایتە bi {model} هێزدراوە. زیرەکی دەستکرد هەڵە دەکا — هەمیشە naveroka girîng بپشکنەرەوە.",
     guestNotice: "قسەکانی میوان کاتییە و لە مێژوودا نەگیراون.",
+    aiModelLabel: "مۆدێلی زیرەکی دەستکرد: {model}",
+    signInToUploadImages: "بچۆ ژوورەوە بۆ بارکردنی وێنە",
     previewGateTitle: "بچوو ژوورەوە بۆ پێشبینین",
     previewGateDesc: "ئەکاونتێکی بەخۆڕایی دروست بکە بۆ پێشبینین و داگرتنی وێبسایتەکەت.",
     welcomeBack: "بەخێربێیتەوە",
