@@ -17,11 +17,20 @@ import type { AppLanguage } from "@/shared/types/database";
 const GUEST_SESSION_STORAGE_KEY = "guest_mode_session_v1";
 
 type PersistedGuestSession = {
+  sessionId: string;
   messages: HistoryMessage[];
   html: string | null;
   websiteGenerated: boolean;
   promptsUsed: number;
 };
+
+function createGuestSessionId(): string {
+  try {
+    return crypto.randomUUID();
+  } catch {
+    return `guest-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
+  }
+}
 
 function normalizeGuestMessages(value: unknown): HistoryMessage[] {
   if (!Array.isArray(value)) {
@@ -60,6 +69,7 @@ function clearPersistedGuestSession() {
 
 function loadInitialGuestSession(): PersistedGuestSession {
   const emptyState: PersistedGuestSession = {
+    sessionId: createGuestSessionId(),
     messages: [],
     html: null,
     websiteGenerated: false,
@@ -79,6 +89,10 @@ function loadInitialGuestSession(): PersistedGuestSession {
     const parsed = JSON.parse(raw) as Partial<PersistedGuestSession> & {
       websiteWindowExpiresAtMs?: unknown;
     };
+    const sessionId =
+      typeof parsed.sessionId === "string" && parsed.sessionId.trim().length > 0
+        ? parsed.sessionId.trim()
+        : createGuestSessionId();
     const messages = normalizeGuestMessages(parsed.messages);
     const html =
       typeof parsed.html === "string" && parsed.html.trim().length > 0
@@ -94,6 +108,7 @@ function loadInitialGuestSession(): PersistedGuestSession {
         : html !== null;
 
     return {
+      sessionId,
       messages,
       html,
       websiteGenerated,
@@ -225,6 +240,7 @@ export default function GuestHomePage() {
   const { language } = useLanguage();
   const providerName = getDisplayModelName(PRIMARY_MODEL);
   const [messages, setMessages] = useState<HistoryMessage[]>([]);
+  const [guestSessionId, setGuestSessionId] = useState("");
   const [isSending, setIsSending] = useState(false);
   const [sendingStartedAtMs, setSendingStartedAtMs] = useState<number | null>(null);
   const [html, setHtml] = useState<string | null>(null);
@@ -249,6 +265,7 @@ export default function GuestHomePage() {
 
   useEffect(() => {
     const initialSession = loadInitialGuestSession();
+    setGuestSessionId(initialSession.sessionId);
     setMessages(initialSession.messages);
     setHtml(initialSession.html);
     setWebsiteGenerated(initialSession.websiteGenerated);
@@ -271,6 +288,7 @@ export default function GuestHomePage() {
     }
 
     const payload: PersistedGuestSession = {
+      sessionId: guestSessionId || createGuestSessionId(),
       messages,
       html,
       websiteGenerated,
@@ -278,7 +296,7 @@ export default function GuestHomePage() {
     };
 
     window.localStorage.setItem(GUEST_SESSION_STORAGE_KEY, JSON.stringify(payload));
-  }, [messages, html, websiteGenerated, promptsUsed, sessionHydrated]);
+  }, [guestSessionId, messages, html, websiteGenerated, promptsUsed, sessionHydrated]);
 
   useEffect(() => {
     if (!previewOpen) {
@@ -349,6 +367,7 @@ export default function GuestHomePage() {
 
   function queueChatSessionForAuth() {
     savePendingGuestChatSession(messages, {
+      sessionId: guestSessionId,
       html,
       websiteGenerated,
     });

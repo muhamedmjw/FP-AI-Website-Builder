@@ -19,6 +19,7 @@ type PendingGuestChatSession = {
 };
 
 type SavePendingGuestChatSessionOptions = {
+  sessionId?: string;
   html?: string | null;
   websiteGenerated?: boolean;
 };
@@ -131,11 +132,15 @@ export function savePendingGuestChatSession(
   }
 
   const html = normalizePendingHtml(options.html);
+  const providedSessionId =
+    typeof options.sessionId === "string" && options.sessionId.trim().length > 0
+      ? options.sessionId.trim()
+      : null;
   const websiteGenerated =
     typeof options.websiteGenerated === "boolean"
       ? options.websiteGenerated
       : html !== null;
-  const sessionId = buildSessionId(normalizedMessages, html);
+  const sessionId = providedSessionId ?? buildSessionId(normalizedMessages, html);
 
   const payload: PendingGuestChatSession = {
     sessionId,
