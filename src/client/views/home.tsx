@@ -1,8 +1,10 @@
 "use client";
 
-import { FormEvent, useEffect, useRef, useState } from "react";
+import { ChangeEvent, FormEvent, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+import { X } from "lucide-react";
 import { getSupabaseBrowserClient } from "@/client/lib/supabase-browser";
+import { useUserImages } from "@/client/lib/hooks/use-user-images";
 import { addMessage, createChat } from "@/shared/services/chat-service";
 import { sendChatMessage } from "@/client/lib/api/chat-api";
 import { markChatGenerationPending } from "@/client/lib/chat-pending-generations";
@@ -36,15 +38,78 @@ export default function HomePage() {
   const hasModelPlaceholder = disclaimerTemplate.includes("{model}");
   const router = useRouter();
   const inputRef = useRef<HTMLTextAreaElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const draftChatPromiseRef = useRef<Promise<string> | null>(null);
   const [inputValue, setInputValue] = useState("");
   const [isCreating, setIsCreating] = useState(false);
+  const [isPreparingDraftChat, setIsPreparingDraftChat] = useState(false);
   const [submittedPrompt, setSubmittedPrompt] = useState("");
   const [errorMessage, setErrorMessage] = useState("");
+  const [imageErrorMessage, setImageErrorMessage] = useState("");
+  const [draftChatId, setDraftChatId] = useState<string | null>(null);
   const [downloadMessage, setDownloadMessage] = useState("");
+  const {
+    images,
+    isLoading: isImageLoading,
+    uploadImage,
+    deleteImage,
+  } = useUserImages(draftChatId ?? undefined);
   const creatingSeconds = useElapsedSeconds(isCreating);
   const statusRotationSeconds = 8;
   const hasProcessedPendingGuestActions = useRef(false);
   const isProcessingPendingGuestActions = useRef(false);
+  const visibleImages = images.slice(0, 6);
+  const hiddenImagesCount = Math.max(0, images.length - visibleImages.length);
+  const totalImageBytes = images.reduce((sum, image) => {
+    const commaIndex = image.dataUri.indexOf(",");
+    if (commaIndex < 0) {
+      return sum;
+    }
+
+    const base64 = image.dataUri.slice(commaIndex + 1).replace(/\s+/g, "");
+    if (!base64) {
+      return sum;
+    }
+
+    const paddingLength = base64.endsWith("==") ? 2 : base64.endsWith("=") ? 1 : 0;
+    const bytes = Math.max(0, Math.floor((base64.length * 3) / 4) - paddingLength);
+    return sum + bytes;
+  }, 0);
+  const hasLargeImagePayload = totalImageBytes > 2 * 1024 * 1024;
+
+  async function ensureDraftChatId(): Promise<string> {
+    if (draftChatId) {
+      return draftChatId;
+    }
+
+    if (draftChatPromiseRef.current) {
+      return draftChatPromiseRef.current;
+    }
+
+    setIsPreparingDraftChat(true);
+
+    const creatingPromise = (async () => {
+      const supabase = getSupabaseBrowserClient();
+      const user = await getCurrentUser(supabase);
+
+      if (!user) {
+        throw new Error("You need to sign in again.");
+      }
+
+      const draftChat = await createChat(supabase, user.id, "New Chat");
+      setDraftChatId(draftChat.id);
+      return draftChat.id;
+    })();
+
+    draftChatPromiseRef.current = creatingPromise;
+
+    try {
+      return await creatingPromise;
+    } finally {
+      draftChatPromiseRef.current = null;
+      setIsPreparingDraftChat(false);
+    }
+  }
 
   function adjustHeight(el: HTMLTextAreaElement) {
     el.style.height = "auto";
@@ -245,6 +310,52 @@ export default function HomePage() {
     }
   }, []);
 
+  function handleOpenImagePicker() {
+    if (isCreating) {
+      return;
+    }
+
+    fileInputRef.current?.click();
+  }
+
+  async function handleImageSelected(event: ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0];
+    event.target.value = "";
+
+    if (!file) {
+      return;
+    }
+
+    if (!file.type.startsWith("image/")) {
+      setImageErrorMessage("Only image files are supported.");
+      return;
+    }
+
+    setImageErrorMessage("");
+    setErrorMessage("");
+
+    try {
+      const chatIdForUpload = await ensureDraftChatId();
+      await uploadImage(file, { chatIdOverride: chatIdForUpload });
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : "Failed to upload image.";
+      setImageErrorMessage(message);
+    }
+  }
+
+  async function handleRemoveImage(fileId: string) {
+    setImageErrorMessage("");
+
+    try {
+      await deleteImage(fileId);
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : "Failed to remove image.";
+      setImageErrorMessage(message);
+    }
+  }
+
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
 
@@ -272,19 +383,24 @@ export default function HomePage() {
       }
 
       const placeholderTitle = trimmedMessage.split(/\s+/).slice(0, 4).join(" ");
-      const chat = await createChat(
-        supabase,
-        user.id,
-        placeholderTitle || "New Chat"
-      );
-      await addMessage(supabase, chat.id, "user", trimmedMessage);
-      markChatGenerationPending(chat.id, Date.now(), null);
+      const chatIdToUse = draftChatId
+        ? draftChatId
+        : (
+          await createChat(
+            supabase,
+            user.id,
+            placeholderTitle || "New Chat"
+          )
+        ).id;
+
+      await addMessage(supabase, chatIdToUse, "user", trimmedMessage);
+      markChatGenerationPending(chatIdToUse, Date.now(), null);
 
       shouldResetLoadingState = false;
-      router.push(`/chat/${chat.id}`);
+      router.push(`/chat/${chatIdToUse}`);
       router.refresh();
 
-      void sendChatMessage(chat.id, trimmedMessage, language, {
+      void sendChatMessage(chatIdToUse, trimmedMessage, language, {
         skipUserMessageSave: true,
       }).then(() => {
         router.refresh();
@@ -325,10 +441,10 @@ export default function HomePage() {
     <div className="flex min-h-0 flex-1 flex-col px-6 sm:px-8">
       <div className="flex flex-1 items-center justify-center">
         <div className="mx-auto w-full max-w-2xl text-center">
-          <h1 className="text-2xl font-semibold leading-snug text-[var(--app-text-heading)] sm:text-4xl">
+          <h1 className="text-2xl font-semibold leading-snug text-(--app-text-heading) sm:text-4xl">
             {t("heroTitle", language)}
           </h1>
-          <p className="mt-2 text-sm text-[var(--app-text-tertiary)] sm:text-sm">
+          <p className="mt-2 text-sm text-(--app-text-tertiary) sm:text-sm">
             {t("heroSubtitle", language)}
           </p>
           {downloadMessage ? (
@@ -337,7 +453,7 @@ export default function HomePage() {
 
           <form onSubmit={handleSubmit} className="mx-auto mt-8 w-full max-w-2xl min-h-75" aria-busy={isCreating}>
           {isCreating ? (
-            <div className="ui-fade-up rounded-2xl border border-[var(--app-card-border)] bg-[var(--app-card-bg)] p-4 text-left shadow-[var(--app-shadow-md)] sm:p-5">
+            <div className="ui-fade-up rounded-2xl border border-(--app-card-border) bg-(--app-card-bg) p-4 text-left shadow-(--app-shadow-md) sm:p-5">
               <input
                 type="text"
                 value={submittedPrompt}
@@ -361,12 +477,57 @@ export default function HomePage() {
                   {t(creatingStatusKey, language)}
                 </p>
               </div>
-              <p className="mt-2 text-xs text-[var(--app-text-tertiary)] sm:text-sm">
+              <p className="mt-2 text-xs text-(--app-text-tertiary) sm:text-sm">
                 {submittedPrompt}
               </p>
             </div>
           ) : (
-            <div className="flex w-full flex-col rounded-2xl bg-[var(--app-card-bg)]/80 p-1.5 shadow-[var(--app-shadow-lg)] backdrop-blur-sm sm:p-2">
+            <div className="flex w-full flex-col rounded-2xl bg-(--app-card-bg)/80 p-1.5 shadow-(--app-shadow-lg) backdrop-blur-sm sm:p-2">
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                onChange={handleImageSelected}
+                className="hidden"
+                aria-hidden="true"
+              />
+              {images.length > 0 ? (
+                <div className="px-2.5 pb-1.5 pt-1 sm:px-3">
+                  <div className="flex flex-wrap items-center gap-2">
+                    {visibleImages.map((image, index) => (
+                      <div key={image.fileId} className="w-12">
+                        <div className="relative h-12 w-12 overflow-hidden rounded-lg border border-(--app-card-border)">
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
+                          <img
+                            src={image.dataUri}
+                            alt={image.fileName}
+                            className="h-full w-full object-cover"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => {
+                              void handleRemoveImage(image.fileId);
+                            }}
+                            className="absolute -right-1 -top-1 flex h-5 w-5 items-center justify-center rounded-full border border-(--app-card-border) bg-(--app-panel) text-(--app-text-secondary) transition hover:text-(--app-text-heading)"
+                            aria-label="Remove image"
+                            title="Remove image"
+                          >
+                            <X size={12} />
+                          </button>
+                        </div>
+                        <p className="mt-1 truncate text-center text-[10px] text-(--app-text-tertiary)">
+                          {t("imageLabel", language)} {index + 1}
+                        </p>
+                      </div>
+                    ))}
+                    {hiddenImagesCount > 0 ? (
+                      <span className="rounded-full border border-(--app-card-border) px-2 py-1 text-[10px] font-medium text-(--app-text-secondary)">
+                        +{hiddenImagesCount} more
+                      </span>
+                    ) : null}
+                  </div>
+                </div>
+              ) : null}
               <textarea
                 ref={inputRef}
                 rows={1}
@@ -380,7 +541,7 @@ export default function HomePage() {
                 disabled={isCreating}
                 maxLength={MAX_PROMPT_LENGTH}
                 aria-busy={isCreating}
-                className="w-full resize-none overflow-hidden rounded-xl bg-transparent px-2.5 py-2.5 text-sm leading-relaxed text-[var(--app-input-text)] placeholder:text-[var(--app-text-tertiary)] focus:outline-none disabled:opacity-50 sm:px-3 sm:py-3 sm:text-base"
+                className="w-full resize-none overflow-hidden rounded-xl bg-transparent px-2.5 py-2.5 text-sm leading-relaxed text-(--app-input-text) placeholder:text-(--app-text-tertiary) focus:outline-none disabled:opacity-50 sm:px-3 sm:py-3 sm:text-base"
                 style={{
                   height: "auto",
                   maxHeight: "200px",
@@ -388,12 +549,21 @@ export default function HomePage() {
                 }}
               />
               <div className="flex items-center justify-between px-1 pb-1">
-                <div aria-hidden="true" />
+                <button
+                  type="button"
+                  onClick={handleOpenImagePicker}
+                  disabled={isCreating || isImageLoading || isPreparingDraftChat}
+                  className="flex h-10 w-10 shrink-0 items-center justify-center text-2xl leading-none text-(--app-text-secondary) transition hover:text-(--app-text-heading) disabled:opacity-50 sm:h-11 sm:w-11"
+                  title="Upload image"
+                  aria-label="Upload image"
+                >
+                  <span aria-hidden="true">+</span>
+                </button>
                 <button
                   type="submit"
-                  disabled={isCreating}
-                  className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[var(--app-btn-primary-bg)] text-[var(--app-btn-primary-text)] shadow-[var(--app-shadow-sm)] transition hover:bg-[var(--app-btn-primary-hover)] hover:shadow-[var(--app-shadow-md)] hover:-translate-y-px active:translate-y-0 disabled:opacity-50 sm:h-11 sm:w-11"
-                  title={isCreating ? "Creating..." : "Start"}
+                  disabled={isCreating || isPreparingDraftChat}
+                  className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-(--app-btn-primary-bg) text-(--app-btn-primary-text) shadow-(--app-shadow-sm) transition hover:bg-(--app-btn-primary-hover) hover:shadow-(--app-shadow-md) hover:-translate-y-px active:translate-y-0 disabled:opacity-50 sm:h-11 sm:w-11"
+                  title={isCreating ? "Creating..." : isPreparingDraftChat ? "Preparing..." : "Start"}
                 >
                   <svg
                     viewBox="0 0 24 24"
@@ -411,6 +581,16 @@ export default function HomePage() {
                   </svg>
                 </button>
               </div>
+              {hasLargeImagePayload ? (
+                <p className="px-2.5 pb-0.5 text-[10px] text-amber-400 sm:px-3" role="status">
+                  Uploaded image data is over 2 MB and may reduce generation quality.
+                </p>
+              ) : null}
+              {imageErrorMessage ? (
+                <p className="px-2.5 pb-0.5 text-[10px] text-rose-400 sm:px-3" role="alert">
+                  {imageErrorMessage}
+                </p>
+              ) : null}
             </div>
           )}
           {errorMessage ? (
@@ -421,11 +601,11 @@ export default function HomePage() {
           </form>
         </div>
       </div>
-      <p className="relative top-[1px] mx-auto w-full max-w-2xl whitespace-normal pb-2 pt-0.5 text-center text-xs text-[var(--app-text-muted)]">
+      <p className="relative top-px mx-auto w-full max-w-2xl whitespace-normal pb-2 pt-0.5 text-center text-xs text-(--app-text-muted)">
         {hasModelPlaceholder ? (
           <>
             {disclaimerPrefix}
-            <span className="font-medium text-[var(--app-text-tertiary)]">{displayModelName}</span>
+            <span className="font-medium text-(--app-text-tertiary)">{displayModelName}</span>
             {disclaimerSuffix}
           </>
         ) : (

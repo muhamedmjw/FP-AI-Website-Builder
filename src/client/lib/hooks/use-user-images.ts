@@ -62,13 +62,18 @@ export function useUserImages(chatId: string | undefined) {
   }, [loadImages]);
 
   const uploadImage = useCallback(
-    async (file: File): Promise<UserImage> => {
-      if (!chatId) {
+    async (
+      file: File,
+      options?: { chatIdOverride?: string }
+    ): Promise<UserImage> => {
+      const resolvedChatId = options?.chatIdOverride ?? chatId;
+
+      if (!resolvedChatId) {
         throw new Error("Sign in to upload images.");
       }
 
       const formData = new FormData();
-      formData.append("chatId", chatId);
+      formData.append("chatId", resolvedChatId);
       formData.append("file", file);
 
       setIsLoading(true);
