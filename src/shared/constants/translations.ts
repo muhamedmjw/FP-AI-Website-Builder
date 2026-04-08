@@ -22,6 +22,9 @@ export const translations: Record<AppLanguage, Record<string, string>> = {
     previewGateTitle: "Sign in to preview",
     previewGateDesc:
       "Create a free account to preview and download your generated website.",
+    guestWebsiteReadyTitle: "Your website is ready",
+    guestWebsiteReadyDesc:
+      "Sign in to keep editing, download, or deploy your website.",
     welcomeBack: "Welcome back",
     authSubtitle: "Sign in to continue building AI-powered websites.",
     emptyStateTitle: "Start your website with one prompt",
@@ -220,6 +223,9 @@ export const translations: Record<AppLanguage, Record<string, string>> = {
     signInToUploadImages: "سجّل دخولك لرفع الصور",
     previewGateTitle: "سجّل دخولك للمعاينة",
     previewGateDesc: "أنشئ حساباً مجانياً لمعاينة وتحميل موقعك.",
+    guestWebsiteReadyTitle: "موقعك جاهز",
+    guestWebsiteReadyDesc:
+      "سجّل الدخول لمتابعة التعديل أو التحميل أو نشر موقعك.",
     welcomeBack: "مرحباً بعودتك",
     authSubtitle: "سجّل دخولك لمواصلة بناء مواقع بالذكاء الاصطناعي.",
     emptyStateTitle: "ابدأ موقعك بجملة واحدة",
@@ -418,6 +424,9 @@ export const translations: Record<AppLanguage, Record<string, string>> = {
     signInToUploadImages: "بچۆ ژوورەوە بۆ بارکردنی وێنە",
     previewGateTitle: "بچوو ژوورەوە بۆ پێشبینین",
     previewGateDesc: "ئەکاونتێکی بەخۆڕایی دروست بکە بۆ پێشبینین و داگرتنی وێبسایتەکەت.",
+    guestWebsiteReadyTitle: "وێبسایتەکەت ئامادەیە",
+    guestWebsiteReadyDesc:
+      "بچۆ ژوورەوە بۆ بەردەوامبوون لە دەستکاریکردن، داگرتن، یان بڵاوکردنەوەی وێبسایتەکەت.",
     welcomeBack: "بەخێربێیتەوە",
     authSubtitle: "بچوو ژوورەوە بۆ بەردەوام بوون لە دروستکردنی وێبسایت.",
     emptyStateTitle: "وێبسایتەکەت بە یەک وتە دەستپێ بکە",

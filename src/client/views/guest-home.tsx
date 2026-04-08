@@ -212,9 +212,11 @@ function GuestWebsiteReadyBanner({
 }) {
   return (
     <div className="mx-auto mb-2 w-[calc(100%-1rem)] max-w-md rounded-xl border border-[var(--app-card-border)] bg-[var(--app-card-bg)] p-3 sm:w-full sm:max-w-4xl sm:rounded-2xl sm:p-4">
-      <h3 className="text-sm font-semibold text-[var(--app-text-heading)] sm:text-base">Your website is ready</h3>
+      <h3 className="text-sm font-semibold text-[var(--app-text-heading)] sm:text-base">
+        {t("guestWebsiteReadyTitle", language)}
+      </h3>
       <p className="mt-1 text-xs text-[var(--app-text-secondary)] sm:text-sm">
-        Sign in to keep editing, download, or deploy your website.
+        {t("guestWebsiteReadyDesc", language)}
       </p>
       <div className="mt-2.5 grid gap-2 sm:mt-3 sm:grid-cols-2">
         <Link
