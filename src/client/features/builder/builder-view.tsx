@@ -407,6 +407,12 @@ export default function BuilderView({
         friendly = "\ud83d\udd12 Session expired. Please sign in again.";
       } else if (status === 500 || raw.includes("500") || raw.includes("Internal")) {
         friendly = "\u26a0\ufe0f Something went wrong on our end. Please try again.";
+      } else if (
+        normalizedRaw.includes("too large to process") ||
+        normalizedRaw.includes("uploaded images")
+      ) {
+        friendly =
+          "\u26a0\ufe0f Images are too large to send together. Try removing some uploaded images and sending again.";
       } else if (isAbortLikeError) {
         friendly = "Connection interrupted. Checking if your AI reply finishes in the background...";
       }

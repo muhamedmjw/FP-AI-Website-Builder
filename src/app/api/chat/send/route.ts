@@ -22,7 +22,7 @@ type PostgresLikeError = {
   hint?: string;
 };
 
-const MAX_USER_IMAGE_TOTAL_BYTES = 3 * 1024 * 1024;
+const MAX_USER_IMAGE_TOTAL_BYTES = 1.5 * 1024 * 1024;
 
 function isMissingUploadColumns(error: unknown): boolean {
   if (!error || typeof error !== "object") {
@@ -234,18 +234,31 @@ export async function POST(request: NextRequest) {
 
     if (existingWebsite) {
       try {
+        const { data: lastAssistant } = await supabase
+          .from("history")
+          .select("created_at")
+          .eq("chat_id", chatId)
+          .eq("role", "assistant")
+          .order("created_at", { ascending: false })
+          .limit(1)
+          .maybeSingle();
+
+        const imagesSince = lastAssistant?.created_at ?? new Date(0).toISOString();
+
         const { data, error } = await supabase
           .from("files")
           .select("file_name, content")
           .eq("website_id", existingWebsite.id)
           .eq("is_user_upload", true)
-          .order("created_at", { ascending: true });
+          .gte("created_at", imagesSince)
+          .order("created_at", { ascending: false })
+          .limit(3);
 
         if (error) {
           throw error;
         }
 
-        userImages = (data ?? []).map((row) => ({
+        userImages = (data ?? []).reverse().map((row) => ({
           fileName: row.file_name,
           dataUri: row.content,
         }));
@@ -283,7 +296,7 @@ export async function POST(request: NextRequest) {
       }
 
       console.warn(
-        "User image payload exceeded 3MB; truncating images passed to AI.",
+        "User image payload exceeded 1.5MB; truncating images passed to AI.",
         {
           originalCount: userImages.length,
           keptCount: limitedUserImages.length,

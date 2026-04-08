@@ -231,10 +231,15 @@ async function callModelOnce(
   totalTokens: number | null;
   modelUsed: string;
 }> {
+  // deepseek-reasoner has a hard cap of 8192 max_tokens
+  const effectiveMaxTokens = model.includes("reasoner")
+    ? Math.min(maxTokens, 8192)
+    : maxTokens;
+
   const response = await getDeepSeekClient().chat.completions.create({
     model,
     messages,
-    max_tokens: maxTokens,
+    max_tokens: effectiveMaxTokens,
     temperature,
   });
 
@@ -416,6 +421,18 @@ async function generateAIResponseOnce(
   }
 
   try {
+    const totalPromptChars = messages.reduce(
+      (sum, msg) => sum + (typeof msg.content === "string" ? msg.content.length : 0),
+      0
+    );
+
+    if (totalPromptChars > 400_000) {
+      throw new Error(
+        "Your uploaded images are too large to process together. " +
+          "Please remove some images and try again."
+      );
+    }
+
     const workerResult = await callDeepSeekWithRetry(
       messages,
       maxTokens,
