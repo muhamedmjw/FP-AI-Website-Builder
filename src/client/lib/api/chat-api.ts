@@ -23,7 +23,7 @@ export async function sendChatMessage(
   chatId: string,
   content: string,
   language: AppLanguage,
-  options?: { skipUserMessageSave?: boolean }
+  options?: { skipUserMessageSave?: boolean; imageFileIds?: string[] }
 ): Promise<SendChatMessageResponse> {
   const response = await fetch("/api/chat/send", {
     method: "POST",
@@ -33,6 +33,9 @@ export async function sendChatMessage(
       content,
       language,
       skipUserMessageSave: options?.skipUserMessageSave === true,
+      imageFileIds: Array.isArray(options?.imageFileIds)
+        ? options?.imageFileIds
+        : undefined,
     }),
   });
 

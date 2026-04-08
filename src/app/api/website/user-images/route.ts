@@ -1,4 +1,3 @@
-// NOTE: Image upload feature disabled - do not delete, will be re-enabled later.
 import { NextRequest, NextResponse } from "next/server";
 import { getSupabaseServerClient } from "@/server/supabase/server-client";
 import { getWebsiteByChatId } from "@/server/services/website-service";
@@ -34,10 +33,15 @@ function isMissingUploadColumns(error: unknown): boolean {
   );
 }
 
-async function assertChatOwnership(
+function inferMimeType(dataUri: string, fallback = "image/*"): string {
+  const match = dataUri.match(/^data:([^;,]+)[;,]/i);
+  return match?.[1]?.trim() || fallback;
+}
+
+async function userOwnsChat(
+  supabase: Awaited<ReturnType<typeof getSupabaseServerClient>>,
   userId: string,
-  chatId: string,
-  supabase: Awaited<ReturnType<typeof getSupabaseServerClient>>
+  chatId: string
 ): Promise<boolean> {
   const { data, error } = await supabase
     .from("chats")
@@ -68,7 +72,7 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: "chatId is required." }, { status: 400 });
     }
 
-    const ownsChat = await assertChatOwnership(user.id, chatId, supabase);
+    const ownsChat = await userOwnsChat(supabase, user.id, chatId);
     if (!ownsChat) {
       return NextResponse.json({ error: "Forbidden." }, { status: 403 });
     }
@@ -98,7 +102,7 @@ export async function GET(request: NextRequest) {
       fileId: row.id,
       fileName: row.file_name,
       dataUri: row.content,
-      mimeType: row.mime_type ?? "image/*",
+      mimeType: row.mime_type ?? inferMimeType(row.content),
     }));
 
     return NextResponse.json({ images });

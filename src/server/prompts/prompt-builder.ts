@@ -41,20 +41,32 @@ function buildUserImagesBlock(userImages?: PromptUserImage[]): string {
     return "No user-uploaded images were provided.";
   }
 
-  const pathLines = userImages.map(
-    (image) =>
-      `src="${image.fileName}" - user-uploaded image (prioritize for hero, gallery, or product/menu sections)`
-  );
+  const maxTotalBytes = 1.5 * 1024 * 1024;
+  const estimateBytes = (dataUri: string) => {
+    const payload = dataUri.split(",")[1]?.replace(/\s+/g, "") ?? "";
+    if (!payload) {
+      return 0;
+    }
+
+    const padding = payload.endsWith("==") ? 2 : payload.endsWith("=") ? 1 : 0;
+    return Math.max(0, Math.floor((payload.length * 3) / 4) - padding);
+  };
+
+  const totalBytes = userImages.reduce((sum, image) => {
+    return sum + estimateBytes(image.dataUri);
+  }, 0);
+
+  const imagesForPrompt =
+    totalBytes > maxTotalBytes ? userImages.slice(-3) : userImages;
+
+  const pathLines = imagesForPrompt.map((image) => {
+    return `${image.fileName} - user uploaded image (use for hero / gallery / product sections)`;
+  });
 
   return [
-    `User has uploaded ${userImages.length} image(s). You MUST use these exact paths as the src attribute`,
-    "in <img> tags in the generated HTML. Do NOT use Unsplash or any external URL for these image slots:",
-    "",
-    ...pathLines,
-    "",
-    "These paths are relative and will resolve correctly in the exported ZIP.",
-    "For the live preview, the actual image data is embedded separately - always write the",
-    "relative path as the src, the preview system handles substitution.",
+    `User has uploaded ${imagesForPrompt.length} image(s). Use these EXACT src paths in your HTML img tags:`,
+    ...pathLines.map((line) => `- ${line}`),
+    "These paths work in the exported ZIP. For live preview the data URI is injected automatically.",
   ].join("\n");
 }
 

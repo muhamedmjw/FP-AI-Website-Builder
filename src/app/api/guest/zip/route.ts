@@ -49,14 +49,19 @@ function toSafeFilename(title: string): string {
   return `${safeBase || "website"}.zip`;
 }
 
-function extractBase64FromDataUri(dataUri: string): string | null {
-  const match = dataUri.match(/^data:[^;]+;base64,(.+)$/i);
-  if (!match) {
-    return null;
+function replaceDataUriSrcWithFilePath(
+  html: string,
+  dataUri: string,
+  fileName: string
+): string {
+  if (!dataUri) {
+    return html;
   }
 
-  const rawBase64 = match[1]?.trim() ?? "";
-  return rawBase64.length > 0 ? rawBase64 : null;
+  let nextHtml = html;
+  nextHtml = nextHtml.replaceAll(`src="${dataUri}"`, `src="${fileName}"`);
+  nextHtml = nextHtml.replaceAll(`src='${dataUri}'`, `src="${fileName}"`);
+  return nextHtml;
 }
 
 function generateReadme(
@@ -266,8 +271,6 @@ export async function POST(request: NextRequest) {
     const zip = new JSZip();
     const safeFolderName = zipFilename.replace(/\.zip$/i, "");
     const folder = zip.folder(safeFolderName)!;
-
-    folder.file("index.html", processedHtml);
     folder.file("assets/css/styles.css", extractedCss);
     folder.file("assets/js/main.js", extractedJs || "// main.js\n");
     folder.file("assets/images/.gitkeep", "");
@@ -297,13 +300,24 @@ export async function POST(request: NextRequest) {
     }
 
     for (const imageRow of uploadedImages ?? []) {
-      const base64 = extractBase64FromDataUri(imageRow.content);
+      const dataUri = typeof imageRow.content === "string" ? imageRow.content : "";
+      const fileName = typeof imageRow.file_name === "string" ? imageRow.file_name : "";
+
+      if (!fileName) {
+        continue;
+      }
+
+      const base64 = dataUri.split(",")[1]?.trim() ?? "";
       if (!base64) {
         continue;
       }
 
-      folder.file(imageRow.file_name, Buffer.from(base64, "base64"));
+      processedHtml = replaceDataUriSrcWithFilePath(processedHtml, dataUri, fileName);
+
+      folder.file(fileName, Buffer.from(base64, "base64"));
     }
+
+    folder.file("index.html", processedHtml);
 
     const zipBuffer = await zip.generateAsync({ type: "arraybuffer" });
 
@@ -329,8 +343,11 @@ export async function POST(request: NextRequest) {
     });
   } catch (error) {
     console.error("POST /api/guest/zip error:", error);
+    const message =
+      error instanceof Error ? error.message : "Internal server error.";
+
     return NextResponse.json(
-      { error: "Internal server error." },
+      { error: message },
       { status: 500 }
     );
   }

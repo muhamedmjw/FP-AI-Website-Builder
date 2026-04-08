@@ -8,6 +8,56 @@ import {
 import { getCurrentUser, getUserProfile } from "@/shared/services/user-service";
 import BuilderView from "@/client/features/builder/builder-view";
 
+type PostgresLikeError = {
+  code?: string;
+  message?: string;
+  details?: string;
+  hint?: string;
+};
+
+function isMissingUploadColumns(error: unknown): boolean {
+  if (!error || typeof error !== "object") {
+    return false;
+  }
+
+  const pgError = error as PostgresLikeError;
+  const combinedMessage = [pgError.message, pgError.details, pgError.hint]
+    .filter((value): value is string => typeof value === "string")
+    .join(" ")
+    .toLowerCase();
+
+  return (
+    pgError.code === "42703" ||
+    (combinedMessage.includes("is_user_upload") && combinedMessage.includes("column")) ||
+    (combinedMessage.includes("mime_type") && combinedMessage.includes("column"))
+  );
+}
+
+function injectUploadedImagesForPreview(
+  html: string,
+  userImages: Array<{ file_name: string; content: string }>
+): string {
+  let nextHtml = html;
+
+  for (const image of userImages) {
+    const variants = [
+      image.file_name,
+      `./${image.file_name}`,
+      `/${image.file_name}`,
+    ];
+
+    for (const variant of variants) {
+      const escapedVariant = variant.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+      nextHtml = nextHtml.replace(
+        new RegExp(`src=["']${escapedVariant}["']`, "gi"),
+        `src="${image.content}"`
+      );
+    }
+  }
+
+  return nextHtml;
+}
+
 type ChatPageProps = {
   params: Promise<{ chatId: string }>;
 };
@@ -21,12 +71,25 @@ export default async function ChatPage({ params }: ChatPageProps) {
   const supabase = await getSupabaseServerClient();
   const user = await getCurrentUser(supabase);
 
-  // Run independent queries in parallel to avoid waterfall latency
+  if (!user) {
+    redirect("/signin");
+  }
+
+  // Run independent queries in parallel to avoid waterfall latency.
   const [chatResult, messages, website, profile] = await Promise.all([
-    supabase.from("chats").select("id, title").eq("id", chatId).single(),
-    getChatMessages(supabase, chatId),
-    getWebsiteByChatId(supabase, chatId),
-    user ? getUserProfile(supabase, user.id) : Promise.resolve(null),
+    supabase.from("chats").select("id, title").eq("id", chatId).maybeSingle(),
+    getChatMessages(supabase, chatId).catch((error) => {
+      console.error("Failed to load chat messages:", error);
+      return [];
+    }),
+    getWebsiteByChatId(supabase, chatId).catch((error) => {
+      console.error("Failed to load chat website:", error);
+      return null;
+    }),
+    getUserProfile(supabase, user.id).catch((error) => {
+      console.error("Failed to load chat user profile:", error);
+      return null;
+    }),
   ]);
 
   if (chatResult.error || !chatResult.data) {
@@ -34,7 +97,34 @@ export default async function ChatPage({ params }: ChatPageProps) {
   }
 
   const chat = chatResult.data;
-  const html = website ? await getGeneratedHtml(supabase, website.id) : null;
+  const html = website
+    ? await getGeneratedHtml(supabase, website.id).catch((error) => {
+        console.error("Failed to load generated HTML:", error);
+        return null;
+      })
+    : null;
+  let initialHtml = html;
+
+  if (website && html) {
+    try {
+      const { data: uploadedImages, error: uploadedImagesError } = await supabase
+        .from("files")
+        .select("file_name, content")
+        .eq("website_id", website.id)
+        .eq("is_user_upload", true)
+        .order("created_at", { ascending: true });
+
+      if (uploadedImagesError) {
+        if (!isMissingUploadColumns(uploadedImagesError)) {
+          console.error("Failed to load uploaded images for preview injection:", uploadedImagesError);
+        }
+      } else {
+        initialHtml = injectUploadedImagesForPreview(html, uploadedImages ?? []);
+      }
+    } catch (error) {
+      console.error("Failed to inject uploaded images into initial preview:", error);
+    }
+  }
   let initialDeployUrl: string | null = null;
 
   if (website && user) {
@@ -59,7 +149,7 @@ export default async function ChatPage({ params }: ChatPageProps) {
       chatId={chatId}
       chatTitle={chat.title ?? "Untitled"}
       initialMessages={messages}
-      initialHtml={html}
+      initialHtml={initialHtml}
       initialDeployUrl={initialDeployUrl}
       isAuthenticated
       currentUserAvatarUrl={profile?.avatarUrl ?? null}

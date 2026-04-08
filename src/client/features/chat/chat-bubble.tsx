@@ -95,71 +95,109 @@ export default function ChatBubble({
 }: ChatBubbleProps) {
   const isUser = role === "user";
   const hasAttachedImages = isUser && attachedImages.length > 0;
+  const [zoomedImage, setZoomedImage] = useState<
+    { src: string; fileName: string } | null
+  >(null);
 
   return (
-    <div
-      dir="ltr"
-      className={`ui-fade-up flex min-w-0 max-w-[92%] items-start gap-2 sm:max-w-[78%] sm:gap-2.5 ${
-        isUser
-          ? "ml-auto flex-row-reverse chat-bubble-user"
-          : "mr-auto"
-      }`}
-    >
-      {/* Avatar */}
+    <>
       <div
-        className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full sm:h-9 sm:w-9 ${
-          isUser && !userAvatarUrl
-            ? "bg-[var(--app-avatar-user-bg)] text-[var(--app-avatar-user-text)]"
-            : "bg-[var(--app-avatar-bot-bg)] text-[var(--app-avatar-bot-text)]"
+        dir="ltr"
+        className={`ui-fade-up flex min-w-0 max-w-[92%] items-start gap-2 sm:max-w-[78%] sm:gap-2.5 ${
+          isUser
+            ? "ml-auto flex-row-reverse chat-bubble-user"
+            : "mr-auto"
         }`}
       >
-        {/* Avatar icon */}
-        {!isUser && <Bot size={16} />}
-        {isUser && !userAvatarUrl && <User size={16} />}
-        {isUser && userAvatarUrl && (
-          <UserAvatar src={userAvatarUrl} fallbackIcon={<User size={16} />} />
+        {/* Avatar */}
+        <div
+          className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full sm:h-9 sm:w-9 ${
+            isUser && !userAvatarUrl
+              ? "bg-[var(--app-avatar-user-bg)] text-[var(--app-avatar-user-text)]"
+              : "bg-[var(--app-avatar-bot-bg)] text-[var(--app-avatar-bot-text)]"
+          }`}
+        >
+          {/* Avatar icon */}
+          {!isUser && <Bot size={16} />}
+          {isUser && !userAvatarUrl && <User size={16} />}
+          {isUser && userAvatarUrl && (
+            <UserAvatar src={userAvatarUrl} fallbackIcon={<User size={16} />} />
+          )}
+        </div>
+
+        {/* Message */}
+        {isUser ? (
+          <div className="min-w-0 space-y-2">
+            <div
+              dir="auto"
+              className="min-w-0 overflow-hidden break-words rounded-2xl px-3 py-2.5 text-sm leading-relaxed shadow-[var(--app-shadow-md)] sm:px-4 sm:py-3.5 sm:text-base bg-[var(--app-bubble-user-bg)] text-[var(--app-bubble-user-text)]"
+              style={{ overflowWrap: "anywhere" }}
+            >
+              {content}
+            </div>
+
+            {hasAttachedImages ? (
+              <div className="flex flex-wrap gap-2">
+                {attachedImages.map((image) => (
+                  <div key={image.fileId} className="w-16">
+                    <button
+                      type="button"
+                      onClick={() => setZoomedImage({ src: image.dataUri, fileName: image.fileName })}
+                      className="h-16 w-16 overflow-hidden rounded-lg border border-[var(--app-card-border)] bg-[var(--app-card-bg)]"
+                      title="Open image"
+                      aria-label={`Open ${image.label}`}
+                    >
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img
+                        src={image.dataUri}
+                        alt={image.fileName}
+                        className="h-full w-full object-cover"
+                      />
+                    </button>
+                    <p className="mt-1 truncate text-center text-[10px] text-[var(--app-text-tertiary)]">
+                      {image.label}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            ) : null}
+          </div>
+        ) : (
+          <div
+            dir="auto"
+            className="min-w-0 overflow-hidden break-words rounded-2xl px-3 py-2.5 text-sm leading-relaxed shadow-[var(--app-shadow-md)] sm:px-4 sm:py-3.5 sm:text-base bg-[var(--app-bubble-bot-bg)] text-[var(--app-bubble-bot-text)]"
+            style={{ overflowWrap: "anywhere" }}
+            dangerouslySetInnerHTML={{ __html: renderMarkdown(content) }}
+          />
         )}
       </div>
 
-      {/* Message */}
-      {isUser ? (
-        <div className="min-w-0 space-y-2">
-          <div
-            dir="auto"
-            className="min-w-0 overflow-hidden break-words rounded-2xl px-3 py-2.5 text-sm leading-relaxed shadow-[var(--app-shadow-md)] sm:px-4 sm:py-3.5 sm:text-base bg-[var(--app-bubble-user-bg)] text-[var(--app-bubble-user-text)]"
-            style={{ overflowWrap: "anywhere" }}
-          >
-            {content}
-          </div>
-
-          {hasAttachedImages ? (
-            <div className="flex flex-wrap gap-2">
-              {attachedImages.map((image) => (
-                <div key={image.fileId} className="w-16">
-                  <div className="h-16 w-16 overflow-hidden rounded-lg border border-[var(--app-card-border)] bg-[var(--app-card-bg)]">
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img
-                      src={image.dataUri}
-                      alt={image.fileName}
-                      className="h-full w-full object-cover"
-                    />
-                  </div>
-                  <p className="mt-1 truncate text-center text-[10px] text-[var(--app-text-tertiary)]">
-                    {image.label}
-                  </p>
-                </div>
-              ))}
-            </div>
-          ) : null}
-        </div>
-      ) : (
+      {zoomedImage ? (
         <div
-          dir="auto"
-          className="min-w-0 overflow-hidden break-words rounded-2xl px-3 py-2.5 text-sm leading-relaxed shadow-[var(--app-shadow-md)] sm:px-4 sm:py-3.5 sm:text-base bg-[var(--app-bubble-bot-bg)] text-[var(--app-bubble-bot-text)]"
-          style={{ overflowWrap: "anywhere" }}
-          dangerouslySetInnerHTML={{ __html: renderMarkdown(content) }}
-        />
-      )}
-    </div>
+          className="fixed inset-0 z-[90] flex items-center justify-center bg-black/75 p-4"
+          onClick={() => setZoomedImage(null)}
+          role="dialog"
+          aria-modal="true"
+          aria-label="Image preview"
+        >
+          <div className="relative max-h-[90vh] max-w-[90vw]" onClick={(event) => event.stopPropagation()}>
+            <button
+              type="button"
+              onClick={() => setZoomedImage(null)}
+              className="absolute right-2 top-2 rounded-full border border-white/20 bg-black/60 px-2 py-1 text-xs text-white"
+              aria-label="Close image preview"
+            >
+              Close
+            </button>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={zoomedImage.src}
+              alt={zoomedImage.fileName}
+              className="max-h-[90vh] max-w-[90vw] rounded-lg object-contain"
+            />
+          </div>
+        </div>
+      ) : null}
+    </>
   );
 }

@@ -78,6 +78,7 @@ const MODEL_NAME = PRIMARY_MODEL;
 
 const MAX_RETRIES = 2;
 const RETRY_DELAYS = [1000, 2000];
+const MAX_PROMPT_CHARS = 400_000;
 
 function isAppLanguage(value: unknown): value is AppLanguage {
   return value === "en" || value === "ar" || value === "ku";
@@ -170,15 +171,25 @@ function injectUserImageDataUris(
   html: string,
   userImages: Array<{ fileName: string; dataUri: string }>
 ): string {
-  let result = html;
+  let nextHtml = html;
 
   for (const image of userImages) {
-    const escapedPath = image.fileName.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-    const regex = new RegExp(`src=["']${escapedPath}["']`, "gi");
-    result = result.replace(regex, `src="${image.dataUri}"`);
+    const pathVariants = [
+      image.fileName,
+      `./${image.fileName}`,
+      `/${image.fileName}`,
+    ];
+
+    for (const variant of pathVariants) {
+      const escapedVariant = variant.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+      nextHtml = nextHtml.replace(
+        new RegExp(`src=["']${escapedVariant}["']`, "gi"),
+        `src="${image.dataUri}"`
+      );
+    }
   }
 
-  return result;
+  return nextHtml;
 }
 
 function parseAIResponse(raw: string): AIResponse {
@@ -380,56 +391,82 @@ async function generateAIResponseOnce(
     language
   );
 
+  const buildMessagesForIntent = (
+    selectedUserImages: Array<{ fileName: string; dataUri: string }>
+  ): { messages: AIMessage[]; maxTokens: number; temperature: number } => {
+    if (intent === "build") {
+      return {
+        messages: buildGenerationMessages(
+          history,
+          language,
+          detectedLanguage,
+          selectedUserImages
+        ) as AIMessage[],
+        maxTokens: AI_CONFIG.MAX_TOKENS,
+        temperature: 0.4,
+      };
+    }
+
+    if (intent === "edit") {
+      if (existingHtml && existingHtml.trim().length > 0) {
+        return {
+          messages: buildEditMessages(
+            history,
+            existingHtml,
+            language,
+            detectedLanguage,
+            selectedUserImages
+          ) as AIMessage[],
+          maxTokens: AI_CONFIG.MAX_TOKENS,
+          temperature: 0.2,
+        };
+      }
+
+      return {
+        messages: buildGenerationMessages(
+          history,
+          language,
+          detectedLanguage,
+          selectedUserImages
+        ) as AIMessage[],
+        maxTokens: AI_CONFIG.MAX_TOKENS,
+        temperature: 0.4,
+      };
+    }
+
+    return {
+      messages: buildChatMessages(history, detectedLanguage) as AIMessage[],
+      maxTokens: 300,
+      temperature: 0.7,
+    };
+  };
+
+  let effectiveUserImages = userImages;
   let messages: AIMessage[];
   let maxTokens: number;
   let temperature: number;
 
-  if (intent === "build") {
-    messages = buildGenerationMessages(
-      history,
-      language,
-      detectedLanguage,
-      userImages
-    ) as AIMessage[];
-    maxTokens = AI_CONFIG.MAX_TOKENS;
-    temperature = 0.4;
-  } else if (intent === "edit") {
-    if (existingHtml && existingHtml.trim().length > 0) {
-      messages = buildEditMessages(
-        history,
-        existingHtml,
-        language,
-        detectedLanguage,
-        userImages
-      ) as AIMessage[];
-      maxTokens = AI_CONFIG.MAX_TOKENS;
-      temperature = 0.2;
-    } else {
-      messages = buildGenerationMessages(
-        history,
-        language,
-        detectedLanguage,
-        userImages
-      ) as AIMessage[];
-      maxTokens = AI_CONFIG.MAX_TOKENS;
-      temperature = 0.4;
-    }
-  } else {
-    messages = buildChatMessages(history, detectedLanguage) as AIMessage[];
-    maxTokens = 300;
-    temperature = 0.7;
-  }
+  ({ messages, maxTokens, temperature } = buildMessagesForIntent(effectiveUserImages));
 
   try {
-    const totalPromptChars = messages.reduce(
+    let totalPromptChars = messages.reduce(
       (sum, msg) => sum + (typeof msg.content === "string" ? msg.content.length : 0),
       0
     );
 
-    if (totalPromptChars > 400_000) {
+    // Keep the most recent images by removing older ones from the front if prompt grows too large.
+    while (totalPromptChars > MAX_PROMPT_CHARS && effectiveUserImages.length > 0) {
+      effectiveUserImages = effectiveUserImages.slice(1);
+      ({ messages, maxTokens, temperature } = buildMessagesForIntent(effectiveUserImages));
+      totalPromptChars = messages.reduce(
+        (sum, msg) => sum + (typeof msg.content === "string" ? msg.content.length : 0),
+        0
+      );
+    }
+
+    if (totalPromptChars > MAX_PROMPT_CHARS) {
       throw new Error(
-        "Your uploaded images are too large to process together. " +
-          "Please remove some images and try again."
+        "Prompt is too large to process. Please shorten your request and try again."
       );
     }
 
@@ -443,7 +480,7 @@ async function generateAIResponseOnce(
 
     if (parsed.type === "website") {
       let enrichedHtml = await enrichWebsiteHtmlImages(parsed.html, history);
-      enrichedHtml = injectUserImageDataUris(enrichedHtml, userImages);
+      enrichedHtml = injectUserImageDataUris(enrichedHtml, effectiveUserImages);
       parsed = {
         ...parsed,
         html: enrichedHtml,
@@ -508,7 +545,11 @@ export async function generateAIResponse(
     const message = error instanceof Error ? error.message.toLowerCase() : "";
     const shouldRetryWithoutImages =
       userImages.length > 0 &&
-      (message.includes("context length") || message.includes("maximum"));
+      (
+        message.includes("context length") ||
+        message.includes("maximum") ||
+        message.includes("prompt is too large")
+      );
 
     if (!shouldRetryWithoutImages) {
       throw error;

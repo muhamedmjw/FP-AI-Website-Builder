@@ -53,7 +53,7 @@ export default function HomePage() {
     isLoading: isImageLoading,
     uploadImage,
     deleteImage,
-  } = useUserImages(draftChatId ?? undefined);
+  } = useUserImages(draftChatId ?? undefined, { autoLoad: false });
   const creatingSeconds = useElapsedSeconds(isCreating);
   const statusRotationSeconds = 8;
   const hasProcessedPendingGuestActions = useRef(false);
@@ -402,6 +402,7 @@ export default function HomePage() {
 
       void sendChatMessage(chatIdToUse, trimmedMessage, language, {
         skipUserMessageSave: true,
+        imageFileIds: images.map((image) => image.fileId),
       }).then(() => {
         router.refresh();
       }).catch((error) => {
@@ -453,16 +454,10 @@ export default function HomePage() {
 
           <form onSubmit={handleSubmit} className="mx-auto mt-8 w-full max-w-2xl min-h-75" aria-busy={isCreating}>
           {isCreating ? (
-            <div className="ui-fade-up rounded-2xl border border-(--app-card-border) bg-(--app-card-bg) p-4 text-left shadow-(--app-shadow-md) sm:p-5">
-              <input
-                type="text"
-                value={submittedPrompt}
-                readOnly
-                disabled
-                aria-busy={isCreating}
-                tabIndex={-1}
-                className="sr-only"
-              />
+            <div
+              key="creating-view"
+              className="ui-fade-up rounded-2xl border border-(--app-card-border) bg-(--app-card-bg) p-4 text-left shadow-(--app-shadow-md) sm:p-5"
+            >
               <div className="flex items-center gap-2.5">
                 <span className="generating-dots" aria-hidden="true">
                   <span />
@@ -482,7 +477,10 @@ export default function HomePage() {
               </p>
             </div>
           ) : (
-            <div className="flex w-full flex-col rounded-2xl bg-(--app-card-bg)/80 p-1.5 shadow-(--app-shadow-lg) backdrop-blur-sm sm:p-2">
+            <div
+              key="editing-view"
+              className="flex w-full flex-col rounded-2xl bg-(--app-card-bg)/80 p-1.5 shadow-(--app-shadow-lg) backdrop-blur-sm sm:p-2"
+            >
               <input
                 ref={fileInputRef}
                 type="file"

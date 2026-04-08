@@ -1,11 +1,7 @@
-// NOTE: Image upload feature disabled - do not delete, will be re-enabled later.
 import { Buffer } from "node:buffer";
 import { NextRequest, NextResponse } from "next/server";
 import { getSupabaseServerClient } from "@/server/supabase/server-client";
-import {
-  createWebsite,
-  getWebsiteByChatId,
-} from "@/server/services/website-service";
+import { createWebsite, getWebsiteByChatId } from "@/server/services/website-service";
 import { getCurrentUser } from "@/shared/services/user-service";
 
 type PostgresLikeError = {
@@ -17,6 +13,8 @@ type PostgresLikeError = {
 
 const MAX_IMAGE_SIZE_BYTES = 4 * 1024 * 1024;
 const IMAGE_MIME_TYPE_REGEX = /^image\//i;
+const MISSING_COLUMNS_ERROR =
+  "Database migration required: add is_user_upload (boolean) and mime_type (text) columns to public.files.";
 
 function isMissingUploadColumns(error: unknown): boolean {
   if (!error || typeof error !== "object") {
@@ -36,7 +34,7 @@ function isMissingUploadColumns(error: unknown): boolean {
   );
 }
 
-function getExtensionFromMimeType(mimeType: string): string {
+function toImageExtension(mimeType: string): string {
   switch (mimeType) {
     case "image/jpeg":
       return "jpg";
@@ -46,63 +44,84 @@ function getExtensionFromMimeType(mimeType: string): string {
       return "webp";
     case "image/gif":
       return "gif";
-    case "image/svg+xml":
-      return "svg";
-    case "image/avif":
-      return "avif";
-    case "image/bmp":
-      return "bmp";
-    case "image/heic":
-      return "heic";
-    case "image/heif":
-      return "heif";
-    case "image/tiff":
-      return "tiff";
     default:
       return "png";
   }
 }
 
-function getExtensionFromFileName(fileName: string): string | null {
-  const parts = fileName.trim().split(".");
-  if (parts.length < 2) {
-    return null;
-  }
-
-  const candidate = parts.at(-1)?.toLowerCase() ?? "";
-  if (!candidate || !/^[a-z0-9]{2,8}$/i.test(candidate)) {
-    return null;
-  }
-
-  return candidate;
-}
-
-function resolveImageExtension(file: File, mimeType: string): string {
-  const fromName = getExtensionFromFileName(file.name);
-  if (fromName) {
-    return fromName;
-  }
-
-  return getExtensionFromMimeType(mimeType);
-}
-
-async function assertChatOwnership(
-  userId: string,
-  chatId: string,
+async function hasUploadColumns(
   supabase: Awaited<ReturnType<typeof getSupabaseServerClient>>
 ): Promise<boolean> {
-  const { data, error } = await supabase
-    .from("chats")
-    .select("id")
-    .eq("id", chatId)
-    .eq("user_id", userId)
-    .maybeSingle();
+  try {
+    const { error } = await supabase
+      .from("files")
+      .select("id, is_user_upload, mime_type")
+      .limit(1);
 
-  if (error) {
+    if (error) {
+      if (isMissingUploadColumns(error)) {
+        return false;
+      }
+      throw error;
+    }
+
+    return true;
+  } catch (error) {
+    if (isMissingUploadColumns(error)) {
+      return false;
+    }
     throw error;
   }
+}
 
-  return Boolean(data);
+async function userOwnsChat(
+  supabase: Awaited<ReturnType<typeof getSupabaseServerClient>>,
+  userId: string,
+  chatId: string
+): Promise<boolean> {
+  try {
+    const { data, error } = await supabase
+      .from("chats")
+      .select("id")
+      .eq("id", chatId)
+      .eq("user_id", userId)
+      .maybeSingle();
+
+    if (error) {
+      throw error;
+    }
+
+    return Boolean(data);
+  } catch (error) {
+    throw error;
+  }
+}
+
+async function resolveWebsiteForChat(
+  supabase: Awaited<ReturnType<typeof getSupabaseServerClient>>,
+  chatId: string
+): Promise<{ id: string }> {
+  let website = await getWebsiteByChatId(supabase, chatId);
+
+  if (!website) {
+    try {
+      website = await createWebsite(supabase, chatId, "");
+    } catch (error) {
+      const pgError = error as PostgresLikeError;
+
+      if (pgError.code === "23505") {
+        website = await getWebsiteByChatId(supabase, chatId);
+      } else {
+        throw error;
+      }
+    }
+  }
+
+  if (!website) {
+    throw new Error("Failed to resolve website for this chat.");
+  }
+
+  return { id: website.id };
 }
 
 export async function POST(request: NextRequest) {
@@ -112,6 +131,11 @@ export async function POST(request: NextRequest) {
 
     if (!user) {
       return NextResponse.json({ error: "Unauthorized." }, { status: 401 });
+    }
+
+    const columnsAvailable = await hasUploadColumns(supabase);
+    if (!columnsAvailable) {
+      return NextResponse.json({ error: MISSING_COLUMNS_ERROR }, { status: 400 });
     }
 
     const formData = await request.formData();
@@ -131,10 +155,7 @@ export async function POST(request: NextRequest) {
     const mimeType = fileValue.type.trim().toLowerCase();
 
     if (!IMAGE_MIME_TYPE_REGEX.test(mimeType)) {
-      return NextResponse.json(
-        { error: "Only image uploads are allowed." },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: "Only image/* files are allowed." }, { status: 400 });
     }
 
     if (fileValue.size > MAX_IMAGE_SIZE_BYTES) {
@@ -144,75 +165,57 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const ownsChat = await assertChatOwnership(user.id, chatId, supabase);
+    const ownsChat = await userOwnsChat(supabase, user.id, chatId);
+
     if (!ownsChat) {
       return NextResponse.json({ error: "Forbidden." }, { status: 403 });
     }
 
-    const arrayBuffer = await fileValue.arrayBuffer();
-    const binaryBuffer = Buffer.from(arrayBuffer);
-    const base64 = binaryBuffer.toString("base64");
-    const dataUri = `data:${mimeType};base64,${base64}`;
-
-    let website = await getWebsiteByChatId(supabase, chatId);
-    if (!website) {
-      try {
-        website = await createWebsite(supabase, chatId, "");
-      } catch (error) {
-        const maybePgError = error as PostgresLikeError;
-        if (maybePgError.code === "23505") {
-          website = await getWebsiteByChatId(supabase, chatId);
-        } else {
-          throw error;
-        }
-      }
-    }
-
-    if (!website) {
-      throw new Error("Failed to load website for image upload.");
-    }
-
-    const extension = resolveImageExtension(fileValue, mimeType);
+    const website = await resolveWebsiteForChat(supabase, chatId);
+    const extension = toImageExtension(mimeType);
     const fileName = `assets/images/${crypto.randomUUID()}.${extension}`;
 
-    const { data: fileRow, error: insertError } = await supabase
-      .from("files")
-      .insert({
-        website_id: website.id,
-        file_name: fileName,
-        content: dataUri,
-        version: 1,
-        mime_type: mimeType,
-        is_user_upload: true,
-      })
-      .select("id, file_name, content")
-      .single();
+    const base64 = Buffer.from(await fileValue.arrayBuffer()).toString("base64");
+    const dataUri = `data:${mimeType};base64,${base64}`;
 
-    if (insertError) {
-      if (isMissingUploadColumns(insertError)) {
-        return NextResponse.json(
-          {
-            error:
-              "Database migration required: add mime_type and is_user_upload columns to public.files.",
-          },
-          { status: 400 }
-        );
+    try {
+      const { data, error } = await supabase
+        .from("files")
+        .insert({
+          website_id: website.id,
+          file_name: fileName,
+          content: dataUri,
+          version: 1,
+          mime_type: mimeType,
+          is_user_upload: true,
+        })
+        .select("id, file_name, content")
+        .single();
+
+      if (error) {
+        if (isMissingUploadColumns(error)) {
+          return NextResponse.json({ error: MISSING_COLUMNS_ERROR }, { status: 400 });
+        }
+
+        throw error;
       }
 
-      throw insertError;
+      return NextResponse.json({
+        fileId: data.id,
+        fileName: data.file_name,
+        dataUri: data.content,
+      });
+    } catch (error) {
+      if (isMissingUploadColumns(error)) {
+        return NextResponse.json({ error: MISSING_COLUMNS_ERROR }, { status: 400 });
+      }
+
+      throw error;
     }
-
-    return NextResponse.json({
-      fileId: fileRow.id,
-      fileName: fileRow.file_name,
-      dataUri: fileRow.content,
-    });
   } catch (error) {
-    console.error("POST /api/website/upload-image error:", error);
+    console.error("POST /api/website/upload-image failed:", error);
 
-    const message =
-      error instanceof Error ? error.message : "Internal server error.";
-
+    const message = error instanceof Error ? error.message : "Internal server error.";
     return NextResponse.json({ error: message }, { status: 500 });
   }
 }
@@ -224,6 +227,11 @@ export async function DELETE(request: NextRequest) {
 
     if (!user) {
       return NextResponse.json({ error: "Unauthorized." }, { status: 401 });
+    }
+
+    const columnsAvailable = await hasUploadColumns(supabase);
+    if (!columnsAvailable) {
+      return NextResponse.json({ error: MISSING_COLUMNS_ERROR }, { status: 400 });
     }
 
     const fileId = request.nextUrl.searchParams.get("fileId")?.trim() ?? "";
@@ -240,13 +248,7 @@ export async function DELETE(request: NextRequest) {
 
     if (fileError) {
       if (isMissingUploadColumns(fileError)) {
-        return NextResponse.json(
-          {
-            error:
-              "Database migration required: add mime_type and is_user_upload columns to public.files.",
-          },
-          { status: 400 }
-        );
+        return NextResponse.json({ error: MISSING_COLUMNS_ERROR }, { status: 400 });
       }
 
       throw fileError;
@@ -258,7 +260,7 @@ export async function DELETE(request: NextRequest) {
 
     if (!fileRow.is_user_upload) {
       return NextResponse.json(
-        { error: "Only uploaded image files can be deleted from this endpoint." },
+        { error: "Only user-uploaded images can be deleted from this endpoint." },
         { status: 400 }
       );
     }
@@ -277,7 +279,8 @@ export async function DELETE(request: NextRequest) {
       return NextResponse.json({ error: "Website not found." }, { status: 404 });
     }
 
-    const ownsChat = await assertChatOwnership(user.id, websiteRow.chat_id, supabase);
+    const ownsChat = await userOwnsChat(supabase, user.id, websiteRow.chat_id);
+
     if (!ownsChat) {
       return NextResponse.json({ error: "Forbidden." }, { status: 403 });
     }
@@ -290,11 +293,9 @@ export async function DELETE(request: NextRequest) {
 
     return NextResponse.json({ success: true, fileId });
   } catch (error) {
-    console.error("DELETE /api/website/upload-image error:", error);
+    console.error("DELETE /api/website/upload-image failed:", error);
 
-    const message =
-      error instanceof Error ? error.message : "Internal server error.";
-
+    const message = error instanceof Error ? error.message : "Internal server error.";
     return NextResponse.json({ error: message }, { status: 500 });
   }
 }

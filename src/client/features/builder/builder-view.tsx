@@ -1,7 +1,6 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { useRouter } from "next/navigation";
 import { ArrowLeftRight, Eye, MessageCircle } from "lucide-react";
 import { HistoryMessage, UserImage } from "@/shared/types/database";
 import { ChatApiError, sendChatMessage } from "@/client/lib/api/chat-api";
@@ -44,6 +43,14 @@ const MIN_CHAT_WIDTH = 610;
 /** Default preview width as a fraction of the container (0-1) */
 const DEFAULT_PREVIEW_FRACTION = 0.52;
 const PREVIEW_WIDTH_STORAGE_KEY = "builder-preview-width";
+const MESSAGE_IMAGE_IDS_STORAGE_PREFIX = "chat-message-image-file-ids:";
+
+type MessageAttachment = {
+  fileId: string;
+  fileName: string;
+  dataUri: string;
+  label: string;
+};
 
 export default function BuilderView({
   chatId,
@@ -54,7 +61,6 @@ export default function BuilderView({
   isAuthenticated = true,
   currentUserAvatarUrl = null,
 }: BuilderViewProps) {
-  const router = useRouter();
   const { language } = useLanguage();
   const hasInitialPreview =
     typeof initialHtml === "string" && initialHtml.trim().length > 0;
@@ -71,9 +77,9 @@ export default function BuilderView({
   const [messages, setMessages] = useState<HistoryMessage[]>(initialMessages);
   const [html, setHtml] = useState<string | null>(initialHtml);
   const currentInputImagesRef = useRef<UserImage[]>([]);
-  const [lastSentImages, setLastSentImages] = useState<
-    Array<{ fileId: string; fileName: string; dataUri: string; label: string }>
-  >([]);
+  const [messageImages, setMessageImages] = useState<Record<string, MessageAttachment[]>>({});
+  const [messageImageFileIds, setMessageImageFileIds] = useState<Record<string, string[]>>({});
+  const [uploadedImageCatalog, setUploadedImageCatalog] = useState<Record<string, UserImage>>({});
   const currentHtmlRef = useRef<string>(initialHtml ?? "");
   const lastSavedHtml = useRef<string>(initialHtml ?? "");
   const [isRequestInFlight, setIsRequestInFlight] = useState(false);
@@ -113,8 +119,124 @@ export default function BuilderView({
 
   useEffect(() => {
     currentInputImagesRef.current = [];
-    setLastSentImages([]);
+    setMessageImages({});
+
+    try {
+      const raw = window.sessionStorage.getItem(
+        `${MESSAGE_IMAGE_IDS_STORAGE_PREFIX}${chatId}`
+      );
+
+      if (!raw) {
+        setMessageImageFileIds({});
+        return;
+      }
+
+      const parsed = JSON.parse(raw) as Record<string, unknown>;
+      const normalizedEntries = Object.entries(parsed).map(([messageId, value]) => {
+        const ids = Array.isArray(value)
+          ? value.filter((entry): entry is string => typeof entry === "string")
+          : [];
+        return [messageId, ids] as const;
+      });
+
+      setMessageImageFileIds(Object.fromEntries(normalizedEntries));
+    } catch {
+      setMessageImageFileIds({});
+    }
   }, [chatId]);
+
+  useEffect(() => {
+    try {
+      window.sessionStorage.setItem(
+        `${MESSAGE_IMAGE_IDS_STORAGE_PREFIX}${chatId}`,
+        JSON.stringify(messageImageFileIds)
+      );
+    } catch {
+      // Ignore storage access failures.
+    }
+  }, [chatId, messageImageFileIds]);
+
+  useEffect(() => {
+    if (!isAuthenticated) {
+      setUploadedImageCatalog({});
+      return;
+    }
+
+    const controller = new AbortController();
+    let disposed = false;
+
+    async function loadImageCatalog() {
+      try {
+        const response = await fetch(
+          `/api/website/user-images?chatId=${encodeURIComponent(chatId)}`,
+          {
+            method: "GET",
+            signal: controller.signal,
+          }
+        );
+
+        const data = (await response.json().catch(() => null)) as
+          | { images?: UserImage[] }
+          | null;
+
+        if (!response.ok || !data?.images || disposed) {
+          return;
+        }
+
+        const nextCatalog = Object.fromEntries(
+          data.images.map((image) => [image.fileId, image])
+        );
+
+        setUploadedImageCatalog(nextCatalog);
+      } catch {
+        if (!disposed) {
+          setUploadedImageCatalog({});
+        }
+      }
+    }
+
+    void loadImageCatalog();
+
+    return () => {
+      disposed = true;
+      controller.abort();
+    };
+  }, [chatId, isAuthenticated]);
+
+  useEffect(() => {
+    const entries = Object.entries(messageImageFileIds);
+    if (entries.length === 0) {
+      return;
+    }
+
+    setMessageImages((prev) => {
+      const next = { ...prev };
+
+      for (const [messageId, fileIds] of entries) {
+        const attachments = fileIds
+          .map((fileId, index) => {
+            const image = uploadedImageCatalog[fileId];
+            if (!image) {
+              return null;
+            }
+
+            return {
+              fileId: image.fileId,
+              fileName: image.fileName,
+              dataUri: image.dataUri,
+              label: `${t("imageLabel", language)} ${index + 1}`,
+            };
+          })
+          .filter((value): value is MessageAttachment => Boolean(value));
+
+        if (attachments.length > 0) {
+          next[messageId] = attachments;
+        }
+      }
+
+      return next;
+    });
+  }, [language, messageImageFileIds, uploadedImageCatalog]);
 
   const syncPendingGenerationState = useCallback(() => {
     const pending = getPendingChatGeneration(chatId);
@@ -333,8 +455,6 @@ export default function BuilderView({
       label: `${t("imageLabel", language)} ${index + 1}`,
     }));
 
-    setLastSentImages(outgoingImages);
-
     // Optimistically add the user message to the UI
     const tempUserMessage: HistoryMessage = {
       id: `temp-${Date.now()}`,
@@ -343,6 +463,18 @@ export default function BuilderView({
       content,
       created_at: new Date().toISOString(),
     };
+
+    if (outgoingImages.length > 0) {
+      setMessageImages((prev) => ({
+        ...prev,
+        [tempUserMessage.id]: outgoingImages,
+      }));
+
+      setMessageImageFileIds((prev) => ({
+        ...prev,
+        [tempUserMessage.id]: outgoingImages.map((image) => image.fileId),
+      }));
+    }
 
     const latestAssistantCreatedAt =
       [...messages]
@@ -358,10 +490,29 @@ export default function BuilderView({
     setInputErrorMessage("");
 
     try {
-      const data = await sendChatMessage(chatId, content, language);
+      const data = await sendChatMessage(chatId, content, language, {
+        imageFileIds: outgoingImages.map((image) => image.fileId),
+      });
 
       // Replace optimistic messages with the real ones from DB
       setMessages(data.messages);
+
+      if (outgoingImages.length > 0) {
+        setMessageImages((prev) => {
+          const next = { ...prev };
+          delete next[tempUserMessage.id];
+          next[data.userMessage.id] = outgoingImages;
+          return next;
+        });
+
+        setMessageImageFileIds((prev) => {
+          const next = { ...prev };
+          const ids = next[tempUserMessage.id] ?? outgoingImages.map((image) => image.fileId);
+          delete next[tempUserMessage.id];
+          next[data.userMessage.id] = ids;
+          return next;
+        });
+      }
 
       // Show preview only when backend returns actual generated HTML.
       if (typeof data.html === "string") {
@@ -380,7 +531,6 @@ export default function BuilderView({
 
       resolveChatGeneration(chatId);
       setPendingGenerationStartedAt(null);
-      router.refresh();
     } catch (error) {
       const status = error instanceof ChatApiError ? error.status : null;
       const raw = error instanceof Error ? error.message : "";
@@ -420,7 +570,16 @@ export default function BuilderView({
       setInputErrorMessage(friendly);
       if (!isAbortLikeError) {
         setMessages((prev) => prev.filter((msg) => msg.id !== tempUserMessage.id));
-        setLastSentImages([]);
+        setMessageImages((prev) => {
+          const next = { ...prev };
+          delete next[tempUserMessage.id];
+          return next;
+        });
+        setMessageImageFileIds((prev) => {
+          const next = { ...prev };
+          delete next[tempUserMessage.id];
+          return next;
+        });
       }
     } finally {
       setIsRequestInFlight(false);
@@ -541,7 +700,7 @@ export default function BuilderView({
             chatId={chatId}
             chatTitle={chatTitle}
             messages={messages}
-            userImagesForLastMessage={lastSentImages}
+            messageImages={messageImages}
             onSend={handleSend}
             onImagesChange={handleInputImagesChange}
             onTogglePreview={() => setPreviewOpen((prev) => !prev)}
@@ -606,7 +765,7 @@ export default function BuilderView({
             chatId={chatId}
             chatTitle={chatTitle}
             messages={messages}
-            userImagesForLastMessage={lastSentImages}
+            messageImages={messageImages}
             onSend={handleSend}
             onImagesChange={handleInputImagesChange}
             onTogglePreview={() => setPreviewOpen((prev) => !prev)}

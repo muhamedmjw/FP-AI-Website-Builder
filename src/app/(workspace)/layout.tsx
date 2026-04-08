@@ -35,17 +35,27 @@ export default async function AppLayout({
     );
   }
 
-  // Fetch user profile and chat list in parallel
+  // Fetch user profile and chat list in parallel with safe fallbacks.
   const [profile, chats] = await Promise.all([
-    getUserProfile(supabase, user.id),
-    getUserChats(supabase),
+    getUserProfile(supabase, user.id).catch((error) => {
+      console.error("Failed to load user profile:", error);
+      return null;
+    }),
+    getUserChats(supabase).catch((error) => {
+      console.error("Failed to load chat list:", error);
+      return [];
+    }),
   ]);
 
-  const { data: preferences } = await supabase
+  const { data: preferences, error: preferencesError } = await supabase
     .from("user_preferences")
     .select("language")
     .eq("user_id", user.id)
     .maybeSingle();
+
+  if (preferencesError) {
+    console.error("Failed to load user preferences:", preferencesError);
+  }
 
   const hasLanguagePreference = isAppLanguage(preferences?.language);
 

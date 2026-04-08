@@ -92,7 +92,13 @@ export default function ChatInput({
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [inputValue, setInputValue] = useState("");
   const [imageErrorMessage, setImageErrorMessage] = useState("");
-  const { images, isLoading: isImageLoading, uploadImage, deleteImage } = useUserImages(chatId);
+  const {
+    images,
+    isLoading: isImageLoading,
+    uploadImage,
+    deleteImage,
+    clearImages,
+  } = useUserImages(chatId, { autoLoad: false });
   const resolvedPlaceholder = placeholder ?? t("inputPlaceholder", language);
   const displayModelName = getDisplayModelName(PRIMARY_MODEL);
   const disclaimerTemplate = t("aiDisclaimer", language);
@@ -169,6 +175,7 @@ export default function ChatInput({
     if (!message) return;
 
     onSend(message);
+    clearImages();
     setInputValue("");
     setTimeout(() => {
       if (textareaRef.current) {

@@ -40,12 +40,12 @@ type ChatPanelProps = {
   chatId?: string;
   chatTitle?: string;
   messages: HistoryMessage[];
-  userImagesForLastMessage?: Array<{
+  messageImages?: Record<string, Array<{
     fileId: string;
     fileName: string;
     dataUri: string;
     label: string;
-  }>;
+  }>>;
   onSend: (message: string) => void;
   onImagesChange?: (images: UserImage[]) => void;
   onTogglePreview?: () => void;
@@ -78,7 +78,7 @@ export default function ChatPanel({
   chatId,
   chatTitle,
   messages,
-  userImagesForLastMessage = [],
+  messageImages = {},
   onSend,
   onImagesChange,
   onTogglePreview,
@@ -106,8 +106,6 @@ export default function ChatPanel({
   const isRtlLanguage = language === "ar" || language === "ku";
   const scrollRef = useRef<HTMLDivElement>(null);
   const visibleMessages = messages.filter((msg) => msg.role !== "system");
-  const lastUserMessageId =
-    [...visibleMessages].reverse().find((msg) => msg.role === "user")?.id ?? null;
   const shouldCenterInput = centerInputWhenEmpty && visibleMessages.length === 0;
   const emptyStateTitle = t("emptyStateTitle", language);
   const emptyStateDescription = t("emptyStateDesc", language);
@@ -246,11 +244,7 @@ export default function ChatPanel({
                       role={msg.role}
                       content={msg.content}
                       userAvatarUrl={currentUserAvatarUrl}
-                      attachedImages={
-                        msg.role === "user" && msg.id === lastUserMessageId
-                          ? userImagesForLastMessage
-                          : undefined
-                      }
+                      attachedImages={msg.role === "user" ? messageImages[msg.id] : undefined}
                     />
                     {inlineAttachments
                       .filter((attachment) => attachment.anchorMessageId === msg.id)
