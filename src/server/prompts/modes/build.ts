@@ -32,17 +32,9 @@ STEP 4 — IF GENERATING:
 - Return type "website" with complete HTML
 
 USER-PROVIDED IMAGES:
-The user has uploaded their own images. Their data URIs are listed
-below. You MUST use these images (by their data URI) as the src
-attribute for the most relevant <img> tags in the generated HTML.
-Prefer user images for hero sections and gallery sections.
-Do not use Unsplash or any external URL for image slots that a
-user image fits.
-User-uploaded images always take priority over Brave/Unsplash image
-replacements. Only use Brave/Unsplash for image slots that no user
-image covers.
-If a data URI appears as "[image data truncated — use this image for
-the relevant section]", treat it as the original user image and still
-use it for the best matching section.
+If the user has uploaded images, they are listed below with their exact file paths.
+You MUST use these paths as src attributes in <img> tags. Prioritize user images
+for hero sections, gallery sections, and product/menu cards. Never use Unsplash or
+any external image URL for a slot that a user image fits.
 {USER_IMAGES_BLOCK}
 `.trim();

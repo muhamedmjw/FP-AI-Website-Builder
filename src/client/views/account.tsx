@@ -25,7 +25,7 @@ export default function AccountPageView() {
         <div className="-mt-10 flex flex-col items-center justify-center text-center sm:-mt-8">
           <Sparkles size={42} strokeWidth={1.8} className="prismatic-icon" aria-hidden="true" />
           <div className="mt-5 prismatic-text text-base font-semibold uppercase tracking-[0.2em] sm:text-lg">
-            <span style={{ fontFamily: "var(--font-logo)" }}>AI Website Builder</span>
+            <span style={{ fontFamily: "var(--font-ui)", fontWeight: 700, letterSpacing: "0.15em" }}>AI Website Builder</span>
           </div>
 
           <h1 className="mt-7 max-w-2xl text-balance text-3xl font-semibold leading-[1.08] text-(--app-text-heading) sm:text-4xl md:w-152 md:max-w-none">

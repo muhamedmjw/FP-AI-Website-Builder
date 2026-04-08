@@ -398,7 +398,7 @@ export default function GuestHomePage() {
             >
               <Sparkles size={20} strokeWidth={1.8} className="mt-0.5 shrink-0 prismatic-icon sm:mt-0" />
               <p className="prismatic-text whitespace-normal wrap-break-word text-[0.72rem] font-semibold uppercase leading-[1.15] tracking-[0.14em] sm:text-base sm:tracking-[0.24em]">
-                <span style={{ fontFamily: "var(--font-logo)" }}>
+                <span style={{ fontFamily: "var(--font-ui)", fontWeight: 700, letterSpacing: "0.15em" }}>
                   {shouldWrapBrandOnMobile ? (
                     <>
                       <span className="block sm:inline">AI Website</span>

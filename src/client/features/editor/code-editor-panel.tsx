@@ -181,7 +181,26 @@ export default function CodeEditorPanel({
   return (
     <div dir="ltr" className="flex h-full min-w-0 flex-col border-l border-(--app-border) bg-(--app-panel)">
       <div className="flex h-12 shrink-0 items-center gap-2 border-b border-(--app-border) px-3">
-        <div className="flex-1" />
+        <div className="flex flex-1 items-center gap-2">
+          <svg
+            width="16"
+            height="16"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            className="text-[var(--app-text-tertiary)]"
+            aria-hidden="true"
+          >
+            <polyline points="16 18 22 12 16 6" />
+            <polyline points="8 6 2 12 8 18" />
+          </svg>
+          <span className="text-xs font-semibold text-[var(--app-text-tertiary)] uppercase tracking-widest">
+            Editor
+          </span>
+        </div>
         <button
           type="button"
           onClick={() => void handleSave()}

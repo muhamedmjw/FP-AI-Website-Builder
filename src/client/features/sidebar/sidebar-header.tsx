@@ -47,7 +47,7 @@ export default function SidebarHeader({
           className="prismatic-icon shrink-0"
         />
         <div className="flex flex-col leading-tight">
-          <span style={{ fontFamily: "var(--font-logo)" }}>
+          <span style={{ fontFamily: "var(--font-ui)", fontWeight: 700, letterSpacing: "0.15em" }}>
             <span className="prismatic-text block text-lg font-bold uppercase tracking-[0.22em]">
               AI Website
             </span>

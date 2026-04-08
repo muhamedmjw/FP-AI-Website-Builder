@@ -166,6 +166,21 @@ async function enrichWebsiteHtmlImages(
   }
 }
 
+function injectUserImageDataUris(
+  html: string,
+  userImages: Array<{ fileName: string; dataUri: string }>
+): string {
+  let result = html;
+
+  for (const image of userImages) {
+    const escapedPath = image.fileName.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    const regex = new RegExp(`src=["']${escapedPath}["']`, "gi");
+    result = result.replace(regex, `src="${image.dataUri}"`);
+  }
+
+  return result;
+}
+
 function parseAIResponse(raw: string): AIResponse {
   let cleaned = raw.trim();
 
@@ -410,7 +425,8 @@ async function generateAIResponseOnce(
     let parsed = workerResult.parsed;
 
     if (parsed.type === "website") {
-      const enrichedHtml = await enrichWebsiteHtmlImages(parsed.html, history);
+      let enrichedHtml = await enrichWebsiteHtmlImages(parsed.html, history);
+      enrichedHtml = injectUserImageDataUris(enrichedHtml, userImages);
       parsed = {
         ...parsed,
         html: enrichedHtml,
@@ -557,7 +573,8 @@ export async function generateGuestAIResponse(
     let parsed = workerResult.parsed;
 
     if (parsed.type === "website") {
-      const enrichedHtml = await enrichWebsiteHtmlImages(parsed.html, historyMessages);
+      let enrichedHtml = await enrichWebsiteHtmlImages(parsed.html, historyMessages);
+      enrichedHtml = injectUserImageDataUris(enrichedHtml, userImages);
       parsed = {
         ...parsed,
         html: enrichedHtml,

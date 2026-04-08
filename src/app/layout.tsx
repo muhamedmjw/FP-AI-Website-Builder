@@ -1,19 +1,18 @@
 import type { Metadata, Viewport } from "next";
-import { Readex_Pro } from "next/font/google";
-import { Bungee } from "next/font/google";
+import { Alexandria, Geist_Mono } from "next/font/google";
 import "./globals.css"; // Global styles for the application
 import Providers from "@/client/components/providers";
 
-const readexPro = Readex_Pro({
-  subsets: ["latin", "arabic"],
-  variable: "--font-readex",
-  weight: ["300", "400", "500", "600", "700"],
+const geistMono = Geist_Mono({
+  subsets: ["latin"],
+  variable: "--font-geist-mono",
+  weight: ["400", "500", "600", "700"],
 });
 
-const bungee = Bungee({
-  subsets: ["latin"],
-  variable: "--font-logo",
-  weight: ["400"],
+const alexandria = Alexandria({
+  subsets: ["latin", "arabic"],
+  variable: "--font-alexandria",
+  weight: ["300", "400", "500", "600", "700"],
 });
 
 export const viewport: Viewport = {
@@ -53,7 +52,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" data-theme="dark" suppressHydrationWarning>
-      <body className={`${readexPro.variable} ${bungee.variable} antialiased`}>
+      <body className={`${geistMono.variable} ${alexandria.variable} antialiased`}>
         <script dangerouslySetInnerHTML={{ __html: THEME_INIT_SCRIPT }} />
         <Providers>{children}</Providers>
       </body>

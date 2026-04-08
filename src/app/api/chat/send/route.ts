@@ -249,6 +249,11 @@ export async function POST(request: NextRequest) {
           fileName: row.file_name,
           dataUri: row.content,
         }));
+
+        console.log(
+          `[chat/send] User images found: ${userImages.length}`,
+          userImages.map((img) => img.fileName)
+        );
       } catch (error) {
         if (isMissingUploadColumns(error)) {
           userImages = [];

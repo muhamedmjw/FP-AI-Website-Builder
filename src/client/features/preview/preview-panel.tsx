@@ -67,6 +67,7 @@ export default function PreviewPanel({
   const hasMountedEditor = useRef(false);
   const [editorMounted, setEditorMounted] = useState(false);
   const [isHistoryOpen, setIsHistoryOpen] = useState(false);
+  const toggleTargetPanel = activePanel === "preview" ? "editor" : "preview";
 
   function ensureEditorPanelMounted() {
     if (!hasMountedEditor.current) {
@@ -150,11 +151,15 @@ export default function PreviewPanel({
           <button
             type="button"
             onClick={handlePanelToggle}
-            className="mr-1 flex h-8 items-center gap-1.5 rounded-lg border border-[var(--app-border)] px-2.5 text-xs font-medium text-[var(--app-text-secondary)] transition hover:bg-[var(--app-hover-bg)] hover:text-[var(--app-text-heading)]"
-            title={activePanel === "preview" ? t("editor", language) : t("preview", language)}
+            className={`mr-1 flex h-8 items-center gap-1.5 rounded-lg border px-2.5 text-xs font-medium transition ${
+              activePanel === "preview"
+                ? "border-[var(--button-hover-border)] bg-[var(--app-hover-bg)] text-[var(--app-text-heading)]"
+                : "border-[var(--app-border)] text-[var(--app-text-secondary)] hover:bg-[var(--app-hover-bg)] hover:text-[var(--app-text-heading)]"
+            }`}
+            title={t(toggleTargetPanel, language)}
           >
-            {activePanel === "preview" ? <Eye size={14} /> : <Code size={14} />}
-            {activePanel === "preview" ? t("preview", language) : t("editor", language)}
+            {toggleTargetPanel === "preview" ? <Eye size={14} /> : <Code size={14} />}
+            {t(toggleTargetPanel, language)}
           </button>
         ) : null}
 

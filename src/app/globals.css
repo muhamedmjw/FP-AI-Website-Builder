@@ -1,7 +1,24 @@
+@font-face {
+  font-family: 'NRT';
+  src: url('/fonts/kurdish/NRT-Bd.ttf') format('truetype');
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'NRT';
+  src: url('/fonts/kurdish/NRT-Reg.ttf') format('truetype');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+  unicode-range: U+0600-06FF, U+FB50-FDFF, U+FE70-FEFF;
+}
+
 @import "tailwindcss";
 
 :root {
-  --font-ui: var(--font-readex), sans-serif;
+  --font-ui: 'Geist Mono', 'NRT', 'Alexandria', sans-serif;
   --app-bg: #0a0a0a;
   --app-bg-soft: #111111;
   --app-panel: #121212;

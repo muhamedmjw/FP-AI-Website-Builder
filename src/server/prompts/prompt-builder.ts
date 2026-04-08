@@ -26,10 +26,6 @@ type PromptUserImage = {
   dataUri: string;
 };
 
-const MAX_PROMPT_IMAGE_DATA_URI_LENGTH = 50_000;
-const TRUNCATED_IMAGE_PLACEHOLDER =
-  "[image data truncated — use this image for the relevant section]";
-
 function mapHistoryToChatMessages(history: HistoryMessage[]): ChatMessage[] {
   return history
     .slice(-AI_CONFIG.MAX_HISTORY_TURNS)
@@ -45,16 +41,21 @@ function buildUserImagesBlock(userImages?: PromptUserImage[]): string {
     return "No user-uploaded images were provided.";
   }
 
-  return userImages
-    .map((image, index) => {
-      const dataUriForPrompt =
-        image.dataUri.length > MAX_PROMPT_IMAGE_DATA_URI_LENGTH
-          ? TRUNCATED_IMAGE_PLACEHOLDER
-          : image.dataUri.slice(0, MAX_PROMPT_IMAGE_DATA_URI_LENGTH);
+  const pathLines = userImages.map(
+    (image) =>
+      `src="${image.fileName}" - user-uploaded image (prioritize for hero, gallery, or product/menu sections)`
+  );
 
-      return `${index + 1}. ${image.fileName} — ${dataUriForPrompt}`;
-    })
-    .join("\n");
+  return [
+    `User has uploaded ${userImages.length} image(s). You MUST use these exact paths as the src attribute`,
+    "in <img> tags in the generated HTML. Do NOT use Unsplash or any external URL for these image slots:",
+    "",
+    ...pathLines,
+    "",
+    "These paths are relative and will resolve correctly in the exported ZIP.",
+    "For the live preview, the actual image data is embedded separately - always write the",
+    "relative path as the src, the preview system handles substitution.",
+  ].join("\n");
 }
 
 export function buildClassifierMessages(
