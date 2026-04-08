@@ -610,11 +610,7 @@ export async function generateGuestAIResponse(
 }
 
 function formatDefaultChatTitle(): string {
-  const now = new Date();
-  const month = new Intl.DateTimeFormat("en-US", { month: "long" }).format(now);
-  const day = new Intl.DateTimeFormat("en-US", { day: "2-digit" }).format(now);
-
-  return `New Website. ${month}, ${day}`;
+  return "New Chat";
 }
 
 function isLikelyGibberish(input: string): boolean {
@@ -761,7 +757,18 @@ export async function generateChatTitle(
           {
             role: "system",
             content:
-              `You are a title generator. Return ONLY one short descriptive title of 2 to 7 words for a website/chat. The title MUST be written in ${languageLabel}. Do not add quotes, explanations, prefixes, or extra text. If the user input is unclear or meaningless, return exactly: New Website.`,
+              `You are a chat title generator. Your job is to create a short,
+descriptive title (2 to 5 words) for a conversation based on the
+user's first message. Rules:
+- If the message is a greeting (hello, hi, hey, مرحبا, سڵاو etc.)
+  -> return a warm short title like "Greeting" or "Hello There"
+- If the message is a website request -> return the website type,
+  e.g. "Restaurant Website", "Gym Landing Page"
+- If the message is a question -> summarize it in 2-4 words
+- If the message is unclear or very short -> return "New Chat"
+- The title MUST be in ${languageLabel}
+- Return ONLY the title. No quotes. No punctuation at the end.
+  No explanation. Nothing else.`,
           },
           { role: "user", content: trimmedMessage },
         ],
@@ -790,8 +797,8 @@ export async function generateChatTitle(
       if (
         !normalizedTitle ||
         normalizedTitle.length > 50 ||
-        words.length < 2 ||
-        words.length > 7 ||
+        words.length < 1 ||
+        words.length > 5 ||
         lowerTitle === "invalid user input" ||
         lowerTitle === "invalid input" ||
         lowerTitle === "new website" ||

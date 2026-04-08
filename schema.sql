@@ -1,7 +1,15 @@
--- AI Website Builder - database schema
--- Tables: users, user_preferences, chats, history, websites, pages, sections,
---         files, zip_downloads, guest_usage, ai_generations
--- Run this in Supabase SQL Editor.
+-- =============================================================
+-- AI Website Builder - Complete Database Schema
+-- =============================================================
+-- Single source of truth for all tables, indexes, RLS policies,
+-- triggers, and enums.
+--
+-- To set up: paste this entire file into the Supabase SQL Editor
+-- and run it. It is safe to re-run (uses IF NOT EXISTS throughout).
+--
+-- Last consolidated: includes archived chats, version history,
+-- public sharing, deploy tracking, and file upload support.
+-- =============================================================
 
 create extension if not exists pgcrypto;
 
@@ -135,6 +143,7 @@ create index if not exists websites_chat_id_idx on public.websites(chat_id);
 create index if not exists websites_updated_at_idx on public.websites(updated_at desc);
 
 -- 6) Pages
+-- NOTE: pages table reserved for future multi-page support
 create table if not exists public.pages (
   id uuid primary key default gen_random_uuid(),
   website_id uuid not null references public.websites(id) on delete cascade,
@@ -149,6 +158,7 @@ create unique index if not exists pages_website_slug_unique_idx
 create index if not exists pages_website_id_idx on public.pages(website_id);
 
 -- 7) Sections
+-- NOTE: sections table reserved for future multi-page support
 create table if not exists public.sections (
   id uuid primary key default gen_random_uuid(),
   page_id uuid not null references public.pages(id) on delete cascade,
@@ -211,6 +221,8 @@ alter table public.guest_usage
 add column if not exists session_data text;
 
 create index if not exists guest_usage_date_idx on public.guest_usage(usage_date);
+create index if not exists guest_usage_token_date_idx
+  on public.guest_usage(guest_token, usage_date);
 
 -- 11) AI Generations (logs every AI API call)
 create table if not exists public.ai_generations (
@@ -658,6 +670,9 @@ create table if not exists public.file_versions (
 create unique index if not exists file_versions_file_id_version_unique_idx
   on public.file_versions(file_id, version);
 
+create index if not exists file_versions_file_id_idx
+  on public.file_versions(file_id);
+
 create index if not exists file_versions_website_id_version_idx
   on public.file_versions(website_id, version desc);
 
@@ -749,6 +764,8 @@ create table if not exists public.deploys (
 create index if not exists deploys_user_id_idx on public.deploys(user_id);
 create index if not exists deploys_website_id_idx on public.deploys(website_id);
 create index if not exists deploys_created_at_idx on public.deploys(created_at desc);
+create index if not exists deploys_website_user_idx
+  on public.deploys(website_id, user_id, created_at desc);
 
 alter table public.deploys enable row level security;
 

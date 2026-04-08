@@ -271,7 +271,12 @@ export default function HomePage() {
         throw new Error("You need to sign in again.");
       }
 
-      const chat = await createChat(supabase, user.id, "New Website");
+      const placeholderTitle = trimmedMessage.split(/\s+/).slice(0, 4).join(" ");
+      const chat = await createChat(
+        supabase,
+        user.id,
+        placeholderTitle || "New Chat"
+      );
       await addMessage(supabase, chat.id, "user", trimmedMessage);
       markChatGenerationPending(chat.id, Date.now(), null);
 
@@ -281,6 +286,8 @@ export default function HomePage() {
 
       void sendChatMessage(chat.id, trimmedMessage, language, {
         skipUserMessageSave: true,
+      }).then(() => {
+        router.refresh();
       }).catch((error) => {
         console.error("Background AI send failed after navigation:", error);
       });

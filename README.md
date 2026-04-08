@@ -119,9 +119,10 @@ Copy-Item .env.example .env
 
 4. Set up the database:
 
-- Open Supabase SQL Editor
-- Paste and run the contents of `schema.sql`
-- Then run `migration_archived_chats.sql` to enable archived chat support
+- Open your Supabase project
+- Go to the SQL Editor
+- Paste and run the entire contents of `schema.sql`
+- That's it - everything is consolidated in one file
 
 5. Start development server:
 
@@ -171,7 +172,6 @@ NETLIFY_API_TOKEN=
 ## Database Notes
 
 - Schema is consolidated in `schema.sql`
-- Run `migration_archived_chats.sql` after the base schema to add archived chat support
 - RLS policies are included
 - `file_versions` and `deploys` tables support version history and deployment flows
 

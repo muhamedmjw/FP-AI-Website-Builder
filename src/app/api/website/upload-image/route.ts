@@ -1,3 +1,4 @@
+// NOTE: Image upload feature disabled - do not delete, will be re-enabled later.
 import { Buffer } from "node:buffer";
 import { NextRequest, NextResponse } from "next/server";
 import { getSupabaseServerClient } from "@/server/supabase/server-client";
