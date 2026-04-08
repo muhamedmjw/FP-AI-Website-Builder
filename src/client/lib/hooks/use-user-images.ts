@@ -53,6 +53,7 @@ export function useUserImages(
       return;
     }
 
+    const resolvedChatId = chatId;
     const controller = new AbortController();
     let isDisposed = false;
 
@@ -62,7 +63,7 @@ export function useUserImages(
 
       try {
         const response = await fetch(
-          `/api/website/user-images?chatId=${encodeURIComponent(chatId)}`,
+          `/api/website/user-images?chatId=${encodeURIComponent(resolvedChatId)}`,
           {
             method: "GET",
             signal: controller.signal,
