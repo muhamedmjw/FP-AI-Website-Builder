@@ -159,6 +159,11 @@ function generateReadme(
   ].join("\n");
 }
 
+/**
+ * ZIP export endpoint.
+ * Despite the /guest path, this requires authentication.
+ * The path is kept for backwards compatibility.
+ */
 export async function POST(request: NextRequest) {
   try {
     const supabase = await getSupabaseServerClient();

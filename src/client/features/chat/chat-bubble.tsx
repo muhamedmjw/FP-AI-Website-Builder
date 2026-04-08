@@ -55,6 +55,12 @@ type ChatBubbleProps = {
   role: "user" | "assistant" | "system";
   content: string;
   userAvatarUrl?: string | null;
+  attachedImages?: Array<{
+    fileId: string;
+    fileName: string;
+    dataUri: string;
+    label: string;
+  }>;
 };
 
 type UserAvatarProps = {
@@ -85,8 +91,10 @@ export default function ChatBubble({
   role,
   content,
   userAvatarUrl = null,
+  attachedImages = [],
 }: ChatBubbleProps) {
   const isUser = role === "user";
+  const hasAttachedImages = isUser && attachedImages.length > 0;
 
   return (
     <div
@@ -115,12 +123,34 @@ export default function ChatBubble({
 
       {/* Message */}
       {isUser ? (
-        <div
-          dir="auto"
-          className="min-w-0 overflow-hidden break-words rounded-2xl px-3 py-2.5 text-sm leading-relaxed shadow-[var(--app-shadow-md)] sm:px-4 sm:py-3.5 sm:text-base bg-[var(--app-bubble-user-bg)] text-[var(--app-bubble-user-text)]"
-          style={{ overflowWrap: "anywhere" }}
-        >
-          {content}
+        <div className="min-w-0 space-y-2">
+          <div
+            dir="auto"
+            className="min-w-0 overflow-hidden break-words rounded-2xl px-3 py-2.5 text-sm leading-relaxed shadow-[var(--app-shadow-md)] sm:px-4 sm:py-3.5 sm:text-base bg-[var(--app-bubble-user-bg)] text-[var(--app-bubble-user-text)]"
+            style={{ overflowWrap: "anywhere" }}
+          >
+            {content}
+          </div>
+
+          {hasAttachedImages ? (
+            <div className="flex flex-wrap gap-2">
+              {attachedImages.map((image) => (
+                <div key={image.fileId} className="w-16">
+                  <div className="h-16 w-16 overflow-hidden rounded-lg border border-[var(--app-card-border)] bg-[var(--app-card-bg)]">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={image.dataUri}
+                      alt={image.fileName}
+                      className="h-full w-full object-cover"
+                    />
+                  </div>
+                  <p className="mt-1 truncate text-center text-[10px] text-[var(--app-text-tertiary)]">
+                    {image.label}
+                  </p>
+                </div>
+              ))}
+            </div>
+          ) : null}
         </div>
       ) : (
         <div

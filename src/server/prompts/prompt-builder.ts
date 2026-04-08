@@ -26,6 +26,10 @@ type PromptUserImage = {
   dataUri: string;
 };
 
+const MAX_PROMPT_IMAGE_DATA_URI_LENGTH = 50_000;
+const TRUNCATED_IMAGE_PLACEHOLDER =
+  "[image data truncated — use this image for the relevant section]";
+
 function mapHistoryToChatMessages(history: HistoryMessage[]): ChatMessage[] {
   return history
     .slice(-AI_CONFIG.MAX_HISTORY_TURNS)
@@ -42,7 +46,14 @@ function buildUserImagesBlock(userImages?: PromptUserImage[]): string {
   }
 
   return userImages
-    .map((image, index) => `${index + 1}. ${image.fileName} — ${image.dataUri}`)
+    .map((image, index) => {
+      const dataUriForPrompt =
+        image.dataUri.length > MAX_PROMPT_IMAGE_DATA_URI_LENGTH
+          ? TRUNCATED_IMAGE_PLACEHOLDER
+          : image.dataUri.slice(0, MAX_PROMPT_IMAGE_DATA_URI_LENGTH);
+
+      return `${index + 1}. ${image.fileName} — ${dataUriForPrompt}`;
+    })
     .join("\n");
 }
 

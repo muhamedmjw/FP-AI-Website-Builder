@@ -15,21 +15,6 @@ import type { AppLanguage } from "@/shared/types/database";
 
 const STORAGE_KEY = "app-language";
 const LANGUAGE_SYNC_EVENT = "app-language-change";
-const RTL_FONT_LINK_ID = "rtl-fonts";
-const RTL_FONT_LINK_HREF =
-	"https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800&family=Tajawal:wght@400;500;700&family=Noto+Sans+Arabic:wght@400;500;700&family=Noto+Kufi+Arabic:wght@400;500;700&display=swap";
-
-function getUiFontStack(language: AppLanguage): string {
-	if (language === "ku") {
-		return '"KurdishUI", "Noto Kufi Arabic", "Cairo", sans-serif';
-	}
-
-	if (language === "ar") {
-		return '"Cairo", "Noto Sans Arabic", sans-serif';
-	}
-
-	return 'var(--font-latin), "Segoe UI", monospace';
-}
 
 type LanguageContextValue = {
 	language: AppLanguage;
@@ -57,34 +42,6 @@ function getInitialLanguage(): AppLanguage {
 	return "en";
 }
 
-function ensureRtlFontLink(language: AppLanguage) {
-	const fontStack = getUiFontStack(language);
-	document.documentElement.style.setProperty("--font-ui", fontStack);
-	document.body.style.setProperty("--font-ui", fontStack);
-
-	const applyUiFontOverride = () => {
-		document.documentElement.style.setProperty("--font-ui", fontStack);
-		document.body.style.setProperty("--font-ui", fontStack);
-	};
-
-	const existing = document.getElementById(RTL_FONT_LINK_ID);
-	if (existing instanceof HTMLLinkElement) {
-		if (existing.sheet) {
-			applyUiFontOverride();
-		} else {
-			existing.addEventListener("load", applyUiFontOverride, { once: true });
-		}
-		return;
-	}
-
-	const link = document.createElement("link");
-	link.id = RTL_FONT_LINK_ID;
-	link.rel = "stylesheet";
-	link.href = RTL_FONT_LINK_HREF;
-	link.addEventListener("load", applyUiFontOverride, { once: true });
-	document.head.appendChild(link);
-}
-
 export function LanguageProvider({
 	children,
 	initialLanguage,
@@ -105,9 +62,6 @@ export function LanguageProvider({
 		const isRtl = RTL_LANGUAGES.includes(nextLanguage);
 		document.documentElement.setAttribute("lang", nextLanguage);
 		document.documentElement.setAttribute("dir", isRtl ? "rtl" : "ltr");
-
-		// Always ensure RTL-capable fonts, even when the UI language is English.
-		ensureRtlFontLink(nextLanguage);
 	}, []);
 
 	useEffect(() => {

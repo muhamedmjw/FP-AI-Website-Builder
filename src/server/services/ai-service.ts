@@ -52,16 +52,24 @@ type GenerationLog = {
   durationMs: number;
 };
 
-const DEEPSEEK_API_KEY = process.env.DEEPSEEK_API_KEY?.trim();
+let deepseekClient: OpenAI | null = null;
 
-if (!DEEPSEEK_API_KEY) {
-  throw new Error("DEEPSEEK_API_KEY is required for AI generation.");
+function getDeepSeekClient(): OpenAI {
+  const apiKey = process.env.DEEPSEEK_API_KEY?.trim() ?? "";
+
+  if (!apiKey) {
+    throw new Error("DEEPSEEK_API_KEY is required for AI generation.");
+  }
+
+  if (!deepseekClient) {
+    deepseekClient = new OpenAI({
+      baseURL: "https://api.deepseek.com",
+      apiKey,
+    });
+  }
+
+  return deepseekClient;
 }
-
-const deepseek = new OpenAI({
-  baseURL: "https://api.deepseek.com",
-  apiKey: DEEPSEEK_API_KEY,
-});
 
 const PRIMARY_MODEL = process.env.DEEPSEEK_MODEL_PRIMARY?.trim() || AI_MODELS.PRIMARY;
 const FALLBACK_MODEL = process.env.DEEPSEEK_MODEL_FALLBACK?.trim() || AI_MODELS.FALLBACK;
@@ -208,7 +216,7 @@ async function callModelOnce(
   totalTokens: number | null;
   modelUsed: string;
 }> {
-  const response = await deepseek.chat.completions.create({
+  const response = await getDeepSeekClient().chat.completions.create({
     model,
     messages,
     max_tokens: maxTokens,
@@ -295,7 +303,7 @@ async function classifyIntent(
 
   for (const model of MODEL_CANDIDATES) {
     try {
-      const response = await deepseek.chat.completions.create({
+      const response = await getDeepSeekClient().chat.completions.create({
         model,
         messages,
         max_tokens: 60,
@@ -333,7 +341,7 @@ async function classifyIntent(
   return fallback;
 }
 
-export async function generateAIResponse(
+async function generateAIResponseOnce(
   supabase: SupabaseClient,
   chatId: string,
   history: HistoryMessage[],
@@ -446,77 +454,125 @@ export async function generateAIResponse(
   }
 }
 
+export async function generateAIResponse(
+  supabase: SupabaseClient,
+  chatId: string,
+  history: HistoryMessage[],
+  language: "en" | "ar" | "ku" = "en",
+  existingHtml: string | null = null,
+  userImages: Array<{ fileName: string; dataUri: string }> = []
+): Promise<AIResponse> {
+  try {
+    return await generateAIResponseOnce(
+      supabase,
+      chatId,
+      history,
+      language,
+      existingHtml,
+      userImages
+    );
+  } catch (error) {
+    const message = error instanceof Error ? error.message.toLowerCase() : "";
+    const shouldRetryWithoutImages =
+      userImages.length > 0 &&
+      (message.includes("context length") || message.includes("maximum"));
+
+    if (!shouldRetryWithoutImages) {
+      throw error;
+    }
+
+    console.warn(
+      "AI generation failed with user images due to context/maximum limits; retrying without user images.",
+      { chatId, imageCount: userImages.length }
+    );
+
+    return generateAIResponseOnce(
+      supabase,
+      chatId,
+      history,
+      language,
+      existingHtml,
+      []
+    );
+  }
+}
+
 export async function generateGuestAIResponse(
   history: Array<{ role: "user" | "assistant"; content: string }>,
   language: AppLanguage = "en",
   userImages: Array<{ fileName: string; dataUri: string }> = []
 ): Promise<AIResponse> {
-  const historyMessages: HistoryMessage[] = history.map((msg, i) => ({
-    id: `guest-${i}`,
-    chat_id: "guest-session",
-    role: msg.role,
-    content: msg.content,
-    created_at: new Date().toISOString(),
-  }));
+  try {
+    const historyMessages: HistoryMessage[] = history.map((msg, i) => ({
+      id: `guest-${i}`,
+      chat_id: "guest-session",
+      role: msg.role,
+      content: msg.content,
+      created_at: new Date().toISOString(),
+    }));
 
-  const latestUserMessage =
-    historyMessages.filter((m) => m.role === "user").at(-1)?.content ?? "";
+    const latestUserMessage =
+      historyMessages.filter((m) => m.role === "user").at(-1)?.content ?? "";
 
-  const { intent, detectedLanguage } = await classifyIntent(
-    latestUserMessage,
-    false,
-    language
-  );
+    const { intent, detectedLanguage } = await classifyIntent(
+      latestUserMessage,
+      false,
+      language
+    );
 
-  let messages: AIMessage[];
-  let maxTokens: number;
-  let temperature: number;
+    let messages: AIMessage[];
+    let maxTokens: number;
+    let temperature: number;
 
-  if (intent === "build") {
-    messages = buildGenerationMessages(
-      historyMessages,
-      language,
-      detectedLanguage,
-      userImages
-    ) as AIMessage[];
-    maxTokens = AI_CONFIG.MAX_TOKENS;
-    temperature = 0.4;
-  } else if (intent === "chat") {
-    messages = buildChatMessages(historyMessages, detectedLanguage) as AIMessage[];
-    maxTokens = 300;
-    temperature = 0.7;
-  } else {
-    messages = buildGenerationMessages(
-      historyMessages,
-      language,
-      detectedLanguage,
-      userImages
-    ) as AIMessage[];
-    maxTokens = AI_CONFIG.MAX_TOKENS;
-    temperature = 0.4;
-  }
-
-  const workerResult = await callDeepSeekWithRetry(
-    messages,
-    maxTokens,
-    temperature
-  );
-
-  let parsed = workerResult.parsed;
-
-  if (parsed.type === "website") {
-    const enrichedHtml = await enrichWebsiteHtmlImages(parsed.html, historyMessages);
-    parsed = {
-      ...parsed,
-      html: enrichedHtml,
-    };
-
-    if (!validateWebsiteHtml(parsed.html)) {
-      console.warn("AI returned potentially incomplete HTML — serving anyway.");
+    if (intent === "build") {
+      messages = buildGenerationMessages(
+        historyMessages,
+        language,
+        detectedLanguage,
+        userImages
+      ) as AIMessage[];
+      maxTokens = AI_CONFIG.MAX_TOKENS;
+      temperature = 0.4;
+    } else if (intent === "chat") {
+      messages = buildChatMessages(historyMessages, detectedLanguage) as AIMessage[];
+      maxTokens = 300;
+      temperature = 0.7;
+    } else {
+      messages = buildGenerationMessages(
+        historyMessages,
+        language,
+        detectedLanguage,
+        userImages
+      ) as AIMessage[];
+      maxTokens = AI_CONFIG.MAX_TOKENS;
+      temperature = 0.4;
     }
-  }
 
-  return parsed;
+    const workerResult = await callDeepSeekWithRetry(
+      messages,
+      maxTokens,
+      temperature
+    );
+
+    let parsed = workerResult.parsed;
+
+    if (parsed.type === "website") {
+      const enrichedHtml = await enrichWebsiteHtmlImages(parsed.html, historyMessages);
+      parsed = {
+        ...parsed,
+        html: enrichedHtml,
+      };
+
+      if (!validateWebsiteHtml(parsed.html)) {
+        console.warn("AI returned potentially incomplete HTML — serving anyway.");
+      }
+    }
+
+    return parsed;
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Unknown guest AI error.";
+    throw new Error(`Guest AI generation failed: ${message}`);
+  }
 }
 
 function formatDefaultChatTitle(): string {
@@ -665,7 +721,7 @@ export async function generateChatTitle(
 
   for (const model of MODEL_CANDIDATES) {
     try {
-      const response = await deepseek.chat.completions.create({
+      const response = await getDeepSeekClient().chat.completions.create({
         model,
         messages: [
           {

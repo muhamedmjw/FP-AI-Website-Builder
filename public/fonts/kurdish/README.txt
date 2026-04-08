@@ -1,10 +1,4 @@
-Place your Kurdish font files in this folder.
+This project now uses Readex Pro via next/font/google.
 
-Recommended filename:
-- kurdish-ui.woff2
-
-Optional fallback filenames:
-- kurdish-ui.woff
-- kurdish-ui.ttf
-
-Once the file is placed, the app will use it automatically for language "ku".
+Readex Pro supports Latin, Arabic, and Kurdish scripts in one font,
+so no local Kurdish font files are required in this folder.

@@ -1,13 +1,10 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
-import { Eye, MessageCircle, Sparkles, X } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import { Sparkles, X } from "lucide-react";
 import { HistoryMessage } from "@/shared/types/database";
 import ChatPanel from "@/client/features/chat/chat-panel";
-import PreviewPanel from "@/client/features/preview/preview-panel";
-import PreviewErrorBoundary from "@/client/features/preview/preview-error-boundary";
-import { savePendingGuestZipPrompt } from "@/client/lib/zip-download";
 import { savePendingGuestChatSession } from "@/client/lib/guest-chat-handoff";
 import LanguageSwitcher from "@/client/components/ui/language-switcher";
 import { useLanguage } from "@/client/lib/language-context";
@@ -15,6 +12,116 @@ import { t } from "@/shared/constants/translations";
 import { localizeGuestChatErrorMessage } from "@/shared/utils/localized-errors";
 import { MAX_GUEST_PROMPTS } from "@/shared/constants/limits";
 import type { AppLanguage } from "@/shared/types/database";
+
+const GUEST_WEBSITE_WINDOW_MS = 12 * 60 * 60 * 1000;
+const GUEST_SESSION_STORAGE_KEY = "guest_mode_session_v1";
+
+type PersistedGuestSession = {
+  messages: HistoryMessage[];
+  html: string | null;
+  promptsUsed: number;
+  websiteWindowExpiresAtMs: number | null;
+};
+
+function normalizeGuestMessages(value: unknown): HistoryMessage[] {
+  if (!Array.isArray(value)) {
+    return [];
+  }
+
+  return value
+    .filter((item): item is HistoryMessage => {
+      if (!item || typeof item !== "object") {
+        return false;
+      }
+
+      const message = item as Partial<HistoryMessage>;
+      return (
+        typeof message.id === "string" &&
+        typeof message.chat_id === "string" &&
+        (message.role === "user" || message.role === "assistant") &&
+        typeof message.content === "string" &&
+        typeof message.created_at === "string"
+      );
+    })
+    .map((message) => ({
+      ...message,
+      content: message.content.trim(),
+    }))
+    .filter((message) => message.content.length > 0);
+}
+
+function clearPersistedGuestSession() {
+  if (typeof window === "undefined") {
+    return;
+  }
+
+  window.localStorage.removeItem(GUEST_SESSION_STORAGE_KEY);
+}
+
+function loadInitialGuestSession(): PersistedGuestSession {
+  const emptyState: PersistedGuestSession = {
+    messages: [],
+    html: null,
+    promptsUsed: 0,
+    websiteWindowExpiresAtMs: null,
+  };
+
+  if (typeof window === "undefined") {
+    return emptyState;
+  }
+
+  try {
+    const raw = window.localStorage.getItem(GUEST_SESSION_STORAGE_KEY);
+    if (!raw) {
+      return emptyState;
+    }
+
+    const parsed = JSON.parse(raw) as Partial<PersistedGuestSession>;
+    const messages = normalizeGuestMessages(parsed.messages);
+    const html = typeof parsed.html === "string" && parsed.html.trim().length > 0
+      ? parsed.html
+      : null;
+    const promptsUsed =
+      typeof parsed.promptsUsed === "number" && Number.isFinite(parsed.promptsUsed)
+        ? Math.max(0, Math.min(MAX_GUEST_PROMPTS, Math.floor(parsed.promptsUsed)))
+        : 0;
+    const websiteWindowExpiresAtMs =
+      typeof parsed.websiteWindowExpiresAtMs === "number" &&
+      Number.isFinite(parsed.websiteWindowExpiresAtMs)
+        ? parsed.websiteWindowExpiresAtMs
+        : null;
+
+    if (
+      websiteWindowExpiresAtMs !== null &&
+      Date.now() >= websiteWindowExpiresAtMs
+    ) {
+      clearPersistedGuestSession();
+      return emptyState;
+    }
+
+    return {
+      messages,
+      html,
+      promptsUsed,
+      websiteWindowExpiresAtMs,
+    };
+  } catch {
+    clearPersistedGuestSession();
+    return emptyState;
+  }
+}
+
+function formatRemainingWindow(ms: number): string {
+  const totalSeconds = Math.max(0, Math.floor(ms / 1000));
+  const hours = Math.floor(totalSeconds / 3600);
+  const minutes = Math.floor((totalSeconds % 3600) / 60);
+
+  if (hours > 0) {
+    return `${hours}h ${minutes}m`;
+  }
+
+  return `${minutes}m`;
+}
 
 function createGuestMessage(
   role: "user" | "assistant",
@@ -101,30 +208,95 @@ function GuestLimitBanner({
 
 export default function GuestHomePage() {
   const { language } = useLanguage();
-  const [messages, setMessages] = useState<HistoryMessage[]>([]);
+  const initialSession = useMemo(loadInitialGuestSession, []);
+  const [messages, setMessages] = useState<HistoryMessage[]>(initialSession.messages);
   const [isSending, setIsSending] = useState(false);
   const [sendingStartedAtMs, setSendingStartedAtMs] = useState<number | null>(null);
-  const [html, setHtml] = useState<string | null>(null);
+  const [html, setHtml] = useState<string | null>(initialSession.html);
   const [inputErrorMessage, setInputErrorMessage] = useState("");
-  const [authGateOpen, setAuthGateOpen] = useState(false);
-  const [pendingDownloadPrompt, setPendingDownloadPrompt] = useState("");
-  const [mobileTab, setMobileTab] = useState<"chat" | "preview">("chat");
-  const [promptsUsed, setPromptsUsed] = useState(0);
+  const [previewGateOpen, setPreviewGateOpen] = useState(false);
+  const [promptsUsed, setPromptsUsed] = useState(initialSession.promptsUsed);
+  const [websiteWindowExpiresAtMs, setWebsiteWindowExpiresAtMs] = useState<number | null>(
+    initialSession.websiteWindowExpiresAtMs
+  );
+  const [windowClockNowMs, setWindowClockNowMs] = useState<number>(Date.now());
 
   const hasPreview = typeof html === "string" && html.trim().length > 0;
   const hasLimitErrorMessage =
     inputErrorMessage === t("guestLimitReached", language) ||
     inputErrorMessage.toLowerCase().includes("limit");
+  const isWebsiteWindowActive =
+    websiteWindowExpiresAtMs !== null && windowClockNowMs < websiteWindowExpiresAtMs;
+  const websiteWindowRemainingMs =
+    websiteWindowExpiresAtMs !== null
+      ? Math.max(0, websiteWindowExpiresAtMs - windowClockNowMs)
+      : 0;
   const isLimitReached = promptsUsed >= MAX_GUEST_PROMPTS;
+  const isGuestInputLocked = isLimitReached || isWebsiteWindowActive;
   const displayedInputError = hasLimitErrorMessage ? "" : inputErrorMessage;
   const guestInputPlaceholder = isSending
     ? t("generating", language)
-    : t("inputPlaceholder", language);
+    : isWebsiteWindowActive
+      ? `Next guest reset in ${formatRemainingWindow(websiteWindowRemainingMs)}`
+      : t("inputPlaceholder", language);
   const shouldShowGeneratingIndicator =
     isSending && messages.some((message) => message.role === "user");
 
+  useEffect(() => {
+    if (typeof window === "undefined") {
+      return;
+    }
+
+    if (
+      messages.length === 0 &&
+      !html &&
+      promptsUsed === 0 &&
+      websiteWindowExpiresAtMs === null
+    ) {
+      clearPersistedGuestSession();
+      return;
+    }
+
+    const payload: PersistedGuestSession = {
+      messages,
+      html,
+      promptsUsed,
+      websiteWindowExpiresAtMs,
+    };
+
+    window.localStorage.setItem(GUEST_SESSION_STORAGE_KEY, JSON.stringify(payload));
+  }, [messages, html, promptsUsed, websiteWindowExpiresAtMs]);
+
+  useEffect(() => {
+    if (websiteWindowExpiresAtMs === null) {
+      return;
+    }
+
+    const intervalId = window.setInterval(() => {
+      const now = Date.now();
+      setWindowClockNowMs(now);
+
+      if (now < websiteWindowExpiresAtMs) {
+        return;
+      }
+
+      window.clearInterval(intervalId);
+      clearPersistedGuestSession();
+      setMessages([]);
+      setHtml(null);
+      setPromptsUsed(0);
+      setWebsiteWindowExpiresAtMs(null);
+      setPreviewGateOpen(false);
+      setInputErrorMessage("");
+    }, 1000);
+
+    return () => {
+      window.clearInterval(intervalId);
+    };
+  }, [websiteWindowExpiresAtMs]);
+
   async function handleSend(content: string) {
-    if (isSending) return;
+    if (isSending || isGuestInputLocked) return;
     const trimmed = content.trim();
     if (!trimmed) return;
 
@@ -147,6 +319,13 @@ export default function GuestHomePage() {
         const nextHtml = aiResponse.html.trim();
         if (nextHtml.length > 0) {
           setHtml(aiResponse.html);
+          setWebsiteWindowExpiresAtMs((previousValue) => {
+            if (previousValue && previousValue > Date.now()) {
+              return previousValue;
+            }
+
+            return Date.now() + GUEST_WEBSITE_WINDOW_MS;
+          });
         }
       }
 
@@ -169,32 +348,50 @@ export default function GuestHomePage() {
     }
   }
 
-  function openAuthGate(prompt: string) {
-    if (!prompt.trim()) return;
-    setPendingDownloadPrompt(prompt);
-    setAuthGateOpen(true);
-  }
-
-  function queueDownloadAndContinue() {
-    if (!pendingDownloadPrompt) return;
-    savePendingGuestChatSession(messages);
-    savePendingGuestZipPrompt(pendingDownloadPrompt);
-    setAuthGateOpen(false);
-    setPendingDownloadPrompt("");
-  }
-
-  function closeAuthGate() {
-    setAuthGateOpen(false);
-    setPendingDownloadPrompt("");
-  }
-
   function queueChatSessionForAuth() {
     savePendingGuestChatSession(messages);
   }
 
-  // Get the first user message content for the download prompt
-  const firstUserMessage = messages.find((m) => m.role === "user");
-  const downloadPrompt = firstUserMessage?.content ?? "";
+  function handlePreviewRequest() {
+    if (!hasPreview) {
+      return;
+    }
+
+    setPreviewGateOpen(true);
+  }
+
+  function closePreviewGate() {
+    setPreviewGateOpen(false);
+  }
+
+  const shouldShowWindowLockBanner = isWebsiteWindowActive;
+
+  const windowLockBanner = shouldShowWindowLockBanner ? (
+    <div className="mx-auto mb-2 w-full max-w-4xl rounded-2xl border border-[var(--app-card-border)] bg-[var(--app-card-bg)] p-4">
+      <h3 className="font-semibold text-[var(--app-text-heading)]">
+        Guest website saved for 12 hours
+      </h3>
+      <p className="mt-1 text-sm text-[var(--app-text-secondary)]">
+        Your generated website is kept for {formatRemainingWindow(websiteWindowRemainingMs)}. Sign in to continue building now, or wait for the guest reset.
+      </p>
+      <div className="mt-3 grid gap-2 sm:grid-cols-2">
+        <Link
+          href="/signin"
+          onClick={queueChatSessionForAuth}
+          className="rounded-lg border border-[var(--app-card-border)] px-3 py-2.5 text-center text-sm font-medium text-[var(--app-text-secondary)] transition hover:border-[var(--app-text-tertiary)] hover:text-[var(--app-text-heading)]"
+        >
+          {t("signIn", language)}
+        </Link>
+        <Link
+          href="/signup"
+          onClick={queueChatSessionForAuth}
+          className="rounded-lg bg-[var(--app-btn-primary-bg)] px-3 py-2.5 text-center text-sm font-semibold text-[var(--app-btn-primary-text)] shadow-[var(--app-shadow-sm)] transition hover:bg-[var(--app-btn-primary-hover)] hover:-translate-y-px active:translate-y-0"
+        >
+          {t("signUp", language)}
+        </Link>
+      </div>
+    </div>
+  ) : null;
 
   return (
     <div className="flex min-h-0 flex-1 flex-col bg-[var(--app-bg)]">
@@ -240,121 +437,44 @@ export default function GuestHomePage() {
         </p>
       </header>
 
-      {/* Mobile tab bar */}
-      <div
-        className={`flex shrink-0 border-b border-[var(--app-border)] md:hidden overflow-hidden transition-all duration-300 ${
-          hasPreview ? "max-h-12 opacity-100" : "max-h-0 opacity-0"
-        }`}
-      >
-          <button
-            type="button"
-            onClick={() => setMobileTab("chat")}
-            className={`flex flex-1 items-center justify-center gap-2 px-4 py-3 text-sm font-medium transition ${
-              mobileTab === "chat"
-                ? "border-b-2 border-[var(--app-btn-primary-bg)] text-[var(--app-text-heading)]"
-                : "text-[var(--app-text-tertiary)] hover:text-[var(--app-text-secondary)]"
-            }`}
-          >
-            <MessageCircle size={16} />
-            {t("chat", language)}
-          </button>
-          <button
-            type="button"
-            onClick={() => setMobileTab("preview")}
-            className={`flex flex-1 items-center justify-center gap-2 px-4 py-3 text-sm font-medium transition ${
-              mobileTab === "preview"
-                ? "border-b-2 border-[var(--app-btn-primary-bg)] text-[var(--app-text-heading)]"
-                : "text-[var(--app-text-tertiary)] hover:text-[var(--app-text-secondary)]"
-            }`}
-          >
-            <Eye size={16} />
-            {t("preview", language)}
-          </button>
-      </div>
-
-      {/* Desktop: side-by-side layout */}
-      <div className="hidden min-h-0 flex-1 md:flex">
+      <div className="flex min-h-0 flex-1">
         <div className="flex min-w-0 flex-1 flex-col">
           <ChatPanel
             messages={messages}
             onSend={handleSend}
+            onPreviewRequest={handlePreviewRequest}
+            showPreviewGateButton
+            hasPreview={hasPreview}
             isSending={shouldShowGeneratingIndicator}
             sendingStartedAtMs={sendingStartedAtMs}
             currentUserAvatarUrl={null}
             showHeader={false}
-            centerInputWhenEmpty={!hasPreview}
+            centerInputWhenEmpty
             inputPlaceholder={guestInputPlaceholder}
             inputErrorMessage={displayedInputError}
+            disableInput={isGuestInputLocked}
             inputBanner={
-              isLimitReached ? (
+              shouldShowWindowLockBanner
+                ? windowLockBanner
+                : isLimitReached ? (
                 <GuestLimitBanner
                   language={language}
                   queueChatSessionForAuth={queueChatSessionForAuth}
                 />
-              ) : null
-            }
-          />
-        </div>
-
-        {hasPreview && (
-          <div
-            className="shrink-0 bg-[var(--app-bg-soft)]/90 shadow-[-12px_0_32px_rgba(0,0,0,0.15)]"
-            style={{ width: "55%" }}
-          >
-            <PreviewErrorBoundary>
-              <PreviewPanel
-                html={html}
-                onDownload={() => openAuthGate(downloadPrompt)}
-              />
-            </PreviewErrorBoundary>
-          </div>
-        )}
-      </div>
-
-      {/* Mobile: tab-switched views */}
-      <div className="flex min-h-0 flex-1 flex-col md:hidden">
-        <div className={`min-h-0 flex-1 flex-col ${!hasPreview || mobileTab === "chat" ? "flex" : "hidden"}`}>
-          <ChatPanel
-            messages={messages}
-            onSend={handleSend}
-            isSending={shouldShowGeneratingIndicator}
-            sendingStartedAtMs={sendingStartedAtMs}
-            currentUserAvatarUrl={null}
-            showHeader={false}
-            centerInputWhenEmpty={!hasPreview}
-            inputPlaceholder={guestInputPlaceholder}
-            inputErrorMessage={displayedInputError}
-            inputBanner={
-              isLimitReached ? (
-                <GuestLimitBanner
-                  language={language}
-                  queueChatSessionForAuth={queueChatSessionForAuth}
-                />
-              ) : null
+                ) : null
             }
             emptyStateMobileTuning
             pinDisclaimerToBottomOnMobile
           />
         </div>
-
-        {hasPreview && mobileTab === "preview" && (
-          <div className="min-h-0 flex-1">
-            <PreviewErrorBoundary>
-              <PreviewPanel
-                html={html}
-                onDownload={() => openAuthGate(downloadPrompt)}
-              />
-            </PreviewErrorBoundary>
-          </div>
-        )}
       </div>
 
-      {authGateOpen ? (
+      {previewGateOpen ? (
         <div
           className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 p-4 backdrop-blur-sm"
           onClick={(event) => {
             if (event.target === event.currentTarget) {
-              closeAuthGate();
+              closePreviewGate();
             }
           }}
         >
@@ -362,17 +482,17 @@ export default function GuestHomePage() {
             <div className="flex items-start justify-between gap-4">
               <div>
                 <h3 className="text-lg font-semibold text-[var(--app-text-heading)]">
-                  Sign in required
+                  {t("previewGateTitle", language)}
                 </h3>
                 <p className="mt-1 text-sm text-[var(--app-text-secondary)]">
-                  Create an account or sign in to download this ZIP package.
+                  {t("previewGateDesc", language)}
                 </p>
               </div>
               <button
                 type="button"
-                onClick={closeAuthGate}
+                onClick={closePreviewGate}
                 className="rounded-lg p-2 text-[var(--app-text-tertiary)] transition hover:bg-[var(--app-hover-bg-strong)] hover:text-[var(--app-text-heading)]"
-                title="Close dialog"
+                title={t("close", language)}
               >
                 <X size={16} />
               </button>
@@ -381,14 +501,20 @@ export default function GuestHomePage() {
             <div className="mt-5 grid gap-2.5 sm:grid-cols-2">
               <Link
                 href="/signin"
-                onClick={queueDownloadAndContinue}
+                onClick={() => {
+                  queueChatSessionForAuth();
+                  closePreviewGate();
+                }}
                 className="rounded-lg border border-[var(--app-card-border)] px-3 py-2.5 text-center text-sm font-medium text-[var(--app-text-secondary)] transition hover:border-[var(--app-text-tertiary)] hover:text-[var(--app-text-heading)]"
               >
                 {t("signIn", language)}
               </Link>
               <Link
                 href="/signup"
-                onClick={queueDownloadAndContinue}
+                onClick={() => {
+                  queueChatSessionForAuth();
+                  closePreviewGate();
+                }}
                 className="rounded-lg bg-[var(--app-btn-primary-bg)] px-3 py-2.5 text-center text-sm font-semibold text-[var(--app-btn-primary-text)] shadow-[var(--app-shadow-sm)] transition hover:bg-[var(--app-btn-primary-hover)] hover:-translate-y-px active:translate-y-0"
               >
                 {t("signUp", language)}

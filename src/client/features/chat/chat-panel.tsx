@@ -40,9 +40,17 @@ type ChatPanelProps = {
   chatId?: string;
   chatTitle?: string;
   messages: HistoryMessage[];
+  userImagesForLastMessage?: Array<{
+    fileId: string;
+    fileName: string;
+    dataUri: string;
+    label: string;
+  }>;
   onSend: (message: string) => void;
   onImagesChange?: (images: UserImage[]) => void;
   onTogglePreview?: () => void;
+  onPreviewRequest?: () => void;
+  showPreviewGateButton?: boolean;
   previewOpen?: boolean;
   hasPreview?: boolean;
   isSending?: boolean;
@@ -69,9 +77,12 @@ export default function ChatPanel({
   chatId,
   chatTitle,
   messages,
+  userImagesForLastMessage = [],
   onSend,
   onImagesChange,
   onTogglePreview,
+  onPreviewRequest,
+  showPreviewGateButton = false,
   previewOpen = false,
   hasPreview = false,
   isSending = false,
@@ -93,6 +104,8 @@ export default function ChatPanel({
   const isRtlLanguage = language === "ar" || language === "ku";
   const scrollRef = useRef<HTMLDivElement>(null);
   const visibleMessages = messages.filter((msg) => msg.role !== "system");
+  const lastUserMessageId =
+    [...visibleMessages].reverse().find((msg) => msg.role === "user")?.id ?? null;
   const shouldCenterInput = centerInputWhenEmpty && visibleMessages.length === 0;
   const emptyStateTitle = t("emptyStateTitle", language);
   const emptyStateDescription = t("emptyStateDesc", language);
@@ -180,6 +193,8 @@ export default function ChatPanel({
             <ChatInput
               onSend={onSend}
               onTogglePreview={onTogglePreview}
+              onPreviewRequest={onPreviewRequest}
+              showPreviewGateButton={showPreviewGateButton}
               previewOpen={previewOpen}
               hasPreview={hasPreview}
               chatId={chatId}
@@ -228,6 +243,11 @@ export default function ChatPanel({
                       role={msg.role}
                       content={msg.content}
                       userAvatarUrl={currentUserAvatarUrl}
+                      attachedImages={
+                        msg.role === "user" && msg.id === lastUserMessageId
+                          ? userImagesForLastMessage
+                          : undefined
+                      }
                     />
                     {inlineAttachments
                       .filter((attachment) => attachment.anchorMessageId === msg.id)
@@ -277,6 +297,8 @@ export default function ChatPanel({
             <ChatInput
               onSend={onSend}
               onTogglePreview={onTogglePreview}
+              onPreviewRequest={onPreviewRequest}
+              showPreviewGateButton={showPreviewGateButton}
               previewOpen={previewOpen}
               hasPreview={hasPreview}
               chatId={chatId}

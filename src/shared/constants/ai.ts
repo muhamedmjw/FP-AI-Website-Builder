@@ -4,6 +4,8 @@ export const AI_MODELS = {
   FALLBACK: "deepseek-reasoner",
 } as const;
 
+// Client-facing display model override (NEXT_PUBLIC_*).
+// Server-side generation uses DEEPSEEK_MODEL_PRIMARY in ai-service.ts.
 export const PRIMARY_MODEL =
   process.env.NEXT_PUBLIC_DEEPSEEK_MODEL_PRIMARY?.trim() || AI_MODELS.PRIMARY;
 

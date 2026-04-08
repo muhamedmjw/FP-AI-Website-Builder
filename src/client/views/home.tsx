@@ -3,8 +3,9 @@
 import { FormEvent, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { getSupabaseBrowserClient } from "@/client/lib/supabase-browser";
-import { addMessage, createChat, deleteChat } from "@/shared/services/chat-service";
+import { addMessage, createChat } from "@/shared/services/chat-service";
 import { sendChatMessage } from "@/client/lib/api/chat-api";
+import { markChatGenerationPending } from "@/client/lib/chat-pending-generations";
 import { getCurrentUser } from "@/shared/services/user-service";
 import {
   consumePendingGuestZipPrompt,
@@ -165,19 +166,18 @@ export default function HomePage() {
       }
 
       const chat = await createChat(supabase, user.id, "New Website");
-      try {
-        await sendChatMessage(chat.id, trimmedMessage, language);
-        shouldResetLoadingState = false;
-        router.push(`/chat/${chat.id}`);
-        router.refresh();
-      } catch (error) {
-        try {
-          await deleteChat(supabase, chat.id);
-        } catch {
-          // Ignore cleanup errors.
-        }
-        throw error;
-      }
+      await addMessage(supabase, chat.id, "user", trimmedMessage);
+      markChatGenerationPending(chat.id, Date.now(), null);
+
+      shouldResetLoadingState = false;
+      router.push(`/chat/${chat.id}`);
+      router.refresh();
+
+      void sendChatMessage(chat.id, trimmedMessage, language, {
+        skipUserMessageSave: true,
+      }).catch((error) => {
+        console.error("Background AI send failed after navigation:", error);
+      });
     } catch (error) {
       const raw = error instanceof Error ? error.message : "";
 

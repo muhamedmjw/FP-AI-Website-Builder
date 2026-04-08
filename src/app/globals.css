@@ -1,17 +1,7 @@
 @import "tailwindcss";
 
-@font-face {
-  font-family: "KurdishUI";
-  src:
-    url("/fonts/kurdish/kurdish-ui.woff2") format("woff2"),
-    url("/fonts/kurdish/kurdish-ui.woff") format("woff"),
-    url("/fonts/kurdish/kurdish-ui.ttf") format("truetype");
-  font-display: swap;
-}
-
 :root {
-  --font-ui: var(--font-latin), "Segoe UI", monospace;
-  --font-logo: var(--font-logo-var, "Bungee", monospace);
+  --font-ui: var(--font-readex), sans-serif;
   --app-bg: #0a0a0a;
   --app-bg-soft: #111111;
   --app-panel: #121212;
@@ -130,19 +120,6 @@ body {
   padding-left: env(safe-area-inset-left);
   padding-right: env(safe-area-inset-right);
   min-height: 100dvh;
-}
-
-html[lang="en"] body {
-  --font-ui: var(--font-latin), "Segoe UI", monospace;
-}
-
-html[lang="ku"] body {
-  font-family: "KurdishUI", "Noto Kufi Arabic", "Cairo", sans-serif;
-}
-
-html[lang="ar"] body {
-  font-family: "Cairo", "Noto Sans Arabic", sans-serif;
-  font-weight: 600;
 }
 
 button, [role="button"], a, summary, [type="submit"], [type="reset"], [type="button"] {

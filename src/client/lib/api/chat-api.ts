@@ -22,12 +22,18 @@ export type SendChatMessageResponse = {
 export async function sendChatMessage(
   chatId: string,
   content: string,
-  language: AppLanguage
+  language: AppLanguage,
+  options?: { skipUserMessageSave?: boolean }
 ): Promise<SendChatMessageResponse> {
   const response = await fetch("/api/chat/send", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ chatId, content, language }),
+    body: JSON.stringify({
+      chatId,
+      content,
+      language,
+      skipUserMessageSave: options?.skipUserMessageSave === true,
+    }),
   });
 
   let data: Record<string, unknown> | null = null;

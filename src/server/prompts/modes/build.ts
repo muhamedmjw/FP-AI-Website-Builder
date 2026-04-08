@@ -41,5 +41,8 @@ user image fits.
 User-uploaded images always take priority over Brave/Unsplash image
 replacements. Only use Brave/Unsplash for image slots that no user
 image covers.
+If a data URI appears as "[image data truncated — use this image for
+the relevant section]", treat it as the original user image and still
+use it for the best matching section.
 {USER_IMAGES_BLOCK}
 `.trim();

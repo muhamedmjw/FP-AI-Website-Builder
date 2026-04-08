@@ -1,3 +1,4 @@
+// TODO: unused component - consider removing
 import { Download, Package } from "lucide-react";
 
 type ZipArtifactCardProps = {

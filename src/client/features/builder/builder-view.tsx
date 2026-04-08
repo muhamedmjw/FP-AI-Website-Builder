@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowLeftRight, Eye, MessageCircle } from "lucide-react";
-import { HistoryMessage } from "@/shared/types/database";
+import { HistoryMessage, UserImage } from "@/shared/types/database";
 import { ChatApiError, sendChatMessage } from "@/client/lib/api/chat-api";
 import { downloadWebsiteZip } from "@/client/lib/zip-download";
 import { useMobileHeaderTitle } from "@/client/components/mobile-header-title-context";
@@ -70,6 +70,10 @@ export default function BuilderView({
 
   const [messages, setMessages] = useState<HistoryMessage[]>(initialMessages);
   const [html, setHtml] = useState<string | null>(initialHtml);
+  const currentInputImagesRef = useRef<UserImage[]>([]);
+  const [lastSentImages, setLastSentImages] = useState<
+    Array<{ fileId: string; fileName: string; dataUri: string; label: string }>
+  >([]);
   const currentHtmlRef = useRef<string>(initialHtml ?? "");
   const lastSavedHtml = useRef<string>(initialHtml ?? "");
   const [isRequestInFlight, setIsRequestInFlight] = useState(false);
@@ -106,6 +110,11 @@ export default function BuilderView({
     currentHtmlRef.current = initialHtml ?? "";
     lastSavedHtml.current = initialHtml ?? "";
   }, [chatId, initialHtml]);
+
+  useEffect(() => {
+    currentInputImagesRef.current = [];
+    setLastSentImages([]);
+  }, [chatId]);
 
   const syncPendingGenerationState = useCallback(() => {
     const pending = getPendingChatGeneration(chatId);
@@ -317,6 +326,15 @@ export default function BuilderView({
   }
 
   async function handleSend(content: string) {
+    const outgoingImages = currentInputImagesRef.current.map((image, index) => ({
+      fileId: image.fileId,
+      fileName: image.fileName,
+      dataUri: image.dataUri,
+      label: `${t("imageLabel", language)} ${index + 1}`,
+    }));
+
+    setLastSentImages(outgoingImages);
+
     // Optimistically add the user message to the UI
     const tempUserMessage: HistoryMessage = {
       id: `temp-${Date.now()}`,
@@ -396,11 +414,16 @@ export default function BuilderView({
       setInputErrorMessage(friendly);
       if (!isAbortLikeError) {
         setMessages((prev) => prev.filter((msg) => msg.id !== tempUserMessage.id));
+        setLastSentImages([]);
       }
     } finally {
       setIsRequestInFlight(false);
     }
   }
+
+  const handleInputImagesChange = useCallback((images: UserImage[]) => {
+    currentInputImagesRef.current = images;
+  }, []);
 
   const handleEditorChange = useCallback((nextHtml: string) => {
     currentHtmlRef.current = nextHtml;
@@ -512,7 +535,9 @@ export default function BuilderView({
             chatId={chatId}
             chatTitle={chatTitle}
             messages={messages}
+            userImagesForLastMessage={lastSentImages}
             onSend={handleSend}
+            onImagesChange={handleInputImagesChange}
             onTogglePreview={() => setPreviewOpen((prev) => !prev)}
             previewOpen={previewOpen}
             hasPreview={hasPreview}
@@ -575,7 +600,9 @@ export default function BuilderView({
             chatId={chatId}
             chatTitle={chatTitle}
             messages={messages}
+            userImagesForLastMessage={lastSentImages}
             onSend={handleSend}
+            onImagesChange={handleInputImagesChange}
             onTogglePreview={() => setPreviewOpen((prev) => !prev)}
             previewOpen={previewOpen}
             hasPreview={hasPreview}

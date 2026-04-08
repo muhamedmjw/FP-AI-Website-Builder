@@ -1,13 +1,13 @@
 import type { Metadata, Viewport } from "next";
-import { Geist_Mono } from "next/font/google";
+import { Readex_Pro } from "next/font/google";
 import { Bungee } from "next/font/google";
 import "./globals.css"; // Global styles for the application
 import Providers from "@/client/components/providers";
 
-const geistMono = Geist_Mono({
-  subsets: ["latin"],
-  variable: "--font-latin",
-  weight: ["400", "500", "600", "700"],
+const readexPro = Readex_Pro({
+  subsets: ["latin", "arabic"],
+  variable: "--font-readex",
+  weight: ["300", "400", "500", "600", "700"],
 });
 
 const bungee = Bungee({
@@ -53,7 +53,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" data-theme="dark" suppressHydrationWarning>
-      <body className={`${geistMono.variable} ${bungee.variable} antialiased`}>
+      <body className={`${readexPro.variable} ${bungee.variable} antialiased`}>
         <script dangerouslySetInnerHTML={{ __html: THEME_INIT_SCRIPT }} />
         <Providers>{children}</Providers>
       </body>

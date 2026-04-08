@@ -5,25 +5,24 @@ import { ChangeEvent, FormEvent, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import {
   Archive,
-  Check,
-  ChevronDown,
   ChevronUp,
-  ExternalLink,
   Globe,
   Github,
   LogOut,
   Moon,
-  PencilLine,
-  RefreshCw,
   Settings,
   Sun,
-  Upload,
-  UserCircle2,
-  X,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { getSupabaseBrowserClient } from "@/client/lib/supabase-browser";
 import { useLanguage } from "@/client/lib/language-context";
+import SettingsModal from "@/client/features/sidebar/settings-modal";
+import DeploymentsModal, {
+  DeploymentModalRow,
+} from "@/client/features/sidebar/deployments-modal";
+import ArchivedChatsModal, {
+  ArchivedChatModalRow,
+} from "@/client/features/sidebar/archived-chats-modal";
 import { t } from "@/shared/constants/translations";
 import { isMissingSessionError } from "@/shared/utils/auth-errors";
 import { MAX_AVATAR_FILE_SIZE } from "@/shared/constants/limits";
@@ -53,18 +52,7 @@ type SidebarFooterProps = {
   }) => void;
 };
 
-type DeploymentRow = {
-  websiteId: string;
-  chatId: string | null;
-  websiteName: string;
-  deployUrl: string | null;
-  status: string;
-  deployCount: number;
-  firstDeployedAt: string;
-  lastDeployedAt: string;
-  updatedAt: string;
-  netlifySiteId: string | null;
-};
+type DeploymentRow = DeploymentModalRow;
 
 type DeployRecordRow = {
   id: string;
@@ -87,12 +75,7 @@ type ChatSummaryRow = {
   updated_at: string;
 };
 
-type ArchivedChatRow = {
-  id: string;
-  title: string;
-  updated_at: string;
-  archived_at: string | null;
-};
+type ArchivedChatRow = ArchivedChatModalRow;
 
 /**
  * Bottom sidebar account area.
@@ -600,7 +583,7 @@ export default function SidebarFooter({
 
         if (maybeMissingArchivedColumn) {
           throw new Error(
-            "Archive support is not available yet. Run migration_archived_chats.sql first."
+            t("archiveSupportUnavailable", language)
           );
         }
 
@@ -617,7 +600,7 @@ export default function SidebarFooter({
       setArchivedChatsError(
         error instanceof Error
           ? error.message
-          : "Could not load archived chats."
+          : t("archivedChatsLoadFailed", language)
       );
     } finally {
       setIsArchivedChatsLoading(false);
@@ -653,7 +636,7 @@ export default function SidebarFooter({
       setArchivedChatsError(
         error instanceof Error
           ? error.message
-          : "Could not restore this chat."
+          : t("couldNotRestoreChat", language)
       );
     } finally {
       setRestoringChatId(null);
@@ -858,7 +841,7 @@ export default function SidebarFooter({
               className={menuItemClass}
             >
               <Archive size={15} />
-              Archived chats
+              {t("archivedChats", language)}
             </button>
 
             <a
@@ -895,461 +878,85 @@ export default function SidebarFooter({
         )}
       </div>
 
-      {settingsOpen && createPortal(
-        <div
-          className={settingsOverlayClass}
-          onClick={(event) => {
-            if (event.target === event.currentTarget) {
-              setSettingsOpen(false);
-            }
-          }}
-        >
-          <div className={settingsModalClass}>
-            <div className="flex items-center justify-between px-6 py-4">
-              <div>
-                <h3 className={settingsTitleClass}>{t("settingsTitle", language)}</h3>
-                <p className={settingsSubtitleClass}>
-                  {t("settingsSubtitle", language)}
-                </p>
-              </div>
-              <button
-                type="button"
-                onClick={() => setSettingsOpen(false)}
-                className={closeButtonClass}
-                title="Close settings"
-              >
-                <X size={16} />
-              </button>
-            </div>
+      <SettingsModal
+        isOpen={settingsOpen}
+        language={language}
+        errorMessage={errorMessage}
+        isSaving={isSaving}
+        nameInput={nameInput}
+        emailInput={emailInput}
+        avatarPreview={avatarPreview}
+        settingsAvatarImgError={settingsAvatarImgError}
+        currentLanguageLabel={currentLanguageOption.label}
+        isLanguageMenuOpen={isLanguageMenuOpen}
+        settingsOverlayClass={settingsOverlayClass}
+        settingsModalClass={settingsModalClass}
+        settingsTitleClass={settingsTitleClass}
+        settingsSubtitleClass={settingsSubtitleClass}
+        closeButtonClass={closeButtonClass}
+        avatarPlaceholderClass={avatarPlaceholderClass}
+        secondaryActionButtonClass={secondaryActionButtonClass}
+        removeActionButtonClass={removeActionButtonClass}
+        inputLabelClass={inputLabelClass}
+        inputClass={inputClass}
+        selectInputClass={selectInputClass}
+        cancelButtonClass={cancelButtonClass}
+        fileInputRef={fileInputRef}
+        languageMenuRef={languageMenuRef}
+        languageMenuButtonRef={languageMenuButtonRef}
+        onClose={() => setSettingsOpen(false)}
+        onSubmit={handleSaveSettings}
+        onAvatarFileChange={handleAvatarFileChange}
+        onAvatarError={() => setSettingsAvatarImgError(true)}
+        onRemoveAvatar={handleRemoveAvatar}
+        onNameInputChange={setNameInput}
+        onEmailInputChange={setEmailInput}
+        onToggleLanguageMenu={() => setIsLanguageMenuOpen((prev) => !prev)}
+      />
 
-            <form onSubmit={handleSaveSettings} className="space-y-5 px-6 py-5">
-              <div className="flex items-center gap-4">
-                {avatarPreview && !settingsAvatarImgError ? (
-                  <img
-                    src={avatarPreview}
-                    alt="Profile preview"
-                    loading="lazy"
-                    onError={() => setSettingsAvatarImgError(true)}
-                    className="h-16 w-16 rounded-full object-cover border border-[var(--app-card-border)]"
-                  />
-                ) : (
-                  <div className={avatarPlaceholderClass}>
-                    <UserCircle2 size={30} />
-                  </div>
-                )}
+      <DeploymentsModal
+        isOpen={deploymentsOpen}
+        language={language}
+        isLoading={isDeploymentsLoading}
+        deploymentsError={deploymentsError}
+        deployments={deployments}
+        editingWebsiteId={editingWebsiteId}
+        editingWebsiteName={editingWebsiteName}
+        renamingWebsiteId={renamingWebsiteId}
+        settingsOverlayClass={settingsOverlayClass}
+        deploymentsModalClass={deploymentsModalClass}
+        settingsTitleClass={settingsTitleClass}
+        settingsSubtitleClass={settingsSubtitleClass}
+        closeButtonClass={closeButtonClass}
+        onClose={() => setDeploymentsOpen(false)}
+        onRefresh={() => void loadDeployments()}
+        setEditingWebsiteName={setEditingWebsiteName}
+        onSaveWebsiteName={(row) => void handleSaveWebsiteName(row)}
+        onCancelRename={() => {
+          setEditingWebsiteId(null);
+          setEditingWebsiteName("");
+        }}
+        onStartRename={handleStartRename}
+        formatDateTime={formatDateTime}
+        getDeploymentStatusClass={getDeploymentStatusClass}
+      />
 
-                <div className="flex flex-wrap gap-2">
-                  <button
-                    type="button"
-                    onClick={() => fileInputRef.current?.click()}
-                    className={secondaryActionButtonClass}
-                  >
-                    <Upload size={14} />
-                    {t("uploadPicture", language)}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={handleRemoveAvatar}
-                    className={removeActionButtonClass}
-                  >
-                    {t("removePicture", language)}
-                  </button>
-                </div>
-              </div>
-
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept="image/*"
-                onChange={handleAvatarFileChange}
-                className="hidden"
-              />
-
-              <label className="block space-y-2">
-                <span className={inputLabelClass}>{t("name", language)}</span>
-                <input
-                  type="text"
-                  value={nameInput}
-                  onChange={(event) => setNameInput(event.target.value)}
-                  className={inputClass}
-                />
-              </label>
-
-              <label className="block space-y-2">
-                <span className={inputLabelClass}>{t("email", language)}</span>
-                <input
-                  type="email"
-                  value={emailInput}
-                  onChange={(event) => setEmailInput(event.target.value)}
-                  className={inputClass}
-                />
-              </label>
-
-              <label className="block space-y-2">
-                <span className={inputLabelClass}>{t("language", language)}</span>
-                <div ref={languageMenuRef} className="relative">
-                  <button
-                    ref={languageMenuButtonRef}
-                    type="button"
-                    className={`${selectInputClass} flex items-center justify-between text-left`}
-                    aria-haspopup="menu"
-                    aria-expanded={isLanguageMenuOpen}
-                    onClick={() => setIsLanguageMenuOpen((prev) => !prev)}
-                  >
-                    <span className={currentLanguageOption.code === "en" ? "font-medium" : "font-semibold"}>
-                      {currentLanguageOption.label}
-                    </span>
-                    <ChevronDown
-                      size={16}
-                      className={`shrink-0 text-[var(--app-text-tertiary)] transition ${
-                        isLanguageMenuOpen ? "rotate-180" : ""
-                      }`}
-                      aria-hidden="true"
-                    />
-                  </button>
-                </div>
-              </label>
-
-              {errorMessage ? (
-                <p className="text-sm text-rose-400">{errorMessage}</p>
-              ) : null}
-
-              <div className="flex justify-end gap-2.5 pt-1">
-                <button
-                  type="button"
-                  onClick={() => setSettingsOpen(false)}
-                  className={cancelButtonClass}
-                >
-                  {t("cancel", language)}
-                </button>
-                <button
-                  type="submit"
-                  disabled={isSaving}
-                  className="rounded-lg bg-[var(--app-btn-primary-bg)] px-4 py-2.5 text-sm font-semibold text-[var(--app-btn-primary-text)] shadow-[var(--app-shadow-sm)] transition hover:bg-[var(--app-btn-primary-hover)] hover:shadow-[var(--app-shadow-md)] hover:-translate-y-px active:translate-y-0 disabled:cursor-not-allowed disabled:opacity-60"
-                >
-                  {isSaving ? `${t("saveChanges", language)}...` : t("saveChanges", language)}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>,
-        document.body
-      )}
-
-      {deploymentsOpen &&
-        createPortal(
-          <div
-            className={settingsOverlayClass}
-            onClick={(event) => {
-              if (event.target === event.currentTarget) {
-                setDeploymentsOpen(false);
-              }
-            }}
-          >
-            <div className={deploymentsModalClass}>
-              <div className="flex items-center justify-between gap-3 border-b border-[var(--app-card-border)] px-6 py-4">
-                <div>
-                  <h3 className={settingsTitleClass}>
-                    {t("deployedWebsitesTitle", language)}
-                  </h3>
-                  <p className={settingsSubtitleClass}>
-                    {t("deployedWebsitesSubtitle", language)}
-                  </p>
-                </div>
-                <div className="flex items-center gap-2">
-                  <button
-                    type="button"
-                    onClick={() => void loadDeployments()}
-                    className="inline-flex items-center gap-1.5 rounded-lg bg-[var(--app-hover-bg)] px-3 py-2 text-xs font-medium text-[var(--app-text-secondary)] transition hover:bg-[var(--app-hover-bg-strong)]"
-                  >
-                    <RefreshCw size={14} />
-                    {t("refresh", language)}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setDeploymentsOpen(false)}
-                    className={closeButtonClass}
-                    title="Close deployments"
-                  >
-                    <X size={16} />
-                  </button>
-                </div>
-              </div>
-
-              <div className="max-h-[calc(90vh-90px)] overflow-y-auto px-6 py-5">
-                {isDeploymentsLoading ? (
-                  <p className="text-sm text-[var(--app-text-secondary)]">
-                    {t("loadingDeployedWebsites", language)}
-                  </p>
-                ) : deployments.length === 0 ? (
-                  <div className="rounded-xl border border-[var(--app-card-border)] bg-[var(--app-card-bg)] p-6 text-center text-sm text-[var(--app-text-secondary)]">
-                    {t("noDeployedWebsites", language)}
-                  </div>
-                ) : (
-                  <div className="overflow-x-auto rounded-xl border border-[var(--app-card-border)] bg-[var(--app-card-bg)]">
-                    <table className="min-w-full text-sm">
-                      <thead className="border-b border-[var(--app-card-border)] bg-[var(--app-hover-bg)]/70 text-left text-xs uppercase tracking-wide text-[var(--app-text-tertiary)]">
-                        <tr>
-                          <th className="px-4 py-3">{t("websiteName", language)}</th>
-                          <th className="px-4 py-3">{t("deploymentDomain", language)}</th>
-                          <th className="px-4 py-3">{t("lastUpdated", language)}</th>
-                          <th className="px-4 py-3">{t("deployedAt", language)}</th>
-                          <th className="px-4 py-3">{t("deployStatus", language)}</th>
-                          <th className="px-4 py-3">{t("deployCount", language)}</th>
-                          <th className="px-4 py-3">{t("netlifySiteId", language)}</th>
-                          <th className="px-4 py-3">{t("actions", language)}</th>
-                        </tr>
-                      </thead>
-
-                      <tbody>
-                        {deployments.map((row) => {
-                          const isEditing = editingWebsiteId === row.websiteId;
-                          const isRenaming = renamingWebsiteId === row.websiteId;
-
-                          return (
-                            <tr
-                              key={row.websiteId}
-                              className="border-b border-[var(--app-card-border)]/70 text-[var(--app-text-secondary)] last:border-b-0"
-                            >
-                              <td className="px-4 py-3 align-top">
-                                {isEditing ? (
-                                  <div className="space-y-2">
-                                    <input
-                                      type="text"
-                                      value={editingWebsiteName}
-                                      onChange={(event) =>
-                                        setEditingWebsiteName(event.target.value)
-                                      }
-                                      className="w-full rounded-lg border border-[var(--app-input-border)] bg-[var(--app-input-bg)] px-3 py-2 text-sm text-[var(--app-input-text)] focus:border-[var(--app-input-focus-border)] focus:outline-none"
-                                    />
-                                    <div className="flex items-center gap-2">
-                                      <button
-                                        type="button"
-                                        onClick={() => void handleSaveWebsiteName(row)}
-                                        disabled={isRenaming}
-                                        className="inline-flex items-center gap-1.5 rounded-md bg-[var(--app-btn-primary-bg)] px-2.5 py-1.5 text-xs font-semibold text-[var(--app-btn-primary-text)] transition hover:bg-[var(--app-btn-primary-hover)] disabled:opacity-60"
-                                      >
-                                        <Check size={12} />
-                                        {isRenaming
-                                          ? `${t("saveChanges", language)}...`
-                                          : t("saveChanges", language)}
-                                      </button>
-                                      <button
-                                        type="button"
-                                        onClick={() => {
-                                          setEditingWebsiteId(null);
-                                          setEditingWebsiteName("");
-                                        }}
-                                        className="rounded-md bg-[var(--app-hover-bg)] px-2.5 py-1.5 text-xs text-[var(--app-text-secondary)] transition hover:bg-[var(--app-hover-bg-strong)]"
-                                      >
-                                        {t("cancel", language)}
-                                      </button>
-                                    </div>
-                                  </div>
-                                ) : (
-                                  <>
-                                    <p className="font-semibold text-[var(--app-text-heading)]">
-                                      {row.websiteName}
-                                    </p>
-                                    <p className="mt-1 text-xs text-[var(--app-text-muted)]">
-                                      {t("firstDeployed", language)}: {formatDateTime(row.firstDeployedAt)}
-                                    </p>
-                                  </>
-                                )}
-                              </td>
-
-                              <td className="px-4 py-3">
-                                {row.deployUrl ? (
-                                  <a
-                                    href={row.deployUrl}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className="inline-flex max-w-[220px] items-center gap-1.5 truncate text-[var(--app-text-heading)] hover:underline"
-                                  >
-                                    <span className="truncate">{row.deployUrl}</span>
-                                    <ExternalLink size={12} className="shrink-0" />
-                                  </a>
-                                ) : (
-                                  <span className="text-[var(--app-text-muted)]">-</span>
-                                )}
-                              </td>
-
-                              <td className="px-4 py-3 text-xs">
-                                {formatDateTime(row.updatedAt)}
-                              </td>
-                              <td className="px-4 py-3 text-xs">
-                                {formatDateTime(row.lastDeployedAt)}
-                              </td>
-                              <td className="px-4 py-3">
-                                <span
-                                  className={`inline-flex rounded-full px-2 py-1 text-[10px] font-semibold uppercase tracking-wide ${getDeploymentStatusClass(
-                                    row.status
-                                  )}`}
-                                >
-                                  {row.status}
-                                </span>
-                              </td>
-                              <td className="px-4 py-3 text-center font-medium text-[var(--app-text-heading)]">
-                                {row.deployCount}
-                              </td>
-                              <td className="px-4 py-3 font-mono text-xs text-[var(--app-text-muted)]">
-                                {row.netlifySiteId ? `${row.netlifySiteId.slice(0, 8)}...` : "-"}
-                              </td>
-                              <td className="px-4 py-3">
-                                <div className="flex items-center gap-2">
-                                  {row.chatId ? (
-                                    <button
-                                      type="button"
-                                      onClick={() => handleStartRename(row)}
-                                      className="inline-flex items-center gap-1 rounded-md bg-[var(--app-hover-bg)] px-2.5 py-1.5 text-xs text-[var(--app-text-secondary)] transition hover:bg-[var(--app-hover-bg-strong)]"
-                                    >
-                                      <PencilLine size={12} />
-                                      {t("rename", language)}
-                                    </button>
-                                  ) : null}
-
-                                  {row.deployUrl ? (
-                                    <a
-                                      href={row.deployUrl}
-                                      target="_blank"
-                                      rel="noopener noreferrer"
-                                      className="inline-flex items-center gap-1 rounded-md bg-[var(--app-btn-primary-bg)] px-2.5 py-1.5 text-xs font-semibold text-[var(--app-btn-primary-text)] transition hover:bg-[var(--app-btn-primary-hover)]"
-                                    >
-                                      <ExternalLink size={12} />
-                                      {t("open", language)}
-                                    </a>
-                                  ) : null}
-                                </div>
-                              </td>
-                            </tr>
-                          );
-                        })}
-                      </tbody>
-                    </table>
-                  </div>
-                )}
-
-                {deploymentsError ? (
-                  <p className="mt-4 text-sm text-rose-400">{deploymentsError}</p>
-                ) : null}
-              </div>
-            </div>
-          </div>,
-          document.body
-        )}
-
-      {archivedChatsOpen &&
-        createPortal(
-          <div
-            className={settingsOverlayClass}
-            onClick={(event) => {
-              if (event.target === event.currentTarget) {
-                setArchivedChatsOpen(false);
-              }
-            }}
-          >
-            <div className="w-full max-h-[90vh] overflow-hidden rounded-t-2xl border border-[var(--app-card-border)] bg-[var(--app-panel)] shadow-[var(--app-shadow-lg)] sm:max-w-4xl sm:rounded-2xl">
-              <div className="flex items-center justify-between gap-3 border-b border-[var(--app-card-border)] px-6 py-4">
-                <div>
-                  <h3 className={settingsTitleClass}>Archived chats</h3>
-                  <p className={settingsSubtitleClass}>
-                    Restore chats back to your sidebar anytime.
-                  </p>
-                </div>
-                <div className="flex items-center gap-2">
-                  <button
-                    type="button"
-                    onClick={() => void loadArchivedChats()}
-                    className="inline-flex items-center gap-1.5 rounded-lg bg-[var(--app-hover-bg)] px-3 py-2 text-xs font-medium text-[var(--app-text-secondary)] transition hover:bg-[var(--app-hover-bg-strong)]"
-                  >
-                    <RefreshCw size={14} />
-                    {t("refresh", language)}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setArchivedChatsOpen(false)}
-                    className={closeButtonClass}
-                    title="Close archived chats"
-                  >
-                    <X size={16} />
-                  </button>
-                </div>
-              </div>
-
-              <div className="max-h-[calc(90vh-90px)] overflow-y-auto px-6 py-5">
-                {isArchivedChatsLoading ? (
-                  <p className="text-sm text-[var(--app-text-secondary)]">
-                    Loading archived chats...
-                  </p>
-                ) : archivedChats.length === 0 ? (
-                  <div className="rounded-xl border border-[var(--app-card-border)] bg-[var(--app-card-bg)] p-6 text-center text-sm text-[var(--app-text-secondary)]">
-                    No archived chats.
-                  </div>
-                ) : (
-                  <div className="overflow-x-auto rounded-xl border border-[var(--app-card-border)] bg-[var(--app-card-bg)]">
-                    <table className="min-w-full text-sm">
-                      <thead className="border-b border-[var(--app-card-border)] bg-[var(--app-hover-bg)]/70 text-left text-xs uppercase tracking-wide text-[var(--app-text-tertiary)]">
-                        <tr>
-                          <th className="px-4 py-3">Chat</th>
-                          <th className="px-4 py-3">Archived at</th>
-                          <th className="px-4 py-3">Last updated</th>
-                          <th className="px-4 py-3">Actions</th>
-                        </tr>
-                      </thead>
-
-                      <tbody>
-                        {archivedChats.map((chat) => {
-                          const isRestoring = restoringChatId === chat.id;
-
-                          return (
-                            <tr
-                              key={chat.id}
-                              className="border-b border-[var(--app-card-border)]/70 text-[var(--app-text-secondary)] last:border-b-0"
-                            >
-                              <td className="px-4 py-3">
-                                <p className="font-semibold text-[var(--app-text-heading)]">
-                                  {chat.title?.trim() || t("untitledWebsite", language)}
-                                </p>
-                              </td>
-                              <td className="px-4 py-3 text-xs">
-                                {chat.archived_at ? formatDateTime(chat.archived_at) : "-"}
-                              </td>
-                              <td className="px-4 py-3 text-xs">
-                                {formatDateTime(chat.updated_at)}
-                              </td>
-                              <td className="px-4 py-3">
-                                <button
-                                  type="button"
-                                  onClick={() => void handleRestoreArchivedChat(chat.id)}
-                                  disabled={isRestoring}
-                                  className="inline-flex items-center gap-1 rounded-md bg-[var(--app-btn-primary-bg)] px-2.5 py-1.5 text-xs font-semibold text-[var(--app-btn-primary-text)] transition hover:bg-[var(--app-btn-primary-hover)] disabled:opacity-60"
-                                >
-                                  {isRestoring ? (
-                                    <>
-                                      <RefreshCw size={12} className="animate-spin" />
-                                      Restoring...
-                                    </>
-                                  ) : (
-                                    "Restore chat"
-                                  )}
-                                </button>
-                              </td>
-                            </tr>
-                          );
-                        })}
-                      </tbody>
-                    </table>
-                  </div>
-                )}
-
-                {archivedChatsError ? (
-                  <p className="mt-4 text-sm text-rose-400">{archivedChatsError}</p>
-                ) : null}
-              </div>
-            </div>
-          </div>,
-          document.body
-        )}
+      <ArchivedChatsModal
+        isOpen={archivedChatsOpen}
+        language={language}
+        isLoading={isArchivedChatsLoading}
+        archivedChatsError={archivedChatsError}
+        restoringChatId={restoringChatId}
+        archivedChats={archivedChats}
+        settingsOverlayClass={settingsOverlayClass}
+        settingsTitleClass={settingsTitleClass}
+        settingsSubtitleClass={settingsSubtitleClass}
+        closeButtonClass={closeButtonClass}
+        onClose={() => setArchivedChatsOpen(false)}
+        onRefresh={() => void loadArchivedChats()}
+        onRestoreChat={(chatId) => void handleRestoreArchivedChat(chatId)}
+        formatDateTime={formatDateTime}
+      />
 
       {settingsOpen &&
         isLanguageMenuOpen &&

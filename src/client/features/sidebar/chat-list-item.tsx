@@ -152,7 +152,7 @@ export default function ChatListItem({
       setDeleteErrorMessage(
         error instanceof Error
           ? error.message
-          : "Could not check deployment status."
+          : t("couldNotCheckDeploymentStatus", language)
       );
     } finally {
       setIsCheckingDeleteContext(false);
@@ -181,7 +181,7 @@ export default function ChatListItem({
       setShowDeleteConfirm(false);
     } catch (error) {
       setDeleteErrorMessage(
-        error instanceof Error ? error.message : "Could not archive this chat."
+        error instanceof Error ? error.message : t("couldNotArchiveChat", language)
       );
     } finally {
       setIsArchiving(false);
@@ -197,7 +197,7 @@ export default function ChatListItem({
       setShowDeleteConfirm(false);
     } catch (error) {
       setDeleteErrorMessage(
-        error instanceof Error ? error.message : "Could not delete this chat."
+        error instanceof Error ? error.message : t("couldNotDeleteChat", language)
       );
     } finally {
       setIsDeleting(false);
@@ -262,12 +262,12 @@ export default function ChatListItem({
             e.stopPropagation();
             setMenuOpen((prev) => !prev);
           }}
-          aria-label={`Open actions for ${chat.title}`}
+          aria-label={`${t("actions", language)}: ${chat.title}`}
           aria-haspopup="menu"
           aria-expanded={menuOpen}
           aria-controls={menuId}
           className={`absolute ${actionButtonSideClass} top-1/2 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-xl text-[var(--app-text-tertiary)] transition-[color,opacity] duration-75 ease-out hover:text-white ${menuOpen ? "" : "md:pointer-events-none md:opacity-0 md:group-hover:pointer-events-auto md:group-hover:opacity-100"}`}
-          title="Actions"
+          title={t("actions", language)}
         >
           <MoreHorizontal size={14} />
         </button>
@@ -300,7 +300,7 @@ export default function ChatListItem({
               className={`flex w-full items-center gap-2 px-3 py-2.5 ${menuTextAlignClass} text-sm text-[var(--app-text-secondary)] transition hover:bg-[var(--app-hover-bg)] hover:text-[var(--app-text-heading)]`}
             >
               <Archive size={13} />
-              Archive
+              {t("archive", language)}
             </button>
             <button
               type="button"
@@ -320,35 +320,37 @@ export default function ChatListItem({
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm">
             <div className="w-full max-w-sm rounded-2xl border border-[var(--app-card-border)] bg-[var(--app-panel)] p-6 shadow-[var(--app-shadow-lg)]">
               <h3 className="text-lg font-semibold text-[var(--app-text-heading)]">
-                {hasLiveDeployment ? "This chat has a live website" : "Delete chat"}
+                {hasLiveDeployment
+                  ? t("chatHasLiveSite", language)
+                  : t("deleteChat", language)}
               </h3>
 
               {isCheckingDeleteContext ? (
                 <div className="mt-4 flex items-center gap-2 text-sm text-[var(--app-text-secondary)]">
                   <Loader2 size={15} className="animate-spin" />
-                  Checking deployment status...
+                  {t("checkingDeploymentStatus", language)}
                 </div>
               ) : hasLiveDeployment ? (
                 <>
                   <p className="mt-2 text-sm text-[var(--app-text-secondary)]">
-                    This project has a live Netlify site. Archive is recommended if you only want to hide it from the sidebar.
+                    {t("archiveRecommended", language)}
                   </p>
 
                   {latestDeployUrl ? (
                     <p className="mt-2 text-xs text-[var(--app-text-muted)]">
-                      Live URL: {latestDeployUrl}
+                      {t("liveUrl", language)}: {latestDeployUrl}
                     </p>
                   ) : null}
 
                   {netlifySiteId ? (
                     <p className="mt-1 text-xs text-[var(--app-text-muted)]">
-                      Site ID: {netlifySiteId}
+                      {t("siteId", language)}: {netlifySiteId}
                     </p>
                   ) : null}
 
                   <label className="mt-4 block space-y-1.5">
                     <span className="text-xs text-[var(--app-text-tertiary)]">
-                      Type the chat title to confirm permanent deletion:
+                      {t("confirmDeleteByTitle", language)}
                     </span>
                     <input
                       type="text"
@@ -361,7 +363,7 @@ export default function ChatListItem({
                 </>
               ) : (
                 <p className="mt-2 text-sm text-[var(--app-text-secondary)]">
-                  {`Delete "${chat.title}"? This cannot be undone.`}
+                  {t("deleteChatCannotUndo", language).replace("{title}", chat.title)}
                 </p>
               )}
 
@@ -393,7 +395,7 @@ export default function ChatListItem({
                     ) : (
                       <Archive size={14} />
                     )}
-                    Archive
+                    {t("archive", language)}
                   </button>
                 ) : null}
 
@@ -409,7 +411,7 @@ export default function ChatListItem({
                   className="inline-flex items-center gap-1.5 rounded-lg bg-rose-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-rose-500 disabled:opacity-60"
                 >
                   {isDeleting ? <Loader2 size={14} className="animate-spin" /> : null}
-                  {hasLiveDeployment ? "Delete + unpublish" : t("delete", language)}
+                  {hasLiveDeployment ? t("deletePlusUnpublish", language) : t("delete", language)}
                 </button>
               </div>
             </div>

@@ -22,6 +22,8 @@ type PostgresLikeError = {
   hint?: string;
 };
 
+const MAX_USER_IMAGE_TOTAL_BYTES = 3 * 1024 * 1024;
+
 function isMissingUploadColumns(error: unknown): boolean {
   if (!error || typeof error !== "object") {
     return false;
@@ -41,6 +43,21 @@ function isMissingUploadColumns(error: unknown): boolean {
 
 function isAppLanguage(value: unknown): value is AppLanguage {
   return value === "en" || value === "ar" || value === "ku";
+}
+
+function estimateDataUriBytes(dataUri: string): number {
+  const commaIndex = dataUri.indexOf(",");
+  if (commaIndex < 0) {
+    return 0;
+  }
+
+  const base64 = dataUri.slice(commaIndex + 1).replace(/\s+/g, "");
+  if (!base64) {
+    return 0;
+  }
+
+  const paddingLength = base64.endsWith("==") ? 2 : base64.endsWith("=") ? 1 : 0;
+  return Math.max(0, Math.floor((base64.length * 3) / 4) - paddingLength);
 }
 
 async function checkUserTokenBudget(
@@ -97,7 +114,8 @@ async function checkUserTokenBudget(
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { chatId, content, language } = body;
+    const { chatId, content, language, skipUserMessageSave } = body;
+    const shouldSkipUserMessageSave = skipUserMessageSave === true;
 
     // Validate input
     if (!chatId || typeof chatId !== "string") {
@@ -169,16 +187,39 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Save user message to DB
-    const userMessage = await addMessage(
-      supabase,
-      chatId,
-      "user",
-      content.trim()
-    );
+    let userMessage = null;
 
-    // Fetch history including the just-saved user message
-    const historyForAI = await getChatMessages(supabase, chatId);
+    if (!shouldSkipUserMessageSave) {
+      userMessage = await addMessage(
+        supabase,
+        chatId,
+        "user",
+        content.trim()
+      );
+    }
+
+    // Fetch history including the latest user message.
+    let historyForAI = await getChatMessages(supabase, chatId);
+
+    if (shouldSkipUserMessageSave) {
+      userMessage = [...historyForAI]
+        .reverse()
+        .find((message) => message.role === "user") ?? null;
+
+      if (!userMessage) {
+        userMessage = await addMessage(
+          supabase,
+          chatId,
+          "user",
+          content.trim()
+        );
+        historyForAI = await getChatMessages(supabase, chatId);
+      }
+    }
+
+    if (!userMessage) {
+      throw new Error("Unable to resolve user message for this request.");
+    }
 
     // Get website language and existing HTML for edit mode detection
     const existingWebsite = await getWebsiteByChatId(supabase, chatId);
@@ -189,29 +230,65 @@ export async function POST(request: NextRequest) {
       ? await getGeneratedHtml(supabase, existingWebsite.id)
       : null;
 
-    const userImages = existingWebsite
-      ? await (async () => {
-          const { data, error } = await supabase
-            .from("files")
-            .select("file_name, content")
-            .eq("website_id", existingWebsite.id)
-            .eq("is_user_upload", true)
-            .order("created_at", { ascending: true });
+    let userImages: Array<{ fileName: string; dataUri: string }> = [];
 
-          if (error) {
-            if (isMissingUploadColumns(error)) {
-              return [];
-            }
+    if (existingWebsite) {
+      try {
+        const { data, error } = await supabase
+          .from("files")
+          .select("file_name, content")
+          .eq("website_id", existingWebsite.id)
+          .eq("is_user_upload", true)
+          .order("created_at", { ascending: true });
 
-            throw error;
-          }
+        if (error) {
+          throw error;
+        }
 
-          return (data ?? []).map((row) => ({
-            fileName: row.file_name,
-            dataUri: row.content,
-          }));
-        })()
-      : [];
+        userImages = (data ?? []).map((row) => ({
+          fileName: row.file_name,
+          dataUri: row.content,
+        }));
+      } catch (error) {
+        if (isMissingUploadColumns(error)) {
+          userImages = [];
+        } else {
+          throw error;
+        }
+      }
+    }
+
+    const totalUserImageBytes = userImages.reduce(
+      (sum, image) => sum + estimateDataUriBytes(image.dataUri),
+      0
+    );
+
+    if (totalUserImageBytes > MAX_USER_IMAGE_TOTAL_BYTES) {
+      const limitedUserImages: Array<{ fileName: string; dataUri: string }> = [];
+      let usedBytes = 0;
+
+      for (const image of userImages) {
+        const imageBytes = estimateDataUriBytes(image.dataUri);
+        if (usedBytes + imageBytes > MAX_USER_IMAGE_TOTAL_BYTES) {
+          break;
+        }
+
+        limitedUserImages.push(image);
+        usedBytes += imageBytes;
+      }
+
+      console.warn(
+        "User image payload exceeded 3MB; truncating images passed to AI.",
+        {
+          originalCount: userImages.length,
+          keptCount: limitedUserImages.length,
+          totalUserImageBytes,
+          keptBytes: usedBytes,
+        }
+      );
+
+      userImages = limitedUserImages;
+    }
 
     // Call DeepSeek AI — pass existingHtml so edit mode activates correctly
     const aiResponse = await generateAIResponse(

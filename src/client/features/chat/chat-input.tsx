@@ -15,9 +15,50 @@ import type { UserImage } from "@/shared/types/database";
 
 const CHAT_INPUT_MAX_HEIGHT_PX = 140;
 
+function PreviewDocumentIcon({
+  active,
+}: {
+  active: boolean;
+}) {
+  return (
+    <svg
+      width="18"
+      height="18"
+      viewBox="0 0 18 18"
+      fill="none"
+      className={`transition-colors ${
+        active
+          ? "text-[var(--app-text-heading)]"
+          : "text-[var(--app-text-secondary)]"
+      }`}
+      aria-hidden="true"
+    >
+      <path
+        d="M3 2h8l4 4v10a1 1 0 01-1 1H3a1 1 0 01-1-1V3a1 1 0 011-1z"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.5"
+        strokeLinejoin="round"
+      />
+      <path
+        d="M11 2v4h4"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.5"
+        strokeLinejoin="round"
+      />
+      <line x1="5" y1="9" x2="13" y2="9" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" />
+      <line x1="5" y1="12" x2="13" y2="12" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" />
+      <line x1="5" y1="15" x2="10" y2="15" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" />
+    </svg>
+  );
+}
+
 type ChatInputProps = {
   onSend: (message: string) => void;
   onTogglePreview?: () => void;
+  onPreviewRequest?: () => void;
+  showPreviewGateButton?: boolean;
   previewOpen?: boolean;
   hasPreview?: boolean;
   chatId?: string;
@@ -33,6 +74,8 @@ type ChatInputProps = {
 export default function ChatInput({
   onSend,
   onTogglePreview,
+  onPreviewRequest,
+  showPreviewGateButton = false,
   previewOpen = false,
   hasPreview = false,
   chatId,
@@ -60,6 +103,12 @@ export default function ChatInput({
   const shouldShowCounter = charCount > MAX_PROMPT_LENGTH * 0.8;
   const isAtPromptLimit = charCount >= MAX_PROMPT_LENGTH;
   const shouldShowPreviewToggle = typeof onTogglePreview === "function" && hasPreview;
+  const shouldShowPreviewGateAction =
+    showPreviewGateButton && typeof onPreviewRequest === "function";
+  const isPreviewGateInteractive = hasPreview && !disabled;
+  const previewGateTooltip = hasPreview
+    ? "Sign in to preview your website"
+    : "Generate a website first";
   const isGuestMode = !chatId;
   const visibleImages = images.slice(0, 6);
   const hiddenImagesCount = Math.max(0, images.length - visibleImages.length);
@@ -191,28 +240,30 @@ export default function ChatInput({
               {images.length > 0 ? (
                 <div className="px-2.5 pb-1.5 pt-1 sm:px-3">
                   <div className="flex flex-wrap items-center gap-2">
-                    {visibleImages.map((image) => (
-                      <div
-                        key={image.fileId}
-                        className="relative h-12 w-12 overflow-hidden rounded-lg border border-[var(--app-card-border)]"
-                      >
-                        {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img
-                          src={image.dataUri}
-                          alt={image.fileName}
-                          className="h-full w-full object-cover"
-                        />
-                        <button
-                          type="button"
-                          onClick={() => {
-                            void handleRemoveImage(image.fileId);
-                          }}
-                          className="absolute -right-1 -top-1 flex h-5 w-5 items-center justify-center rounded-full border border-[var(--app-card-border)] bg-[var(--app-panel)] text-[var(--app-text-secondary)] transition hover:text-[var(--app-text-heading)]"
-                          aria-label="Remove image"
-                          title="Remove image"
-                        >
-                          <X size={12} />
-                        </button>
+                    {visibleImages.map((image, index) => (
+                      <div key={image.fileId} className="w-12">
+                        <div className="relative h-12 w-12 overflow-hidden rounded-lg border border-[var(--app-card-border)]">
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
+                          <img
+                            src={image.dataUri}
+                            alt={image.fileName}
+                            className="h-full w-full object-cover"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => {
+                              void handleRemoveImage(image.fileId);
+                            }}
+                            className="absolute -right-1 -top-1 flex h-5 w-5 items-center justify-center rounded-full border border-[var(--app-card-border)] bg-[var(--app-panel)] text-[var(--app-text-secondary)] transition hover:text-[var(--app-text-heading)]"
+                            aria-label="Remove image"
+                            title="Remove image"
+                          >
+                            <X size={12} />
+                          </button>
+                        </div>
+                        <p className="mt-1 truncate text-center text-[10px] text-[var(--app-text-tertiary)]">
+                          {t("imageLabel", language)} {index + 1}
+                        </p>
                       </div>
                     ))}
                     {hiddenImagesCount > 0 ? (
@@ -305,36 +356,28 @@ export default function ChatInput({
                         aria-hidden="true"
                       />
                     ) : null}
-                    <svg
-                      width="18"
-                      height="18"
-                      viewBox="0 0 18 18"
-                      fill="none"
-                      className={`transition-colors ${
-                        previewOpen
-                          ? "text-[var(--app-text-heading)]"
-                          : "text-[var(--app-text-secondary)]"
-                      }`}
-                      aria-hidden="true"
-                    >
-                      <path
-                        d="M3 2h8l4 4v10a1 1 0 01-1 1H3a1 1 0 01-1-1V3a1 1 0 011-1z"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="1.5"
-                        strokeLinejoin="round"
-                      />
-                      <path
-                        d="M11 2v4h4"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="1.5"
-                        strokeLinejoin="round"
-                      />
-                      <line x1="5" y1="9" x2="13" y2="9" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" />
-                      <line x1="5" y1="12" x2="13" y2="12" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" />
-                      <line x1="5" y1="15" x2="10" y2="15" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" />
-                    </svg>
+                    <PreviewDocumentIcon active={previewOpen} />
+                  </button>
+                ) : null}
+
+                {shouldShowPreviewGateAction ? (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (hasPreview) {
+                        onPreviewRequest();
+                      }
+                    }}
+                    disabled={disabled || !hasPreview}
+                    className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-[var(--app-card-border)] bg-[var(--app-card-bg)] text-[var(--app-text-secondary)] transition disabled:cursor-default disabled:opacity-50 sm:h-11 sm:w-11 ${
+                      isPreviewGateInteractive
+                        ? "cursor-pointer hover:bg-[var(--app-hover-bg-strong)] hover:text-[var(--app-text-heading)]"
+                        : "cursor-default"
+                    }`}
+                    title={previewGateTooltip}
+                    aria-label={previewGateTooltip}
+                  >
+                    <PreviewDocumentIcon active={hasPreview} />
                   </button>
                 ) : null}
 

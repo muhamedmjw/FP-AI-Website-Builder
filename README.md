@@ -121,6 +121,7 @@ Copy-Item .env.example .env
 
 - Open Supabase SQL Editor
 - Paste and run the contents of `schema.sql`
+- Then run `migration_archived_chats.sql` to enable archived chat support
 
 5. Start development server:
 
@@ -145,7 +146,7 @@ Use a root `.env` file.
 | `DEEPSEEK_MODEL_PRIMARY` | No | Server primary model override |
 | `DEEPSEEK_MODEL_FALLBACK` | No | Server fallback model override |
 | `NEXT_PUBLIC_DEEPSEEK_MODEL_PRIMARY` | No | Client-side display model override |
-| `BRAVE_SEARCH_API_KEY` | No | Replace unstable placeholder image links with Brave image search results |
+| `BRAVE_SEARCH_API_KEY` | No | Enables Brave Image Search enrichment to replace placeholder image URLs with real, relevant image URLs in generated HTML |
 | `NETLIFY_API_TOKEN` | No | Required only for `/api/website/deploy` |
 
 Example:
@@ -170,6 +171,7 @@ NETLIFY_API_TOKEN=
 ## Database Notes
 
 - Schema is consolidated in `schema.sql`
+- Run `migration_archived_chats.sql` after the base schema to add archived chat support
 - RLS policies are included
 - `file_versions` and `deploys` tables support version history and deployment flows
 
