@@ -206,23 +206,29 @@ create index if not exists zip_downloads_user_id_idx on public.zip_downloads(use
 create index if not exists zip_downloads_website_id_idx on public.zip_downloads(website_id);
 
 -- 10) Guest prompt limit tracking (no saved history for guests)
+-- Uses rolling 24-hour window from first_prompt_at
 create table if not exists public.guest_usage (
   id uuid primary key default gen_random_uuid(),
   guest_token text not null unique,
   prompts_used_today int not null default 0,
-  usage_date date not null default current_date,
+  first_prompt_at timestamptz,
   last_prompt_at timestamptz,
   session_data text,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
 
+-- Add new columns if table already exists
 alter table public.guest_usage
 add column if not exists session_data text;
 
-create index if not exists guest_usage_date_idx on public.guest_usage(usage_date);
-create index if not exists guest_usage_token_date_idx
-  on public.guest_usage(guest_token, usage_date);
+alter table public.guest_usage
+add column if not exists first_prompt_at timestamptz;
+
+-- Drop old index that relied on usage_date
+-- Create new index for guest_token lookups
+create index if not exists guest_usage_token_idx
+  on public.guest_usage(guest_token);
 
 -- 11) AI Generations (logs every AI API call)
 create table if not exists public.ai_generations (

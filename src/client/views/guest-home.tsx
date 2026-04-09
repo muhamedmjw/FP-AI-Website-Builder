@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { Sparkles, X } from "lucide-react";
+import { Sparkles, X, Clock } from "lucide-react";
 import { HistoryMessage } from "@/shared/types/database";
 import ChatPanel from "@/client/features/chat/chat-panel";
 import { savePendingGuestChatSession } from "@/client/lib/guest-chat-handoff";
@@ -12,7 +12,27 @@ import { t } from "@/shared/constants/translations";
 import { localizeGuestChatErrorMessage } from "@/shared/utils/localized-errors";
 import { MAX_GUEST_PROMPTS } from "@/shared/constants/limits";
 import { getDisplayModelName, PRIMARY_MODEL } from "@/shared/constants/ai";
+import { useCountdown, formatCountdown } from "@/client/lib/hooks/use-countdown";
 import type { AppLanguage } from "@/shared/types/database";
+
+type GuestUsageResponse = {
+  promptsUsed: number;
+  promptsRemaining: number;
+  maxPrompts: number;
+  limitReached: boolean;
+  resetsAt: string;
+  msUntilReset: number;
+};
+
+async function fetchGuestUsage(): Promise<GuestUsageResponse | null> {
+  try {
+    const response = await fetch("/api/guest/usage");
+    if (!response.ok) return null;
+    return (await response.json()) as GuestUsageResponse;
+  } catch {
+    return null;
+  }
+}
 
 const GUEST_SESSION_STORAGE_KEY = "guest_mode_session_v1";
 
@@ -22,6 +42,7 @@ type PersistedGuestSession = {
   html: string | null;
   websiteGenerated: boolean;
   promptsUsed: number;
+  resetsAt: string | null;
 };
 
 function createGuestSessionId(): string {
@@ -74,6 +95,7 @@ function loadInitialGuestSession(): PersistedGuestSession {
     html: null,
     websiteGenerated: false,
     promptsUsed: 0,
+    resetsAt: null,
   };
 
   if (typeof window === "undefined") {
@@ -106,6 +128,8 @@ function loadInitialGuestSession(): PersistedGuestSession {
       typeof parsed.websiteGenerated === "boolean"
         ? parsed.websiteGenerated
         : html !== null;
+    const resetsAt =
+      typeof parsed.resetsAt === "string" ? parsed.resetsAt : null;
 
     return {
       sessionId,
@@ -113,6 +137,7 @@ function loadInitialGuestSession(): PersistedGuestSession {
       html,
       websiteGenerated,
       promptsUsed,
+      resetsAt,
     };
   } catch {
     clearPersistedGuestSession();
@@ -171,18 +196,34 @@ async function sendGuestChat(
 function GuestLimitBanner({
   language,
   queueChatSessionForAuth,
+  resetsAt,
 }: {
   language: AppLanguage;
   queueChatSessionForAuth: () => void;
+  resetsAt: string | null;
 }) {
+  const resetTimestamp = resetsAt ? new Date(resetsAt).getTime() : null;
+  const { hours, minutes, seconds, isExpired } = useCountdown(resetTimestamp);
+
+  const timerText = isExpired
+    ? t("guestLimitReset", language)
+    : t("guestLimitTimer", language).replace(
+        "{time}",
+        formatCountdown(hours, minutes, seconds, language)
+      );
+
   return (
     <div className="mx-auto mb-2 w-full max-w-4xl rounded-2xl border border-[var(--app-card-border)] bg-[var(--app-card-bg)] p-4">
       <h3 className="font-semibold text-[var(--app-text-heading)]">
-        You&apos;ve used your 3 free prompts
+        You've used your 3 free prompts
       </h3>
       <p className="mt-1 text-sm text-[var(--app-text-secondary)]">
         Create a free account to keep building - no credit card required.
       </p>
+      <div className="mt-2 flex items-center gap-1.5 text-xs text-[var(--app-text-tertiary)]">
+        <Clock size={12} />
+        <span>{timerText}</span>
+      </div>
       <div className="mt-3 grid gap-2 sm:grid-cols-2">
         <Link
           href="/signin"
@@ -252,13 +293,14 @@ export default function GuestHomePage() {
   const [inputErrorMessage, setInputErrorMessage] = useState("");
   const [promptsUsed, setPromptsUsed] = useState(0);
   const [sessionHydrated, setSessionHydrated] = useState(false);
+  const [resetsAt, setResetsAt] = useState<string | null>(null);
 
   const hasPreview = typeof html === "string" && html.trim().length > 0;
   const hasLimitErrorMessage =
     inputErrorMessage === t("guestLimitReached", language) ||
     inputErrorMessage.toLowerCase().includes("limit");
   const isLimitReached = promptsUsed >= MAX_GUEST_PROMPTS;
-  const isGuestInputLocked = websiteGenerated;
+  const isGuestInputLocked = websiteGenerated || isLimitReached;
   const displayedInputError = hasLimitErrorMessage ? "" : inputErrorMessage;
   const guestInputPlaceholder = isSending
     ? t("generating", language)
@@ -273,9 +315,27 @@ export default function GuestHomePage() {
     setHtml(initialSession.html);
     setWebsiteGenerated(initialSession.websiteGenerated);
     setPromptsUsed(initialSession.promptsUsed);
+    setResetsAt(initialSession.resetsAt);
     setSessionHydrated(true);
   }, []);
 
+  useEffect(() => {
+    // Fetch guest usage data to get reset time
+    fetchGuestUsage().then((usage) => {
+      if (usage) {
+        // Use client's calculation of reset time based on server response
+        // Server returns resetsAt as next midnight UTC
+        setResetsAt(usage.resetsAt);
+        // Only sync prompts used from server if we don't have local data
+        // This prevents overwriting local state after a refresh
+        if (usage.promptsUsed > promptsUsed) {
+          setPromptsUsed(usage.promptsUsed);
+        }
+      }
+    });
+  }, []);
+
+  // Save session to localStorage whenever it changes
   useEffect(() => {
     if (!sessionHydrated) {
       return;
@@ -285,21 +345,17 @@ export default function GuestHomePage() {
       return;
     }
 
-    if (messages.length === 0 && !html && !websiteGenerated && promptsUsed === 0) {
-      clearPersistedGuestSession();
-      return;
-    }
-
     const payload: PersistedGuestSession = {
       sessionId: guestSessionId || createGuestSessionId(),
       messages,
       html,
       websiteGenerated,
       promptsUsed,
+      resetsAt,
     };
 
     window.localStorage.setItem(GUEST_SESSION_STORAGE_KEY, JSON.stringify(payload));
-  }, [guestSessionId, messages, html, websiteGenerated, promptsUsed, sessionHydrated]);
+  }, [guestSessionId, messages, html, websiteGenerated, promptsUsed, resetsAt, sessionHydrated]);
 
   useEffect(() => {
     if (!previewOpen) {
@@ -436,9 +492,14 @@ export default function GuestHomePage() {
             </div>
           </div>
         </div>
-        <p className="mx-auto mt-1.5 w-full max-w-5xl text-xs text-[var(--app-text-tertiary)] sm:mt-2">
-          {t("guestNotice", language)}
-        </p>
+        <div className="mx-auto mt-1.5 flex w-full max-w-5xl items-center justify-between text-xs text-[var(--app-text-tertiary)] sm:mt-2">
+          <span>{t("guestNotice", language)}</span>
+          <span className="rounded-full border border-[var(--app-card-border)] bg-[var(--app-card-bg)] px-2 py-0.5 text-[10px] sm:text-xs">
+            {t("guestPromptsRemaining", language)
+              .replace("{used}", String(promptsUsed))
+              .replace("{max}", String(MAX_GUEST_PROMPTS))}
+          </span>
+        </div>
         <p className="mx-auto mt-1 w-full max-w-5xl text-[10px] text-[var(--app-text-tertiary)] sm:text-xs">
           {t("aiModelLabel", language).replace("{model}", providerName)}
         </p>
@@ -471,6 +532,7 @@ export default function GuestHomePage() {
                 <GuestLimitBanner
                   language={language}
                   queueChatSessionForAuth={queueChatSessionForAuth}
+                  resetsAt={resetsAt}
                 />
               ) : null
             }

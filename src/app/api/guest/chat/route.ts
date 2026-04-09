@@ -39,7 +39,7 @@ function generateGuestToken(): string {
 }
 
 /**
- * Read the guest_usage row for the given token + today's date.
+ * Read the guest_usage row for the given token.
  * Returns null if no row exists yet.
  */
 async function getGuestUsage(
@@ -48,7 +48,7 @@ async function getGuestUsage(
 ) {
   const { data, error } = await supabase
     .from("guest_usage")
-    .select("id, prompts_used_today, usage_date")
+    .select("id, prompts_used_today, first_prompt_at, last_prompt_at")
     .eq("guest_token", guestToken)
     .maybeSingle();
 
@@ -56,13 +56,17 @@ async function getGuestUsage(
   return data as {
     id: string;
     prompts_used_today: number;
-    usage_date: string;
+    first_prompt_at: string;
+    last_prompt_at: string;
   } | null;
 }
 
-function normalizeDateOnly(value: string): string {
-  const [datePart] = value.split("T");
-  return datePart;
+const RATE_LIMIT_WINDOW_MS = 24 * 60 * 60 * 1000; // 24 hours in milliseconds
+
+function hasWindowExpired(firstPromptAt: string): boolean {
+  const firstPromptTime = new Date(firstPromptAt).getTime();
+  const now = Date.now();
+  return now - firstPromptTime >= RATE_LIMIT_WINDOW_MS;
 }
 
 function isPermissionDeniedError(error: unknown): boolean {
@@ -76,22 +80,27 @@ function isPermissionDeniedError(error: unknown): boolean {
 
 /**
  * Increment (or create) the guest_usage row after a successful AI response.
+ * Uses rolling 24-hour window from first_prompt_at.
  */
 async function incrementGuestUsage(
   supabase: SupabaseClient,
-  guestToken: string,
-  today: string
+  guestToken: string
 ) {
   const existing = await getGuestUsage(supabase, guestToken);
+  const now = new Date().toISOString();
 
   if (existing) {
-    const isToday = normalizeDateOnly(existing.usage_date) === today;
+    // Check if 24-hour window has expired
+    // Handle migration: if first_prompt_at is null, use last_prompt_at or treat as new
+    const windowStart = existing.first_prompt_at || existing.last_prompt_at;
+    const windowExpired = windowStart ? hasWindowExpired(windowStart) : true;
+    
     const { error } = await supabase
       .from("guest_usage")
       .update({
-        prompts_used_today: isToday ? existing.prompts_used_today + 1 : 1,
-        usage_date: today,
-        last_prompt_at: new Date().toISOString(),
+        prompts_used_today: windowExpired ? 1 : existing.prompts_used_today + 1,
+        first_prompt_at: windowExpired ? now : (existing.first_prompt_at || now),
+        last_prompt_at: now,
       })
       .eq("id", existing.id);
 
@@ -100,12 +109,48 @@ async function incrementGuestUsage(
     const { error } = await supabase.from("guest_usage").insert({
       guest_token: guestToken,
       prompts_used_today: 1,
-      usage_date: today,
-      last_prompt_at: new Date().toISOString(),
+      first_prompt_at: now,
+      last_prompt_at: now,
     });
 
     if (error) throw error;
   }
+}
+
+/**
+ * Get usage info for the current guest token, checking if 24-hour window has expired
+ */
+async function getGuestUsageInfo(
+  supabase: SupabaseClient,
+  guestToken: string
+): Promise<{ promptsUsed: number; resetsAt: string } | null> {
+  const existing = await getGuestUsage(supabase, guestToken);
+  
+  if (!existing) {
+    return { promptsUsed: 0, resetsAt: "" };
+  }
+
+  // Handle migration: if first_prompt_at is null but last_prompt_at exists,
+  // use last_prompt_at as the window start (for existing data)
+  const windowStart = existing.first_prompt_at || existing.last_prompt_at;
+  
+  if (!windowStart) {
+    // No window start time, treat as fresh
+    return { promptsUsed: 0, resetsAt: "" };
+  }
+
+  const windowExpired = hasWindowExpired(windowStart);
+  
+  if (windowExpired) {
+    // Window expired, reset counter
+    return { promptsUsed: 0, resetsAt: "" };
+  }
+
+  // Calculate when the window resets (24 hours from window start)
+  const windowStartTime = new Date(windowStart).getTime();
+  const resetsAt = new Date(windowStartTime + RATE_LIMIT_WINDOW_MS).toISOString();
+
+  return { promptsUsed: existing.prompts_used_today, resetsAt };
 }
 
 /**
@@ -156,19 +201,16 @@ export async function POST(request: NextRequest) {
     }
 
     const serviceClient = getServiceClient();
-    const today = new Date().toISOString().split("T")[0];
 
-    // Check rate limit. If guest_usage permissions are broken, allow chat instead
-    // of failing the entire request.
+    // Check rate limit using rolling 24-hour window
     let usageTrackingAvailable = true;
     let promptsUsed = 0;
+    let resetsAt = "";
 
     try {
-      const usage = await getGuestUsage(serviceClient, guestToken);
-      promptsUsed =
-        usage && normalizeDateOnly(usage.usage_date) === today
-          ? usage.prompts_used_today
-          : 0;
+      const usageInfo = await getGuestUsageInfo(serviceClient, guestToken);
+      promptsUsed = usageInfo?.promptsUsed ?? 0;
+      resetsAt = usageInfo?.resetsAt ?? "";
     } catch (error) {
       usageTrackingAvailable = false;
 
@@ -268,7 +310,7 @@ export async function POST(request: NextRequest) {
     // Increment usage after successful response, but don't fail response if this write fails.
     if (usageTrackingAvailable) {
       try {
-        await incrementGuestUsage(serviceClient, guestToken, today);
+        await incrementGuestUsage(serviceClient, guestToken);
       } catch (error) {
         console.error(
           "POST /api/guest/chat failed to increment guest usage; response will still be returned.",
