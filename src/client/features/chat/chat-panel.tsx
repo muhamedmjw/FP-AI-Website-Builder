@@ -31,6 +31,13 @@ function GeneratingDots() {
   );
 }
 
+const EMPTY_MESSAGE_IMAGES: Record<string, Array<{
+  fileId: string;
+  fileName: string;
+  dataUri: string;
+  label: string;
+}>> = {};
+
 /**
  * Chat panel — displays conversation history and input bar.
  * Takes up the left side of the builder split view.
@@ -78,7 +85,7 @@ export default function ChatPanel({
   chatId,
   chatTitle,
   messages,
-  messageImages = {},
+  messageImages = EMPTY_MESSAGE_IMAGES,
   onSend,
   onImagesChange,
   onTogglePreview,

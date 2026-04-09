@@ -44,13 +44,14 @@ function WorkspaceShellInner({
   children,
   hasSidebar,
 }: WorkspaceShellProps) {
-  const [sidebarOpenPath, setSidebarOpenPath] = useState<string | null>(null);
+  // Path-scoped open state auto-closes the drawer when navigation changes route.
+  const [openSidebarForPath, setOpenSidebarForPath] = useState<string | null>(null);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [isSidebarCollapseHydrated, setIsSidebarCollapseHydrated] = useState(false);
   const { title } = useMobileHeaderTitle();
   const pathname = usePathname();
 
-  const sidebarOpen = sidebarOpenPath === pathname;
+  const sidebarOpen = openSidebarForPath === pathname;
 
   useEffect(() => {
     try {
@@ -73,9 +74,9 @@ function WorkspaceShellInner({
   }, [isSidebarCollapseHydrated, sidebarCollapsed]);
 
   const openSidebar = useCallback(() => {
-    setSidebarOpenPath(pathname);
+    setOpenSidebarForPath(pathname);
   }, [pathname]);
-  const closeSidebar = useCallback(() => setSidebarOpenPath(null), []);
+  const closeSidebar = useCallback(() => setOpenSidebarForPath(null), []);
   const toggleSidebarCollapsed = useCallback(() => {
     setSidebarCollapsed((prev) => !prev);
   }, []);

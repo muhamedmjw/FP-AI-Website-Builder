@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useState } from "react";
 import {
   Globe,
   Download,
@@ -31,7 +31,7 @@ type PreviewPanelProps = {
   isAuthenticated?: boolean;
   onOpenDeployModal?: () => void;
   isDeployModalOpen?: boolean;
-  isRedeploying?: boolean;
+  canRedeploy?: boolean;
   deployUrl?: string | null;
   hasDeployed?: boolean;
   hasPendingDeployUpdate?: boolean;
@@ -62,18 +62,18 @@ export default function PreviewPanel({
   showModeToggle = true,
 }: PreviewPanelProps) {
   const { language } = useLanguage();
-  const shouldFixToolbarOrder = RTL_LANGUAGES.includes(language);
+  const isRtlLanguage = RTL_LANGUAGES.includes(language);
   const [activePanel, setActivePanel] = useState<"preview" | "editor">("preview");
-  const hasMountedEditor = useRef(false);
   const [editorMounted, setEditorMounted] = useState(false);
   const [isHistoryOpen, setIsHistoryOpen] = useState(false);
-  const toggleTargetPanel = activePanel === "preview" ? "editor" : "preview";
+  const effectiveActivePanel =
+    activePanelOverride === "editor" && !onChange
+      ? "preview"
+      : activePanelOverride ?? activePanel;
+  const toggleTargetPanel = effectiveActivePanel === "preview" ? "editor" : "preview";
 
   function ensureEditorPanelMounted() {
-    if (!hasMountedEditor.current) {
-      hasMountedEditor.current = true;
-      setEditorMounted(true);
-    }
+    setEditorMounted((mounted) => mounted || true);
   }
 
   function handlePanelSwitch(nextPanel: "preview" | "editor") {
@@ -86,25 +86,13 @@ export default function PreviewPanel({
   }
 
   function handlePanelToggle() {
-    if (activePanel === "preview") {
+    if (effectiveActivePanel === "preview") {
       handlePanelSwitch("editor");
       return;
     }
 
     handlePanelSwitch("preview");
   }
-
-  useEffect(() => {
-    if (!activePanelOverride) return;
-    if (activePanelOverride === activePanel) return;
-
-    if (activePanelOverride === "editor") {
-      if (!onChange) return;
-      ensureEditorPanelMounted();
-    }
-
-    setActivePanel(activePanelOverride);
-  }, [activePanel, activePanelOverride, onChange]);
 
   if (!html) {
     return (
@@ -144,7 +132,7 @@ export default function PreviewPanel({
     >
       {/* Single unified toolbar */}
       <div
-        dir={shouldFixToolbarOrder ? "ltr" : undefined}
+        dir={isRtlLanguage ? "ltr" : undefined}
         className="flex h-12 shrink-0 items-center gap-1.5 overflow-x-auto border-b border-[var(--app-border)] bg-[var(--app-panel)] px-3"
       >
         {onChange && showModeToggle ? (
@@ -152,7 +140,7 @@ export default function PreviewPanel({
             type="button"
             onClick={handlePanelToggle}
             className={`mr-1 flex h-8 items-center gap-1.5 rounded-lg border px-2.5 text-xs font-medium transition ${
-              activePanel === "preview"
+              effectiveActivePanel === "preview"
                 ? "border-[var(--button-hover-border)] bg-[var(--app-hover-bg)] text-[var(--app-text-heading)]"
                 : "border-[var(--app-border)] text-[var(--app-text-secondary)] hover:bg-[var(--app-hover-bg)] hover:text-[var(--app-text-heading)]"
             }`}
@@ -248,7 +236,7 @@ export default function PreviewPanel({
       <div className="relative min-h-0 flex-1">
         <div
           className={`absolute inset-0 transition-opacity duration-150 ${
-            activePanel === "preview"
+            effectiveActivePanel === "preview"
               ? "opacity-100"
               : "pointer-events-none opacity-0"
           }`}
@@ -262,11 +250,11 @@ export default function PreviewPanel({
           />
         </div>
 
-        {onChange && editorMounted ? (
+        {onChange && (editorMounted || effectiveActivePanel === "editor") ? (
           <div
             dir="ltr"
             className={`absolute inset-0 transition-opacity duration-150 ${
-              activePanel === "editor"
+              effectiveActivePanel === "editor"
                 ? "opacity-100"
                 : "pointer-events-none opacity-0"
             }`}

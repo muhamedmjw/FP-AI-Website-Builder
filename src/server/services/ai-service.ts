@@ -40,6 +40,12 @@ type AIMessage = {
   content: string;
 };
 
+type IntentExecutionConfig = {
+  messages: AIMessage[];
+  maxTokens: number;
+  temperature: number;
+};
+
 type GenerationLog = {
   chatId: string;
   historyId?: string;
@@ -73,6 +79,7 @@ function getDeepSeekClient(): OpenAI {
 
 const PRIMARY_MODEL = process.env.DEEPSEEK_MODEL_PRIMARY?.trim() || AI_MODELS.PRIMARY;
 const FALLBACK_MODEL = process.env.DEEPSEEK_MODEL_FALLBACK?.trim() || AI_MODELS.FALLBACK;
+// Env vars are process-static for the lifetime of the server instance, so this is safe at module load.
 const MODEL_CANDIDATES = Array.from(new Set([PRIMARY_MODEL, FALLBACK_MODEL]));
 const MODEL_NAME = PRIMARY_MODEL;
 
@@ -372,6 +379,139 @@ async function classifyIntent(
   return fallback;
 }
 
+function buildIntentExecutionConfig(
+  intent: ClassifiedIntent,
+  history: HistoryMessage[],
+  language: AppLanguage,
+  detectedLanguage: AppLanguage,
+  existingHtml: string | null,
+  selectedUserImages: Array<{ fileName: string; dataUri: string }>
+): IntentExecutionConfig {
+  if (intent === "build") {
+    return {
+      messages: buildGenerationMessages(
+        history,
+        language,
+        detectedLanguage,
+        selectedUserImages
+      ) as AIMessage[],
+      maxTokens: AI_CONFIG.MAX_TOKENS,
+      temperature: 0.4,
+    };
+  }
+
+  if (intent === "edit") {
+    if (existingHtml && existingHtml.trim().length > 0) {
+      return {
+        messages: buildEditMessages(
+          history,
+          existingHtml,
+          language,
+          detectedLanguage,
+          selectedUserImages
+        ) as AIMessage[],
+        maxTokens: AI_CONFIG.MAX_TOKENS,
+        temperature: 0.2,
+      };
+    }
+
+    return {
+      messages: buildGenerationMessages(
+        history,
+        language,
+        detectedLanguage,
+        selectedUserImages
+      ) as AIMessage[],
+      maxTokens: AI_CONFIG.MAX_TOKENS,
+      temperature: 0.4,
+    };
+  }
+
+  return {
+    messages: buildChatMessages(history, detectedLanguage) as AIMessage[],
+    maxTokens: 300,
+    temperature: 0.7,
+  };
+}
+
+function trimImagesToPromptLimit(
+  intent: ClassifiedIntent,
+  history: HistoryMessage[],
+  language: AppLanguage,
+  detectedLanguage: AppLanguage,
+  existingHtml: string | null,
+  userImages: Array<{ fileName: string; dataUri: string }>
+): {
+  effectiveUserImages: Array<{ fileName: string; dataUri: string }>;
+  config: IntentExecutionConfig;
+} {
+  let effectiveUserImages = userImages;
+  let config = buildIntentExecutionConfig(
+    intent,
+    history,
+    language,
+    detectedLanguage,
+    existingHtml,
+    effectiveUserImages
+  );
+
+  let totalPromptChars = config.messages.reduce(
+    (sum, msg) => sum + (typeof msg.content === "string" ? msg.content.length : 0),
+    0
+  );
+
+  // Remove older images first and keep newer ones when prompt size is too large.
+  while (totalPromptChars > MAX_PROMPT_CHARS && effectiveUserImages.length > 0) {
+    effectiveUserImages = effectiveUserImages.slice(1);
+    config = buildIntentExecutionConfig(
+      intent,
+      history,
+      language,
+      detectedLanguage,
+      existingHtml,
+      effectiveUserImages
+    );
+    totalPromptChars = config.messages.reduce(
+      (sum, msg) => sum + (typeof msg.content === "string" ? msg.content.length : 0),
+      0
+    );
+  }
+
+  if (totalPromptChars > MAX_PROMPT_CHARS) {
+    throw new Error(
+      "Prompt is too large to process. Please shorten your request and try again."
+    );
+  }
+
+  return {
+    effectiveUserImages,
+    config,
+  };
+}
+
+async function enrichWebsiteResponse(
+  parsed: AIResponse,
+  history: HistoryMessage[],
+  effectiveUserImages: Array<{ fileName: string; dataUri: string }>
+): Promise<AIResponse> {
+  if (parsed.type !== "website") {
+    return parsed;
+  }
+
+  let enrichedHtml = await enrichWebsiteHtmlImages(parsed.html, history);
+  enrichedHtml = injectUserImageDataUris(enrichedHtml, effectiveUserImages);
+  const nextParsed: AIResponse = {
+    ...parsed,
+    html: enrichedHtml,
+  };
+
+  if (!validateWebsiteHtml(nextParsed.html)) {
+    console.warn("AI returned potentially incomplete HTML — serving anyway.");
+  }
+
+  return nextParsed;
+}
+
 async function generateAIResponseOnce(
   supabase: SupabaseClient,
   chatId: string,
@@ -391,105 +531,27 @@ async function generateAIResponseOnce(
     language
   );
 
-  const buildMessagesForIntent = (
-    selectedUserImages: Array<{ fileName: string; dataUri: string }>
-  ): { messages: AIMessage[]; maxTokens: number; temperature: number } => {
-    if (intent === "build") {
-      return {
-        messages: buildGenerationMessages(
-          history,
-          language,
-          detectedLanguage,
-          selectedUserImages
-        ) as AIMessage[],
-        maxTokens: AI_CONFIG.MAX_TOKENS,
-        temperature: 0.4,
-      };
-    }
-
-    if (intent === "edit") {
-      if (existingHtml && existingHtml.trim().length > 0) {
-        return {
-          messages: buildEditMessages(
-            history,
-            existingHtml,
-            language,
-            detectedLanguage,
-            selectedUserImages
-          ) as AIMessage[],
-          maxTokens: AI_CONFIG.MAX_TOKENS,
-          temperature: 0.2,
-        };
-      }
-
-      return {
-        messages: buildGenerationMessages(
-          history,
-          language,
-          detectedLanguage,
-          selectedUserImages
-        ) as AIMessage[],
-        maxTokens: AI_CONFIG.MAX_TOKENS,
-        temperature: 0.4,
-      };
-    }
-
-    return {
-      messages: buildChatMessages(history, detectedLanguage) as AIMessage[],
-      maxTokens: 300,
-      temperature: 0.7,
-    };
-  };
-
-  let effectiveUserImages = userImages;
-  let messages: AIMessage[];
-  let maxTokens: number;
-  let temperature: number;
-
-  ({ messages, maxTokens, temperature } = buildMessagesForIntent(effectiveUserImages));
-
   try {
-    let totalPromptChars = messages.reduce(
-      (sum, msg) => sum + (typeof msg.content === "string" ? msg.content.length : 0),
-      0
+    const { effectiveUserImages, config } = trimImagesToPromptLimit(
+      intent,
+      history,
+      language,
+      detectedLanguage,
+      existingHtml,
+      userImages
     );
-
-    // Keep the most recent images by removing older ones from the front if prompt grows too large.
-    while (totalPromptChars > MAX_PROMPT_CHARS && effectiveUserImages.length > 0) {
-      effectiveUserImages = effectiveUserImages.slice(1);
-      ({ messages, maxTokens, temperature } = buildMessagesForIntent(effectiveUserImages));
-      totalPromptChars = messages.reduce(
-        (sum, msg) => sum + (typeof msg.content === "string" ? msg.content.length : 0),
-        0
-      );
-    }
-
-    if (totalPromptChars > MAX_PROMPT_CHARS) {
-      throw new Error(
-        "Prompt is too large to process. Please shorten your request and try again."
-      );
-    }
 
     const workerResult = await callDeepSeekWithRetry(
-      messages,
-      maxTokens,
-      temperature
+      config.messages,
+      config.maxTokens,
+      config.temperature
     );
 
-    let parsed = workerResult.parsed;
-
-    if (parsed.type === "website") {
-      let enrichedHtml = await enrichWebsiteHtmlImages(parsed.html, history);
-      enrichedHtml = injectUserImageDataUris(enrichedHtml, effectiveUserImages);
-      parsed = {
-        ...parsed,
-        html: enrichedHtml,
-      };
-
-      if (!validateWebsiteHtml(parsed.html)) {
-        console.warn("AI returned potentially incomplete HTML — serving anyway.");
-      }
-    }
+    const parsed = await enrichWebsiteResponse(
+      workerResult.parsed,
+      history,
+      effectiveUserImages
+    );
 
     const durationMs = Date.now() - startTime;
 
@@ -776,6 +838,84 @@ function buildHeuristicTitleFromMessage(
   return language === "en" ? toTitleCaseEnglish(baseTitle) : baseTitle;
 }
 
+function buildChatTitleSystemPrompt(languageLabel: string): string {
+  return `You are a chat title generator. Your job is to create a short,
+descriptive title (2 to 5 words) for a conversation based on the
+user's first message. Rules:
+- If the message is a greeting (hello, hi, hey, مرحبا, سڵاو etc.)
+  -> return a warm short title like "Greeting" or "Hello There"
+- If the message is a website request -> return the website type,
+  e.g. "Restaurant Website", "Gym Landing Page"
+- If the message is a question -> summarize it in 2-4 words
+- If the message is unclear or very short -> return "New Chat"
+- The title MUST be in ${languageLabel}
+- Return ONLY the title. No quotes. No punctuation at the end.
+  No explanation. Nothing else.`;
+}
+
+function normalizeModelChatTitle(
+  rawTitle: string,
+  preferredLanguage: AppLanguage
+): string | null {
+  const title = rawTitle
+    .replace(/^[\"'`]+|[\"'`]+$/g, "")
+    .replace(/[.!?،؛:]+$/u, "")
+    .trim();
+
+  const words = title.split(/\s+/u).filter(Boolean);
+  const normalizedTitle = words.join(" ").trim();
+  const lowerTitle = normalizedTitle.toLowerCase();
+
+  if (
+    !normalizedTitle ||
+    normalizedTitle.length > 50 ||
+    words.length < 1 ||
+    words.length > 5 ||
+    lowerTitle === "invalid user input" ||
+    lowerTitle === "invalid input" ||
+    lowerTitle === "new website" ||
+    isLikelyGibberish(normalizedTitle) ||
+    !isExpectedTitleLanguage(normalizedTitle, preferredLanguage)
+  ) {
+    return null;
+  }
+
+  return preferredLanguage === "en"
+    ? toTitleCaseEnglish(normalizedTitle)
+    : normalizedTitle;
+}
+
+async function getChatTitleFromModel(
+  model: string,
+  trimmedMessage: string,
+  languageLabel: string,
+  preferredLanguage: AppLanguage
+): Promise<string | null> {
+  const response = await getDeepSeekClient().chat.completions.create({
+    model,
+    messages: [
+      {
+        role: "system",
+        content: buildChatTitleSystemPrompt(languageLabel),
+      },
+      { role: "user", content: trimmedMessage },
+    ],
+    max_tokens: 20,
+    temperature: 0.5,
+  });
+
+  const rawTitle =
+    typeof response.choices[0]?.message?.content === "string"
+      ? response.choices[0].message.content
+      : "";
+
+  if (!rawTitle) {
+    return null;
+  }
+
+  return normalizeModelChatTitle(rawTitle, preferredLanguage);
+}
+
 export async function generateChatTitle(
   userMessage: string,
   preferredLanguage: AppLanguage = "en"
@@ -792,66 +932,16 @@ export async function generateChatTitle(
 
   for (const model of MODEL_CANDIDATES) {
     try {
-      const response = await getDeepSeekClient().chat.completions.create({
+      const nextTitle = await getChatTitleFromModel(
         model,
-        messages: [
-          {
-            role: "system",
-            content:
-              `You are a chat title generator. Your job is to create a short,
-descriptive title (2 to 5 words) for a conversation based on the
-user's first message. Rules:
-- If the message is a greeting (hello, hi, hey, مرحبا, سڵاو etc.)
-  -> return a warm short title like "Greeting" or "Hello There"
-- If the message is a website request -> return the website type,
-  e.g. "Restaurant Website", "Gym Landing Page"
-- If the message is a question -> summarize it in 2-4 words
-- If the message is unclear or very short -> return "New Chat"
-- The title MUST be in ${languageLabel}
-- Return ONLY the title. No quotes. No punctuation at the end.
-  No explanation. Nothing else.`,
-          },
-          { role: "user", content: trimmedMessage },
-        ],
-        max_tokens: 20,
-        temperature: 0.5,
-      });
+        trimmedMessage,
+        languageLabel,
+        preferredLanguage
+      );
 
-      const rawTitle =
-        typeof response.choices[0]?.message?.content === "string"
-          ? response.choices[0].message.content
-          : "";
-
-      if (!rawTitle) {
-        continue;
+      if (nextTitle) {
+        return nextTitle;
       }
-
-      const title = rawTitle
-        .replace(/^[\"'`]+|[\"'`]+$/g, "")
-        .replace(/[.!?،؛:]+$/u, "")
-        .trim();
-
-      const words = title.split(/\s+/u).filter(Boolean);
-      const normalizedTitle = words.join(" ").trim();
-      const lowerTitle = normalizedTitle.toLowerCase();
-
-      if (
-        !normalizedTitle ||
-        normalizedTitle.length > 50 ||
-        words.length < 1 ||
-        words.length > 5 ||
-        lowerTitle === "invalid user input" ||
-        lowerTitle === "invalid input" ||
-        lowerTitle === "new website" ||
-        isLikelyGibberish(normalizedTitle) ||
-        !isExpectedTitleLanguage(normalizedTitle, preferredLanguage)
-      ) {
-        continue;
-      }
-
-      return preferredLanguage === "en"
-        ? toTitleCaseEnglish(normalizedTitle)
-        : normalizedTitle;
     } catch {
       continue;
     }

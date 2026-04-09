@@ -5,22 +5,28 @@ export function useElapsedSeconds(active: boolean): number {
 
   useEffect(() => {
     if (!active) {
-      setElapsedSeconds(0);
       return;
     }
 
-    setElapsedSeconds(0);
-    const startedAt = Date.now();
+    let seconds = 0;
+    const resetTimeoutId = window.setTimeout(() => {
+      setElapsedSeconds(0);
+    }, 0);
 
-    const interval = setInterval(() => {
-      const nextSeconds = Math.floor((Date.now() - startedAt) / 1000);
-      setElapsedSeconds(nextSeconds);
+    const interval = window.setInterval(() => {
+      seconds += 1;
+      setElapsedSeconds(seconds);
     }, 1000);
 
     return () => {
-      clearInterval(interval);
+      window.clearTimeout(resetTimeoutId);
+      window.clearInterval(interval);
     };
   }, [active]);
+
+  if (!active) {
+    return 0;
+  }
 
   return elapsedSeconds;
 }

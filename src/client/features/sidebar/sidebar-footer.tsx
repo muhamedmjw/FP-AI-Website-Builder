@@ -128,17 +128,13 @@ export default function SidebarFooter({
   const [avatarPreview, setAvatarPreview] = useState<string | null>(
     userAvatarUrl
   );
-  const [compactAvatarImgError, setCompactAvatarImgError] = useState(false);
-  const [fullAvatarImgError, setFullAvatarImgError] = useState(false);
-  const [settingsAvatarImgError, setSettingsAvatarImgError] = useState(false);
+  const [avatarLoadError, setAvatarLoadError] = useState(false);
 
   useEffect(() => {
     setNameInput(userName ?? "");
     setEmailInput(userEmail ?? "");
     setAvatarPreview(userAvatarUrl);
-    setCompactAvatarImgError(false);
-    setFullAvatarImgError(false);
-    setSettingsAvatarImgError(false);
+    setAvatarLoadError(false);
   }, [userName, userEmail, userAvatarUrl]);
 
   useEffect(() => {
@@ -277,6 +273,7 @@ export default function SidebarFooter({
     try {
       const dataUrl = await readFileAsDataUrl(file);
       setAvatarPreview(dataUrl);
+      setAvatarLoadError(false);
       setErrorMessage("");
     } catch (error) {
       console.error("Failed to read avatar file:", error);
@@ -288,6 +285,7 @@ export default function SidebarFooter({
 
   function handleRemoveAvatar() {
     setAvatarPreview(null);
+    setAvatarLoadError(false);
   }
 
   async function handleSignOut() {
@@ -758,12 +756,12 @@ export default function SidebarFooter({
             aria-haspopup="menu"
             title={t("account", language)}
           >
-            {avatarPreview && !compactAvatarImgError ? (
+            {avatarPreview && !avatarLoadError ? (
               <img
                 src={avatarPreview}
                 alt="Account avatar"
                 loading="lazy"
-                onError={() => setCompactAvatarImgError(true)}
+                onError={() => setAvatarLoadError(true)}
                 className="h-9 w-9 rounded-full object-cover border border-[var(--app-card-border)]"
               />
             ) : (
@@ -783,12 +781,12 @@ export default function SidebarFooter({
               aria-haspopup="menu"
               title={t("account", language)}
             >
-              {avatarPreview && !fullAvatarImgError ? (
+              {avatarPreview && !avatarLoadError ? (
                 <img
                   src={avatarPreview}
                   alt="Account avatar"
                   loading="lazy"
-                  onError={() => setFullAvatarImgError(true)}
+                  onError={() => setAvatarLoadError(true)}
                   className="h-8 w-8 rounded-full object-cover border border-[var(--app-card-border)]"
                 />
               ) : (
@@ -886,7 +884,7 @@ export default function SidebarFooter({
         nameInput={nameInput}
         emailInput={emailInput}
         avatarPreview={avatarPreview}
-        settingsAvatarImgError={settingsAvatarImgError}
+        settingsAvatarImgError={avatarLoadError}
         currentLanguageLabel={currentLanguageOption.label}
         isLanguageMenuOpen={isLanguageMenuOpen}
         settingsOverlayClass={settingsOverlayClass}
@@ -907,7 +905,7 @@ export default function SidebarFooter({
         onClose={() => setSettingsOpen(false)}
         onSubmit={handleSaveSettings}
         onAvatarFileChange={handleAvatarFileChange}
-        onAvatarError={() => setSettingsAvatarImgError(true)}
+        onAvatarError={() => setAvatarLoadError(true)}
         onRemoveAvatar={handleRemoveAvatar}
         onNameInputChange={setNameInput}
         onEmailInputChange={setEmailInput}

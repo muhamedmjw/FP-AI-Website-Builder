@@ -6,57 +6,9 @@ import {
   getGeneratedHtml,
 } from "@/server/services/website-service";
 import { getCurrentUser, getUserProfile } from "@/shared/services/user-service";
+import { isMissingUploadColumns } from "@/shared/utils/db-guards";
+import { injectUploadedImagesForPreview } from "@/shared/utils/html-images";
 import BuilderView from "@/client/features/builder/builder-view";
-
-type PostgresLikeError = {
-  code?: string;
-  message?: string;
-  details?: string;
-  hint?: string;
-};
-
-function isMissingUploadColumns(error: unknown): boolean {
-  if (!error || typeof error !== "object") {
-    return false;
-  }
-
-  const pgError = error as PostgresLikeError;
-  const combinedMessage = [pgError.message, pgError.details, pgError.hint]
-    .filter((value): value is string => typeof value === "string")
-    .join(" ")
-    .toLowerCase();
-
-  return (
-    pgError.code === "42703" ||
-    (combinedMessage.includes("is_user_upload") && combinedMessage.includes("column")) ||
-    (combinedMessage.includes("mime_type") && combinedMessage.includes("column"))
-  );
-}
-
-function injectUploadedImagesForPreview(
-  html: string,
-  userImages: Array<{ file_name: string; content: string }>
-): string {
-  let nextHtml = html;
-
-  for (const image of userImages) {
-    const variants = [
-      image.file_name,
-      `./${image.file_name}`,
-      `/${image.file_name}`,
-    ];
-
-    for (const variant of variants) {
-      const escapedVariant = variant.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-      nextHtml = nextHtml.replace(
-        new RegExp(`src=["']${escapedVariant}["']`, "gi"),
-        `src="${image.content}"`
-      );
-    }
-  }
-
-  return nextHtml;
-}
 
 type ChatPageProps = {
   params: Promise<{ chatId: string }>;
@@ -119,7 +71,13 @@ export default async function ChatPage({ params }: ChatPageProps) {
           console.error("Failed to load uploaded images for preview injection:", uploadedImagesError);
         }
       } else {
-        initialHtml = injectUploadedImagesForPreview(html, uploadedImages ?? []);
+        initialHtml = injectUploadedImagesForPreview(
+          html,
+          (uploadedImages ?? []).map((image) => ({
+            fileName: image.file_name,
+            dataUri: image.content,
+          }))
+        );
       }
     } catch (error) {
       console.error("Failed to inject uploaded images into initial preview:", error);

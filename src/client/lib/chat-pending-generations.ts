@@ -8,17 +8,20 @@ type PendingGenerationPayload = {
 };
 
 type PendingGenerationMap = Record<string, PendingGenerationPayload>;
+let pendingGenerationMapCache: PendingGenerationMap | null = null;
 
 function isBrowser() {
   return typeof window !== "undefined";
 }
 
 function pruneExpired(map: PendingGenerationMap, nowMs = Date.now()): PendingGenerationMap {
-  const entries = Object.entries(map).filter(([, payload]) => {
-    return Number.isFinite(payload.startedAt) && nowMs - payload.startedAt <= MAX_PENDING_AGE_MS;
-  });
+  return Object.entries(map).reduce<PendingGenerationMap>((acc, [chatId, payload]) => {
+    if (Number.isFinite(payload.startedAt) && nowMs - payload.startedAt <= MAX_PENDING_AGE_MS) {
+      acc[chatId] = payload;
+    }
 
-  return Object.fromEntries(entries);
+    return acc;
+  }, {});
 }
 
 function parseStoredMap(raw: string | null): PendingGenerationMap {
@@ -79,6 +82,10 @@ function readMapFromStorage(): PendingGenerationMap {
     return {};
   }
 
+  if (pendingGenerationMapCache) {
+    return pendingGenerationMapCache;
+  }
+
   const raw = window.localStorage.getItem(STORAGE_KEY);
   const parsed = parseStoredMap(raw);
   const pruned = pruneExpired(parsed);
@@ -90,6 +97,8 @@ function readMapFromStorage(): PendingGenerationMap {
     window.localStorage.setItem(STORAGE_KEY, JSON.stringify(pruned));
   }
 
+  pendingGenerationMapCache = pruned;
+
   return pruned;
 }
 
@@ -99,6 +108,7 @@ function writeMapToStorage(map: PendingGenerationMap) {
   }
 
   const nextMap = pruneExpired(map);
+  pendingGenerationMapCache = nextMap;
 
   if (Object.keys(nextMap).length === 0) {
     window.localStorage.removeItem(STORAGE_KEY);
@@ -186,6 +196,7 @@ export function subscribePendingChatGenerations(onChange: () => void): () => voi
 
   const handleStorage = (event: StorageEvent) => {
     if (event.key === STORAGE_KEY) {
+      pendingGenerationMapCache = null;
       onChange();
     }
   };

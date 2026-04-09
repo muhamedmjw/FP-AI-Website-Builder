@@ -14,6 +14,13 @@ import {
 import { AI_CONFIG } from "@/shared/constants/ai";
 import { MAX_PROMPT_LENGTH } from "@/shared/constants/limits";
 import type { AppLanguage } from "@/shared/types/database";
+import { isMissingUploadColumns } from "@/shared/utils/db-guards";
+import {
+  countReferencedUserImagePaths,
+  forceApplyUploadedImagesToHtml,
+  injectUploadedImagesForPreview,
+  normalizeGeneratedHtmlForStorage,
+} from "@/shared/utils/html-images";
 
 type PostgresLikeError = {
   code?: string;
@@ -24,23 +31,6 @@ type PostgresLikeError = {
 
 const MAX_EXISTING_HTML_PROMPT_CHARS = 140_000;
 
-function isMissingUploadColumns(error: unknown): boolean {
-  if (!error || typeof error !== "object") {
-    return false;
-  }
-
-  const pgError = error as PostgresLikeError;
-  const combinedMessage = [pgError.message, pgError.details, pgError.hint]
-    .filter((value): value is string => typeof value === "string")
-    .join(" ")
-    .toLowerCase();
-
-  return (
-    pgError.code === "42703" ||
-    (combinedMessage.includes("is_user_upload") && combinedMessage.includes("column"))
-  );
-}
-
 function isAppLanguage(value: unknown): value is AppLanguage {
   return value === "en" || value === "ar" || value === "ku";
 }
@@ -50,7 +40,7 @@ function normalizeExistingHtmlForPrompt(html: string | null): string | null {
     return null;
   }
 
-  let normalized = html.replace(
+  const normalized = html.replace(
     /data:image\/[a-zA-Z0-9.+-]+;base64,[A-Za-z0-9+/=]+/g,
     "data:image/omitted;base64,[removed]"
   );
@@ -69,30 +59,6 @@ function normalizeExistingHtmlForPrompt(html: string | null): string | null {
   ].join("");
 }
 
-function normalizeGeneratedHtmlForStorage(
-  html: string,
-  userImages: Array<{ fileName: string; dataUri: string }>
-): string {
-  let nextHtml = html;
-
-  for (const image of userImages) {
-    if (!image.dataUri || !image.fileName) {
-      continue;
-    }
-
-    nextHtml = nextHtml.replaceAll(
-      `src="${image.dataUri}"`,
-      `src="${image.fileName}"`
-    );
-    nextHtml = nextHtml.replaceAll(
-      `src='${image.dataUri}'`,
-      `src="${image.fileName}"`
-    );
-  }
-
-  return nextHtml;
-}
-
 function promptRequestsUploadedImageSwap(prompt: string): boolean {
   const normalized = prompt.toLowerCase();
 
@@ -101,146 +67,6 @@ function promptRequestsUploadedImageSwap(prompt: string): boolean {
   const hasUploadHint = /(uploaded|attach|attached|image\s*[1-9])/.test(normalized);
 
   return hasAction && hasImageWord && hasUploadHint;
-}
-
-function countReferencedUserImagePaths(
-  html: string,
-  userImages: Array<{ fileName: string; dataUri: string }>
-): number {
-  const normalizedHtml = html.toLowerCase();
-  let count = 0;
-
-  for (const image of userImages) {
-    const variants = [
-      image.fileName,
-      `./${image.fileName}`,
-      `/${image.fileName}`,
-    ];
-
-    if (variants.some((variant) => normalizedHtml.includes(variant.toLowerCase()))) {
-      count += 1;
-    }
-  }
-
-  return count;
-}
-
-function replaceImgSrcSequentially(
-  html: string,
-  userImages: Array<{ fileName: string; dataUri: string }>
-): { html: string; replacedCount: number } {
-  let imageIndex = 0;
-  let replacedCount = 0;
-
-  const nextHtml = html.replace(/<img\b[^>]*>/gi, (imgTag) => {
-    if (imageIndex >= userImages.length) {
-      return imgTag;
-    }
-
-    if (!/\bsrc=(['"]).*?\1/i.test(imgTag)) {
-      return imgTag;
-    }
-
-    const fileName = userImages[imageIndex]?.fileName;
-    if (!fileName) {
-      return imgTag;
-    }
-
-    imageIndex += 1;
-    replacedCount += 1;
-
-    return imgTag.replace(/\bsrc=(['"]).*?\1/i, `src="${fileName}"`);
-  });
-
-  return { html: nextHtml, replacedCount };
-}
-
-function forceApplyUploadedImagesToHtml(
-  html: string,
-  userImages: Array<{ fileName: string; dataUri: string }>,
-  prompt: string
-): { html: string; replacedCount: number } {
-  if (userImages.length === 0) {
-    return { html, replacedCount: 0 };
-  }
-
-  if (/featured\s+projects?/i.test(prompt)) {
-    let replacedInSection = 0;
-    const sectionAdjusted = html.replace(
-      /<section\b[^>]*>[\s\S]*?<\/section>/gi,
-      (sectionHtml) => {
-        if (!/featured\s+projects?/i.test(sectionHtml)) {
-          return sectionHtml;
-        }
-
-        const replaced = replaceImgSrcSequentially(sectionHtml, userImages);
-        replacedInSection += replaced.replacedCount;
-        return replaced.html;
-      }
-    );
-
-    if (replacedInSection > 0) {
-      return { html: sectionAdjusted, replacedCount: replacedInSection };
-    }
-  }
-
-  if (/(profile|avatar|hero|about\s+me|about\s+section)/i.test(prompt)) {
-    const preferredImage = userImages[0];
-
-    if (preferredImage?.fileName) {
-      let replacedInSection = 0;
-      const sectionAdjusted = html.replace(
-        /<section\b[^>]*>[\s\S]*?<\/section>/gi,
-        (sectionHtml) => {
-          if (!/(hero|about|profile|avatar)/i.test(sectionHtml)) {
-            return sectionHtml;
-          }
-
-          const replaced = sectionHtml.replace(/<img\b[^>]*>/i, (imgTag) => {
-            if (!/\bsrc=(['"]).*?\1/i.test(imgTag)) {
-              return imgTag;
-            }
-
-            replacedInSection += 1;
-            return imgTag.replace(/\bsrc=(['"]).*?\1/i, `src="${preferredImage.fileName}"`);
-          });
-
-          return replaced;
-        }
-      );
-
-      if (replacedInSection > 0) {
-        return { html: sectionAdjusted, replacedCount: replacedInSection };
-      }
-    }
-  }
-
-  return replaceImgSrcSequentially(html, userImages);
-}
-
-function injectUploadedImagesForPreview(
-  html: string,
-  userImages: Array<{ fileName: string; dataUri: string }>
-): string {
-  let nextHtml = html;
-
-  for (const image of userImages) {
-    const variants = [
-      image.fileName,
-      `./${image.fileName}`,
-      `/${image.fileName}`,
-    ];
-
-    for (const variant of variants) {
-      const escapedVariant = variant.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-      nextHtml = nextHtml.replace(
-        new RegExp(`src=["']${escapedVariant}["']`, "gi"),
-        `src="${image.dataUri}"`
-      );
-    }
-  }
-
-  return nextHtml;
 }
 
 async function checkUserTokenBudget(
@@ -285,6 +111,298 @@ async function checkUserTokenBudget(
   return { allowed: true };
 }
 
+type ValidatedSendRequest = {
+  chatId: string;
+  content: string;
+  language: unknown;
+  shouldSkipUserMessageSave: boolean;
+  selectedImageFileIds: string[];
+};
+
+function validateRequest(body: unknown): {
+  data?: ValidatedSendRequest;
+  errorResponse?: NextResponse;
+} {
+  if (!body || typeof body !== "object") {
+    return {
+      errorResponse: NextResponse.json({ error: "Invalid request body." }, { status: 400 }),
+    };
+  }
+
+  const typedBody = body as {
+    chatId?: unknown;
+    content?: unknown;
+    language?: unknown;
+    skipUserMessageSave?: unknown;
+    imageFileIds?: unknown;
+  };
+
+  const chatId = typeof typedBody.chatId === "string" ? typedBody.chatId : "";
+  const content = typeof typedBody.content === "string" ? typedBody.content : "";
+
+  if (!chatId) {
+    return {
+      errorResponse: NextResponse.json({ error: "chatId is required." }, { status: 400 }),
+    };
+  }
+
+  if (!content || content.trim().length === 0) {
+    return {
+      errorResponse: NextResponse.json({ error: "content is required." }, { status: 400 }),
+    };
+  }
+
+  if (content.trim().length > MAX_PROMPT_LENGTH) {
+    return {
+      errorResponse: NextResponse.json({ error: "Prompt too long." }, { status: 400 }),
+    };
+  }
+
+  const selectedImageFileIds = Array.isArray(typedBody.imageFileIds)
+    ? Array.from(
+        new Set(
+          typedBody.imageFileIds
+            .filter((value): value is string => typeof value === "string")
+            .map((value) => value.trim())
+            .filter(Boolean)
+        )
+      )
+    : [];
+
+  return {
+    data: {
+      chatId,
+      content,
+      language: typedBody.language,
+      shouldSkipUserMessageSave: typedBody.skipUserMessageSave === true,
+      selectedImageFileIds,
+    },
+  };
+}
+
+async function resolveUserImages(
+  supabase: SupabaseClient,
+  existingWebsiteId: string | null,
+  selectedImageFileIds: string[]
+): Promise<{
+  userImages: Array<{ fileName: string; dataUri: string }>;
+  websiteImagePool: Array<{ fileName: string; dataUri: string }>;
+}> {
+  if (!existingWebsiteId) {
+    return {
+      userImages: [],
+      websiteImagePool: [],
+    };
+  }
+
+  let userImages: Array<{ fileName: string; dataUri: string }> = [];
+  let websiteImagePool: Array<{ fileName: string; dataUri: string }> = [];
+
+  if (selectedImageFileIds.length > 0) {
+    try {
+      const { data, error } = await supabase
+        .from("files")
+        .select("id, file_name, content")
+        .eq("website_id", existingWebsiteId)
+        .eq("is_user_upload", true)
+        .in("id", selectedImageFileIds);
+
+      if (error) {
+        throw error;
+      }
+
+      const byId = new Map(
+        (data ?? []).map((row) => [
+          row.id,
+          {
+            fileName: row.file_name,
+            dataUri: row.content,
+          },
+        ])
+      );
+
+      userImages = selectedImageFileIds
+        .map((id) => byId.get(id))
+        .filter(
+          (
+            value
+          ): value is {
+            fileName: string;
+            dataUri: string;
+          } => Boolean(value)
+        );
+
+      console.log(
+        `[chat/send] User images found: ${userImages.length}`,
+        userImages.map((img) => img.fileName)
+      );
+    } catch (error) {
+      if (isMissingUploadColumns(error)) {
+        userImages = [];
+      } else {
+        throw error;
+      }
+    }
+  }
+
+  try {
+    const { data: allImagesData, error: allImagesError } = await supabase
+      .from("files")
+      .select("file_name, content")
+      .eq("website_id", existingWebsiteId)
+      .eq("is_user_upload", true)
+      .order("created_at", { ascending: true });
+
+    if (allImagesError) {
+      throw allImagesError;
+    }
+
+    websiteImagePool = (allImagesData ?? []).map((row) => ({
+      fileName: row.file_name,
+      dataUri: row.content,
+    }));
+  } catch (error) {
+    if (isMissingUploadColumns(error)) {
+      websiteImagePool = [];
+    } else {
+      throw error;
+    }
+  }
+
+  if (websiteImagePool.length === 0 && userImages.length > 0) {
+    websiteImagePool = userImages;
+  }
+
+  return {
+    userImages,
+    websiteImagePool,
+  };
+}
+
+function handleHtmlGeneration(params: {
+  aiResponse: Awaited<ReturnType<typeof generateAIResponse>>;
+  existingWebsiteId: string | null;
+  existingHtml: string | null;
+  content: string;
+  userImages: Array<{ fileName: string; dataUri: string }>;
+  websiteImagePool: Array<{ fileName: string; dataUri: string }>;
+}): {
+  htmlToSave: string | null;
+  htmlForPreview?: string;
+} {
+  const {
+    aiResponse,
+    existingWebsiteId,
+    existingHtml,
+    content,
+    userImages,
+    websiteImagePool,
+  } = params;
+
+  let htmlToSave: string | null = null;
+  let htmlForPreview: string | undefined;
+
+  const shouldForceUploadedImageSwap =
+    promptRequestsUploadedImageSwap(content.trim()) && userImages.length > 0;
+
+  if (aiResponse.type === "website") {
+    let normalizedHtml = normalizeGeneratedHtmlForStorage(aiResponse.html, userImages);
+
+    if (shouldForceUploadedImageSwap) {
+      const referencedCount = countReferencedUserImagePaths(normalizedHtml, userImages);
+
+      if (referencedCount === 0) {
+        const baseHtmlForForcedSwap = existingHtml && existingHtml.trim().length > 0
+          ? existingHtml
+          : normalizedHtml;
+
+        const forced = forceApplyUploadedImagesToHtml(
+          baseHtmlForForcedSwap,
+          userImages,
+          content.trim()
+        );
+
+        if (forced.replacedCount > 0) {
+          normalizedHtml = forced.html;
+        }
+      }
+    }
+
+    htmlToSave = normalizedHtml;
+    htmlForPreview = injectUploadedImagesForPreview(normalizedHtml, websiteImagePool);
+  } else if (existingWebsiteId && existingHtml && shouldForceUploadedImageSwap) {
+    const forced = forceApplyUploadedImagesToHtml(existingHtml, userImages, content.trim());
+
+    if (forced.replacedCount > 0) {
+      htmlToSave = forced.html;
+      htmlForPreview = injectUploadedImagesForPreview(forced.html, websiteImagePool);
+    }
+  }
+
+  return { htmlToSave, htmlForPreview };
+}
+
+async function saveWebsiteRecord(params: {
+  supabase: SupabaseClient;
+  chatId: string;
+  content: string;
+  effectiveLanguage: AppLanguage;
+  existingWebsite: Awaited<ReturnType<typeof getWebsiteByChatId>>;
+  htmlToSave: string | null;
+}): Promise<Awaited<ReturnType<typeof getWebsiteByChatId>>> {
+  const {
+    supabase,
+    chatId,
+    content,
+    effectiveLanguage,
+    existingWebsite,
+    htmlToSave,
+  } = params;
+
+  if (!htmlToSave) {
+    return existingWebsite;
+  }
+
+  let website = existingWebsite;
+
+  if (!website) {
+    try {
+      website = await createWebsite(
+        supabase,
+        chatId,
+        content.trim(),
+        effectiveLanguage
+      );
+    } catch (error) {
+      const maybePgError = error as PostgresLikeError;
+
+      if (maybePgError.code === "23505") {
+        website = await getWebsiteByChatId(supabase, chatId);
+      } else {
+        throw error;
+      }
+    }
+  }
+
+  if (!website) {
+    throw new Error("Failed to resolve website after creation race.");
+  }
+
+  if (website.language !== effectiveLanguage) {
+    const { error: updateLanguageError } = await supabase
+      .from("websites")
+      .update({ language: effectiveLanguage })
+      .eq("id", website.id);
+
+    if (updateLanguageError) {
+      throw updateLanguageError;
+    }
+  }
+
+  await saveGeneratedHtml(supabase, website.id, htmlToSave);
+  return website;
+}
+
 /**
  * POST /api/chat/send
  *
@@ -297,40 +415,19 @@ async function checkUserTokenBudget(
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { chatId, content, language, skipUserMessageSave, imageFileIds } = body;
-    const shouldSkipUserMessageSave = skipUserMessageSave === true;
-    const selectedImageFileIds = Array.isArray(imageFileIds)
-      ? Array.from(
-          new Set(
-            imageFileIds
-              .filter((value): value is string => typeof value === "string")
-              .map((value) => value.trim())
-              .filter(Boolean)
-          )
-        )
-      : [];
-
-    // Validate input
-    if (!chatId || typeof chatId !== "string") {
-      return NextResponse.json(
-        { error: "chatId is required." },
-        { status: 400 }
-      );
+    const validation = validateRequest(body);
+    if (validation.errorResponse) {
+      return validation.errorResponse;
     }
 
-    if (!content || typeof content !== "string" || content.trim().length === 0) {
-      return NextResponse.json(
-        { error: "content is required." },
-        { status: 400 }
-      );
-    }
-
-    if (content.trim().length > MAX_PROMPT_LENGTH) {
-      return NextResponse.json(
-        { error: "Prompt too long." },
-        { status: 400 }
-      );
-    }
+    const {
+      chatId,
+      content,
+      language,
+      shouldSkipUserMessageSave,
+      selectedImageFileIds,
+    } = validation.data as ValidatedSendRequest;
+    const trimmedContent = content.trim();
 
     // Create authenticated Supabase client from request cookies
     const supabaseResponse = NextResponse.next();
@@ -387,7 +484,7 @@ export async function POST(request: NextRequest) {
         supabase,
         chatId,
         "user",
-        content.trim()
+        trimmedContent
       );
     }
 
@@ -404,7 +501,7 @@ export async function POST(request: NextRequest) {
           supabase,
           chatId,
           "user",
-          content.trim()
+          trimmedContent
         );
         historyForAI = await getChatMessages(supabase, chatId);
       }
@@ -424,85 +521,11 @@ export async function POST(request: NextRequest) {
       : null;
     const existingHtmlForAI = normalizeExistingHtmlForPrompt(existingHtml);
 
-    let userImages: Array<{ fileName: string; dataUri: string }> = [];
-    let websiteImagePool: Array<{ fileName: string; dataUri: string }> = [];
-
-    if (existingWebsite && selectedImageFileIds.length > 0) {
-      try {
-        const { data, error } = await supabase
-          .from("files")
-          .select("id, file_name, content")
-          .eq("website_id", existingWebsite.id)
-          .eq("is_user_upload", true)
-          .in("id", selectedImageFileIds);
-
-        if (error) {
-          throw error;
-        }
-
-        const byId = new Map(
-          (data ?? []).map((row) => [
-            row.id,
-            {
-              fileName: row.file_name,
-              dataUri: row.content,
-            },
-          ])
-        );
-
-        userImages = selectedImageFileIds
-          .map((id) => byId.get(id))
-          .filter(
-            (
-              value
-            ): value is {
-              fileName: string;
-              dataUri: string;
-            } => Boolean(value)
-          );
-
-        console.log(
-          `[chat/send] User images found: ${userImages.length}`,
-          userImages.map((img) => img.fileName)
-        );
-      } catch (error) {
-        if (isMissingUploadColumns(error)) {
-          userImages = [];
-        } else {
-          throw error;
-        }
-      }
-    }
-
-    if (existingWebsite) {
-      try {
-        const { data: allImagesData, error: allImagesError } = await supabase
-          .from("files")
-          .select("file_name, content")
-          .eq("website_id", existingWebsite.id)
-          .eq("is_user_upload", true)
-          .order("created_at", { ascending: true });
-
-        if (allImagesError) {
-          throw allImagesError;
-        }
-
-        websiteImagePool = (allImagesData ?? []).map((row) => ({
-          fileName: row.file_name,
-          dataUri: row.content,
-        }));
-      } catch (error) {
-        if (isMissingUploadColumns(error)) {
-          websiteImagePool = [];
-        } else {
-          throw error;
-        }
-      }
-    }
-
-    if (websiteImagePool.length === 0 && userImages.length > 0) {
-      websiteImagePool = userImages;
-    }
+    const { userImages, websiteImagePool } = await resolveUserImages(
+      supabase,
+      existingWebsite?.id ?? null,
+      selectedImageFileIds
+    );
 
     // Call DeepSeek AI — pass existingHtml so edit mode activates correctly
     const aiResponse = await generateAIResponse(
@@ -514,85 +537,23 @@ export async function POST(request: NextRequest) {
       userImages
     );
 
-    let htmlToSave: string | null = null;
-    let htmlForPreview: string | undefined;
+    const { htmlToSave, htmlForPreview } = handleHtmlGeneration({
+      aiResponse,
+      existingWebsiteId: existingWebsite?.id ?? null,
+      existingHtml,
+      content: trimmedContent,
+      userImages,
+      websiteImagePool,
+    });
 
-    const shouldForceUploadedImageSwap =
-      promptRequestsUploadedImageSwap(content.trim()) && userImages.length > 0;
-
-    if (aiResponse.type === "website") {
-      let normalizedHtml = normalizeGeneratedHtmlForStorage(aiResponse.html, userImages);
-
-      if (shouldForceUploadedImageSwap) {
-        const referencedCount = countReferencedUserImagePaths(normalizedHtml, userImages);
-
-        if (referencedCount === 0) {
-          const baseHtmlForForcedSwap = existingHtml && existingHtml.trim().length > 0
-            ? existingHtml
-            : normalizedHtml;
-
-          const forced = forceApplyUploadedImagesToHtml(
-            baseHtmlForForcedSwap,
-            userImages,
-            content.trim()
-          );
-
-          if (forced.replacedCount > 0) {
-            normalizedHtml = forced.html;
-          }
-        }
-      }
-
-      htmlToSave = normalizedHtml;
-      htmlForPreview = injectUploadedImagesForPreview(normalizedHtml, websiteImagePool);
-    } else if (existingWebsite && existingHtml && shouldForceUploadedImageSwap) {
-      const forced = forceApplyUploadedImagesToHtml(existingHtml, userImages, content.trim());
-
-      if (forced.replacedCount > 0) {
-        htmlToSave = forced.html;
-        htmlForPreview = injectUploadedImagesForPreview(forced.html, websiteImagePool);
-      }
-    }
-
-    if (htmlToSave) {
-      let website = existingWebsite;
-
-      if (!website) {
-        try {
-          website = await createWebsite(
-            supabase,
-            chatId,
-            content.trim(),
-            effectiveLanguage
-          );
-        } catch (error) {
-          const maybePgError = error as PostgresLikeError;
-
-          if (maybePgError.code === "23505") {
-            website = await getWebsiteByChatId(supabase, chatId);
-          } else {
-            throw error;
-          }
-        }
-      }
-
-      if (!website) {
-        throw new Error("Failed to resolve website after creation race.");
-      }
-
-      if (website.language !== effectiveLanguage) {
-        const { error: updateLanguageError } = await supabase
-          .from("websites")
-          .update({ language: effectiveLanguage })
-          .eq("id", website.id);
-
-        if (updateLanguageError) {
-          throw updateLanguageError;
-        }
-      }
-
-      await saveGeneratedHtml(supabase, website.id, htmlToSave);
-    }
+    await saveWebsiteRecord({
+      supabase,
+      chatId,
+      content: trimmedContent,
+      effectiveLanguage,
+      existingWebsite,
+      htmlToSave,
+    });
 
     // Save the assistant message (the text part)
     const assistantMessage = await addMessage(
@@ -606,7 +567,7 @@ export async function POST(request: NextRequest) {
     const userMessages = historyForAI.filter((m) => m.role === "user");
     if (userMessages.length === 1) {
       try {
-        const title = await generateChatTitle(content.trim(), effectiveLanguage);
+        const title = await generateChatTitle(trimmedContent, effectiveLanguage);
         await renameChat(supabase, chatId, title);
       } catch {
         try {

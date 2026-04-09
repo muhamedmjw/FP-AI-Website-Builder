@@ -3,35 +3,7 @@ import { getSupabaseServerClient } from "@/server/supabase/server-client";
 import { getWebsiteByChatId } from "@/server/services/website-service";
 import { getCurrentUser } from "@/shared/services/user-service";
 import type { UserImage } from "@/shared/types/database";
-
-type SupabaseLikeError = {
-  code?: string;
-  message?: string;
-  details?: string;
-  hint?: string;
-};
-
-function isMissingUploadColumns(error: unknown): boolean {
-  if (!error || typeof error !== "object") {
-    return false;
-  }
-
-  const supabaseError = error as SupabaseLikeError;
-  const combinedMessage = [
-    supabaseError.message,
-    supabaseError.details,
-    supabaseError.hint,
-  ]
-    .filter((value): value is string => typeof value === "string")
-    .join(" ")
-    .toLowerCase();
-
-  return (
-    supabaseError.code === "42703" ||
-    (combinedMessage.includes("is_user_upload") && combinedMessage.includes("column")) ||
-    (combinedMessage.includes("mime_type") && combinedMessage.includes("column"))
-  );
-}
+import { isMissingUploadColumns } from "@/shared/utils/db-guards";
 
 function inferMimeType(dataUri: string, fallback = "image/*"): string {
   const match = dataUri.match(/^data:([^;,]+)[;,]/i);

@@ -21,6 +21,23 @@ function toTimestamp(value: string | null): number | null {
   return Number.isFinite(timestamp) ? timestamp : null;
 }
 
+function getCurrentChatId(pathname: string | null): string | null {
+  if (!pathname) {
+    return null;
+  }
+
+  const match = pathname.match(/^\/chat\/([^/]+)\/?$/);
+  if (!match) {
+    return null;
+  }
+
+  try {
+    return decodeURIComponent(match[1]);
+  } catch {
+    return match[1];
+  }
+}
+
 async function isChatStillPending(
   supabase: SupabaseClient,
   chatId: string,
@@ -71,12 +88,21 @@ export default function PendingChatSync() {
   const pathname = usePathname();
   const supabase = useMemo(() => getSupabaseBrowserClient(), []);
   const isPollingRef = useRef(false);
+  const pathnameRef = useRef(pathname);
+
+  useEffect(() => {
+    pathnameRef.current = pathname;
+  }, [pathname]);
 
   useEffect(() => {
     let isCancelled = false;
 
     const runPendingSync = async () => {
       if (isCancelled || isPollingRef.current) {
+        return;
+      }
+
+      if (document.visibilityState !== "visible") {
         return;
       }
 
@@ -100,16 +126,17 @@ export default function PendingChatSync() {
           }))
         );
 
-        let resolvedCount = 0;
+        const resolvedChatIds = new Set<string>();
 
         for (const check of checks) {
           if (!check.stillPending) {
             resolveChatGeneration(check.chatId);
-            resolvedCount += 1;
+            resolvedChatIds.add(check.chatId);
           }
         }
 
-        if (resolvedCount > 0) {
+        const activeChatId = getCurrentChatId(pathnameRef.current);
+        if (activeChatId && resolvedChatIds.has(activeChatId)) {
           router.refresh();
         }
       } finally {
@@ -141,7 +168,7 @@ export default function PendingChatSync() {
       document.removeEventListener("visibilitychange", handleVisibilityChange);
       unsubscribe();
     };
-  }, [pathname, router, supabase]);
+  }, [router, supabase]);
 
   return null;
 }

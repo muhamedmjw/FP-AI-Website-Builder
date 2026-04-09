@@ -1,6 +1,6 @@
 "use client";
 
-import { ChangeEvent, FormEvent, useEffect, useRef, useState } from "react";
+import { ChangeEvent, FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { X } from "lucide-react";
 import { getSupabaseBrowserClient } from "@/client/lib/supabase-browser";
@@ -60,23 +60,31 @@ export default function HomePage() {
   const isProcessingPendingGuestActions = useRef(false);
   const visibleImages = images.slice(0, 6);
   const hiddenImagesCount = Math.max(0, images.length - visibleImages.length);
-  const totalImageBytes = images.reduce((sum, image) => {
-    const commaIndex = image.dataUri.indexOf(",");
-    if (commaIndex < 0) {
-      return sum;
-    }
+  const totalImageBytes = useMemo(
+    () =>
+      images.reduce((sum, image) => {
+        const commaIndex = image.dataUri.indexOf(",");
+        if (commaIndex < 0) {
+          return sum;
+        }
 
-    const base64 = image.dataUri.slice(commaIndex + 1).replace(/\s+/g, "");
-    if (!base64) {
-      return sum;
-    }
+        const base64 = image.dataUri.slice(commaIndex + 1).replace(/\s+/g, "");
+        if (!base64) {
+          return sum;
+        }
 
-    const paddingLength = base64.endsWith("==") ? 2 : base64.endsWith("=") ? 1 : 0;
-    const bytes = Math.max(0, Math.floor((base64.length * 3) / 4) - paddingLength);
-    return sum + bytes;
-  }, 0);
+        const paddingLength = base64.endsWith("==") ? 2 : base64.endsWith("=") ? 1 : 0;
+        const bytes = Math.max(0, Math.floor((base64.length * 3) / 4) - paddingLength);
+        return sum + bytes;
+      }, 0),
+    [images]
+  );
   const hasLargeImagePayload = totalImageBytes > 2 * 1024 * 1024;
 
+  /**
+   * Ensures there is exactly one in-flight draft chat creation call.
+   * Concurrent callers share draftChatPromiseRef.current to avoid duplicate chats.
+   */
   async function ensureDraftChatId(): Promise<string> {
     if (draftChatId) {
       return draftChatId;
@@ -302,7 +310,7 @@ export default function HomePage() {
       window.clearTimeout(timeoutId);
       subscription.unsubscribe();
     };
-  }, [language, router]);
+  }, [language]);
 
   useEffect(() => {
     if (inputRef.current) {
@@ -398,13 +406,10 @@ export default function HomePage() {
 
       shouldResetLoadingState = false;
       router.push(`/chat/${chatIdToUse}`);
-      router.refresh();
 
       void sendChatMessage(chatIdToUse, trimmedMessage, language, {
         skipUserMessageSave: true,
         imageFileIds: images.map((image) => image.fileId),
-      }).then(() => {
-        router.refresh();
       }).catch((error) => {
         console.error("Background AI send failed after navigation:", error);
       });

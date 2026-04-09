@@ -22,7 +22,7 @@ type DeployModalProps = {
   deployUrl: string | null;
   deployError: string;
   hasDeployed: boolean;
-  isRedeploying: boolean;
+  canRedeploy: boolean;
 };
 
 export default function DeployModal({
@@ -33,7 +33,7 @@ export default function DeployModal({
   deployUrl,
   deployError,
   hasDeployed,
-  isRedeploying,
+  canRedeploy,
 }: DeployModalProps) {
   const { language } = useLanguage();
   const elapsedSeconds = useElapsedSeconds(isOpen && isDeploying);
@@ -72,7 +72,7 @@ export default function DeployModal({
     !isDeploying &&
     !hasDeployError &&
     hasDeployed &&
-    isRedeploying &&
+    canRedeploy &&
     !hasConfirmedThisOpen;
   const showRandomNameConfirmation =
     isOpen &&

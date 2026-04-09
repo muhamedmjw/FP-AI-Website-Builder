@@ -7,31 +7,7 @@ import {
   getWebsiteByChatId,
   getGeneratedHtml,
 } from "@/server/services/website-service";
-
-type PostgresLikeError = {
-  code?: string;
-  message?: string;
-  details?: string;
-  hint?: string;
-};
-
-function isMissingUploadColumns(error: unknown): boolean {
-  if (!error || typeof error !== "object") {
-    return false;
-  }
-
-  const pgError = error as PostgresLikeError;
-  const combinedMessage = [pgError.message, pgError.details, pgError.hint]
-    .filter((value): value is string => typeof value === "string")
-    .join(" ")
-    .toLowerCase();
-
-  return (
-    pgError.code === "42703" ||
-    (combinedMessage.includes("is_user_upload") && combinedMessage.includes("column")) ||
-    (combinedMessage.includes("mime_type") && combinedMessage.includes("column"))
-  );
-}
+import { isMissingUploadColumns } from "@/shared/utils/db-guards";
 
 function toSafeFilename(title: string): string {
   let safeBase = title

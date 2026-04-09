@@ -1,6 +1,6 @@
 "use client";
 
-import { ChangeEvent, FormEvent, useEffect, useRef, useState } from "react";
+import { ChangeEvent, FormEvent, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { X } from "lucide-react";
 import { useLanguage } from "@/client/lib/language-context";
 import { useUserImages } from "@/client/lib/hooks/use-user-images";
@@ -118,21 +118,25 @@ export default function ChatInput({
   const isGuestMode = !chatId;
   const visibleImages = images.slice(0, 6);
   const hiddenImagesCount = Math.max(0, images.length - visibleImages.length);
-  const totalImageBytes = images.reduce((sum, image) => {
-    const commaIndex = image.dataUri.indexOf(",");
-    if (commaIndex < 0) {
-      return sum;
-    }
+  const totalImageBytes = useMemo(
+    () =>
+      images.reduce((sum, image) => {
+        const commaIndex = image.dataUri.indexOf(",");
+        if (commaIndex < 0) {
+          return sum;
+        }
 
-    const base64 = image.dataUri.slice(commaIndex + 1).replace(/\s+/g, "");
-    if (!base64) {
-      return sum;
-    }
+        const base64 = image.dataUri.slice(commaIndex + 1).replace(/\s+/g, "");
+        if (!base64) {
+          return sum;
+        }
 
-    const paddingLength = base64.endsWith("==") ? 2 : base64.endsWith("=") ? 1 : 0;
-    const bytes = Math.max(0, Math.floor((base64.length * 3) / 4) - paddingLength);
-    return sum + bytes;
-  }, 0);
+        const paddingLength = base64.endsWith("==") ? 2 : base64.endsWith("=") ? 1 : 0;
+        const bytes = Math.max(0, Math.floor((base64.length * 3) / 4) - paddingLength);
+        return sum + bytes;
+      }, 0),
+    [images]
+  );
   const hasLargeImagePayload = totalImageBytes > 2 * 1024 * 1024;
 
   useEffect(() => {
@@ -141,13 +145,13 @@ export default function ChatInput({
     }
   }, [images, onImagesChange]);
 
-  function adjustHeight(el: HTMLTextAreaElement) {
+  const adjustHeight = useCallback((el: HTMLTextAreaElement) => {
     el.style.height = "auto";
     const clampedHeight = Math.min(el.scrollHeight, CHAT_INPUT_MAX_HEIGHT_PX);
     el.style.height = `${clampedHeight}px`;
     el.style.overflowY =
       el.scrollHeight > CHAT_INPUT_MAX_HEIGHT_PX ? "auto" : "hidden";
-  }
+  }, []);
 
   function handleKeyDown(event: React.KeyboardEvent<HTMLTextAreaElement>) {
     if (event.key === "Enter" && !event.shiftKey) {
@@ -160,13 +164,13 @@ export default function ChatInput({
     if (textareaRef.current) {
       adjustHeight(textareaRef.current);
     }
-  }, []);
+  }, [adjustHeight]);
 
   useEffect(() => {
     if (textareaRef.current) {
       adjustHeight(textareaRef.current);
     }
-  }, [inputValue]);
+  }, [adjustHeight, inputValue]);
 
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();

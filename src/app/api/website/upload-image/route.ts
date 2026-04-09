@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getSupabaseServerClient } from "@/server/supabase/server-client";
 import { createWebsite, getWebsiteByChatId } from "@/server/services/website-service";
 import { getCurrentUser } from "@/shared/services/user-service";
+import { isMissingUploadColumns } from "@/shared/utils/db-guards";
 
 type PostgresLikeError = {
   code?: string;
@@ -15,24 +16,6 @@ const MAX_IMAGE_SIZE_BYTES = 4 * 1024 * 1024;
 const IMAGE_MIME_TYPE_REGEX = /^image\//i;
 const MISSING_COLUMNS_ERROR =
   "Database migration required: add is_user_upload (boolean) and mime_type (text) columns to public.files.";
-
-function isMissingUploadColumns(error: unknown): boolean {
-  if (!error || typeof error !== "object") {
-    return false;
-  }
-
-  const pgError = error as PostgresLikeError;
-  const combinedMessage = [pgError.message, pgError.details, pgError.hint]
-    .filter((value): value is string => typeof value === "string")
-    .join(" ")
-    .toLowerCase();
-
-  return (
-    pgError.code === "42703" ||
-    (combinedMessage.includes("is_user_upload") && combinedMessage.includes("column")) ||
-    (combinedMessage.includes("mime_type") && combinedMessage.includes("column"))
-  );
-}
 
 function toImageExtension(mimeType: string): string {
   switch (mimeType) {

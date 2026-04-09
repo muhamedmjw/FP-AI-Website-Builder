@@ -2,6 +2,7 @@
 
 import { LanguageProvider } from "@/client/lib/language-context";
 import PendingChatSync from "@/client/components/pending-chat-sync";
+import NavigationLoadingCursor from "@/client/components/navigation-loading-cursor";
 import type { AppLanguage } from "@/shared/types/database";
 
 type WorkspaceProvidersProps = {
@@ -20,6 +21,7 @@ export default function WorkspaceProviders({
       initialLanguage={language}
       hasInitialLanguagePreference={hasLanguagePreference}
     >
+      <NavigationLoadingCursor />
       <PendingChatSync />
       {children}
     </LanguageProvider>
