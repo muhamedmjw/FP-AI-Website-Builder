@@ -1,0 +1,86 @@
+/* =============================================
+   THEME: Street Food Vibrant | Category: Restaurant
+   Fonts: Bebas Neue (heading), Outfit (body)
+   ============================================= */
+@import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Outfit:wght@400;700&display=swap');
+
+:root {
+  --bg:           #ff6b35;
+  --surface:      #ffffff;
+  --primary:      #004e89;
+  --secondary:    #ffd23f;
+  --text:         #1a1a1a;
+  --muted:        #666666;
+  --border:       rgba(255,255,255,0.3);
+  --font-heading: 'Bebas Neue', cursive;
+  --font-body:    'Outfit', sans-serif;
+  --radius:       16px;
+  --transition:   0.3s ease;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; }
+body { background: var(--bg); color: var(--text); font-family: var(--font-body); font-size: 16px; }
+
+nav {
+  padding: 1.5rem 3rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.logo { font-family: var(--font-heading); font-size: 2.5rem; color: var(--surface); letter-spacing: 0.05em; }
+nav ul { display: flex; gap: 2rem; list-style: none; }
+nav ul a { color: var(--surface); text-decoration: none; font-weight: 700; }
+
+.hero {
+  padding: 4rem 3rem;
+  text-align: center;
+}
+.hero h1 { font-family: var(--font-heading); font-size: clamp(4rem, 10vw, 8rem); color: var(--surface); line-height: 0.9; margin-bottom: 1rem; }
+.hero p { font-size: 1.2rem; color: var(--primary); max-width: 600px; margin: 0 auto 2rem; font-weight: 700; }
+
+.food-grid { padding: 3rem; display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 2rem; max-width: 1400px; margin: 0 auto; }
+.food-card {
+  background: var(--surface);
+  border-radius: var(--radius);
+  overflow: hidden;
+  transform: rotate(-2deg);
+  transition: transform var(--transition);
+  box-shadow: 8px 8px 0 var(--primary);
+}
+.food-card:nth-child(even) { transform: rotate(2deg); }
+.food-card:hover { transform: rotate(0deg) scale(1.02); }
+.food-card-image { height: 200px; background: var(--secondary); }
+.food-card-content { padding: 1.5rem; }
+.food-card h3 { font-family: var(--font-heading); font-size: 1.8rem; margin-bottom: 0.5rem; }
+.food-card p { color: var(--muted); font-size: 0.9rem; margin-bottom: 1rem; }
+.food-card .price { font-family: var(--font-heading); font-size: 1.5rem; color: var(--bg); }
+
+.location { background: var(--primary); color: var(--surface); padding: 5rem 3rem; text-align: center; }
+.location h2 { font-family: var(--font-heading); font-size: 3rem; margin-bottom: 1rem; }
+
+.btn {
+  display: inline-block;
+  padding: 1rem 2.5rem;
+  background: var(--secondary);
+  color: var(--primary);
+  text-decoration: none;
+  font-family: var(--font-heading);
+  font-size: 1.2rem;
+  border-radius: var(--radius);
+  transition: transform var(--transition);
+}
+.btn:hover { transform: scale(1.05); }
+
+footer { padding: 3rem; text-align: center; color: var(--primary); font-weight: 700; }
+
+@keyframes fadeUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes bounceIn { 0% { transform: scale(0.3); opacity: 0; } 50% { transform: scale(1.05); } 70% { transform: scale(0.9); } 100% { transform: scale(1); opacity: 1; } }
+[data-scroll] { opacity: 0; transform: translateY(20px); transition: opacity 0.7s ease, transform 0.7s ease; }
+[data-scroll].visible { opacity: 1; transform: translateY(0); }
+
+@media (max-width: 768px) {
+  nav { flex-direction: column; gap: 1rem; }
+  .hero { padding: 2rem 1.5rem; }
+  .food-grid { padding: 1.5rem; }
+}

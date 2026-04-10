@@ -1,0 +1,47 @@
+/* =============================================
+   THEME: Minimalist Prose | Category: Blog
+   Fonts: Instrument Serif (heading), Inter (body)
+   ============================================= */
+@import url('https://fonts.googleapis.com/css2?family=Instrument+Serif&family=Inter:wght@300;400;500&display=swap');
+
+:root {
+  --bg:           #ffffff;
+  --surface:      #fafafa;
+  --primary:      #1a1a1a;
+  --secondary:    #666666;
+  --text:         #1a1a1a;
+  --muted:        #999999;
+  --border:       #f0f0f0;
+  --font-heading: 'Instrument Serif', serif;
+  --font-body:    'Inter', sans-serif;
+  --radius:       0px;
+  --transition:   0.3s ease;
+  --max-width:    640px;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; }
+body { background: var(--bg); color: var(--text); font-family: var(--font-body); font-size: 17px; line-height: 1.8; }
+
+header {
+  padding: 4rem 2rem 2rem;
+  text-align: center;
+  border-bottom: 1px solid var(--border);
+}
+header .logo { font-family: var(--font-heading); font-size: 1.4rem; }
+
+main { max-width: var(--max-width); margin: 0 auto; padding: 4rem 2rem; }
+
+article h1 { font-family: var(--font-heading); font-size: 2.5rem; line-height: 1.2; margin-bottom: 0.5rem; }
+article .meta { font-size: 0.85rem; color: var(--muted); margin-bottom: 3rem; }
+article p { margin-bottom: 1.8rem; font-size: 1.05rem; }
+article h2 { font-family: var(--font-heading); font-size: 1.6rem; margin: 3rem 0 1rem; }
+
+.post-list { list-style: none; }
+.post-list li { padding: 2rem 0; border-bottom: 1px solid var(--border); }
+.post-list h2 { font-family: var(--font-heading); font-size: 1.5rem; margin-bottom: 0.25rem; }
+.post-list h2 a { color: var(--text); text-decoration: none; }
+.post-list h2 a:hover { color: var(--secondary); }
+.post-list .date { font-size: 0.85rem; color: var(--muted); }
+
+footer { padding: 3rem 2rem; text-align: center; border-top: 1px solid var(--border); color: var(--muted); font-size: 0.9rem; }

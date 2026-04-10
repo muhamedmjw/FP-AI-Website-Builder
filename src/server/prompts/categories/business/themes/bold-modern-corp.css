@@ -1,0 +1,90 @@
+/* =============================================
+   THEME: Bold Modern Corp | Category: Business
+   Fonts: Syne (heading), Outfit (body)
+   ============================================= */
+@import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;700;800&family=Outfit:wght@300;400;500&display=swap');
+
+:root {
+  --bg:           #0a0a0a;
+  --surface:      #171717;
+  --primary:      #ff4500;
+  --secondary:    #ffffff;
+  --text:         #fafafa;
+  --muted:        #a3a3a3;
+  --border:       #262626;
+  --font-heading: 'Syne', sans-serif;
+  --font-body:    'Outfit', sans-serif;
+  --radius:       0px;
+  --transition:   0.3s ease;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; }
+body { background: var(--bg); color: var(--text); font-family: var(--font-body); font-size: 16px; }
+
+nav {
+  padding: 2rem 4rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.logo { font-family: var(--font-heading); font-size: 1.8rem; font-weight: 800; }
+.logo span { color: var(--primary); }
+nav ul { display: flex; gap: 3rem; list-style: none; }
+nav ul a { color: var(--muted); text-decoration: none; transition: color var(--transition); }
+nav ul a:hover { color: var(--secondary); }
+
+.hero {
+  min-height: 80vh;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 4rem;
+  padding: 4rem;
+  align-items: center;
+}
+.hero h1 { font-family: var(--font-heading); font-size: clamp(3rem, 6vw, 5rem); font-weight: 800; line-height: 1; margin-bottom: 1.5rem; }
+.hero h1 span { color: var(--primary); }
+.hero p { color: var(--muted); font-size: 1.1rem; margin-bottom: 2rem; }
+.hero-visual { background: var(--surface); min-height: 400px; position: relative; }
+.hero-visual::before {
+  content: '';
+  position: absolute;
+  top: -20px; right: -20px;
+  width: 100%; height: 100%;
+  border: 2px solid var(--primary);
+  z-index: -1;
+}
+
+.stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 2rem; padding: 4rem; border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); }
+.stat h3 { font-family: var(--font-heading); font-size: 3rem; font-weight: 800; color: var(--primary); }
+.stat p { color: var(--muted); }
+
+.features { padding: 5rem 4rem; }
+.features h2 { font-family: var(--font-heading); font-size: 2.5rem; margin-bottom: 3rem; }
+.feature-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 3rem; }
+.feature h4 { font-family: var(--font-heading); font-size: 1.2rem; margin-bottom: 0.5rem; }
+.feature p { color: var(--muted); }
+
+.btn {
+  display: inline-block;
+  padding: 1rem 2rem;
+  background: var(--primary);
+  color: var(--secondary);
+  text-decoration: none;
+  font-weight: 600;
+  transition: transform var(--transition);
+}
+.btn:hover { transform: translateY(-2px); }
+
+footer { padding: 3rem 4rem; border-top: 1px solid var(--border); color: var(--muted); }
+
+@keyframes fadeUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+[data-scroll] { opacity: 0; transform: translateY(20px); transition: opacity 0.7s ease, transform 0.7s ease; }
+[data-scroll].visible { opacity: 1; transform: translateY(0); }
+
+@media (max-width: 768px) {
+  .hero { grid-template-columns: 1fr; padding: 3rem 1.5rem; }
+  .stats { grid-template-columns: 1fr; padding: 3rem 1.5rem; }
+  .features { padding: 3rem 1.5rem; }
+  .feature-grid { grid-template-columns: 1fr; }
+}

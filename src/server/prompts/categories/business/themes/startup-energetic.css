@@ -1,0 +1,90 @@
+/* =============================================
+   THEME: Startup Energetic | Category: Business
+   Fonts: Plus Jakarta Sans (heading), Inter (body)
+   ============================================= */
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;700&family=Inter:wght@300;400;500&display=swap');
+
+:root {
+  --bg:           #ffffff;
+  --surface:      #faf5ff;
+  --primary:      #7c3aed;
+  --secondary:    #ec4899;
+  --text:         #1e1b4b;
+  --muted:        #6b7280;
+  --border:       #e9d5ff;
+  --font-heading: 'Plus Jakarta Sans', sans-serif;
+  --font-body:    'Inter', sans-serif;
+  --radius:       16px;
+  --transition:   0.3s ease;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; }
+body { background: var(--bg); color: var(--text); font-family: var(--font-body); font-size: 16px; }
+
+.hero {
+  min-height: 90vh;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+  padding: 4rem;
+  background: linear-gradient(135deg, var(--surface) 0%, var(--bg) 50%, #fdf2f8 100%);
+  position: relative;
+  overflow: hidden;
+}
+.hero::before {
+  content: '';
+  position: absolute;
+  width: 600px; height: 600px;
+  background: radial-gradient(circle, rgba(124,58,237,0.1) 0%, transparent 70%);
+  top: -200px; right: -200px;
+}
+.hero h1 { font-family: var(--font-heading); font-size: clamp(2.5rem, 6vw, 4.5rem); font-weight: 700; margin-bottom: 1.5rem; }
+.hero h1 span { background: linear-gradient(90deg, var(--primary), var(--secondary)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+.hero p { font-size: 1.2rem; color: var(--muted); max-width: 600px; margin-bottom: 2rem; }
+
+nav { position: absolute; top: 0; left: 0; right: 0; padding: 1.5rem 4rem; display: flex; justify-content: space-between; align-items: center; z-index: 100; }
+.logo { font-family: var(--font-heading); font-size: 1.5rem; font-weight: 700; }
+nav ul { display: flex; gap: 2rem; list-style: none; }
+nav ul a { color: var(--muted); text-decoration: none; font-weight: 500; }
+
+.features-grid { padding: 5rem 4rem; max-width: 1200px; margin: 0 auto; }
+.features-grid h2 { font-family: var(--font-heading); font-size: 2.5rem; text-align: center; margin-bottom: 3rem; }
+.grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 2rem; }
+.card {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 2rem;
+  transition: transform var(--transition), box-shadow var(--transition);
+}
+.card:hover { transform: translateY(-4px); box-shadow: 0 20px 40px rgba(124,58,237,0.1); }
+.card h3 { font-family: var(--font-heading); font-size: 1.2rem; margin-bottom: 0.75rem; }
+.card p { color: var(--muted); font-size: 0.95rem; }
+
+.btn {
+  display: inline-block;
+  padding: 1rem 2rem;
+  background: linear-gradient(90deg, var(--primary), var(--secondary));
+  color: var(--bg);
+  text-decoration: none;
+  font-weight: 600;
+  border-radius: var(--radius);
+  transition: transform var(--transition);
+}
+.btn:hover { transform: translateY(-2px); }
+
+footer { padding: 3rem; text-align: center; color: var(--muted); }
+
+@keyframes fadeUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
+[data-scroll] { opacity: 0; transform: translateY(20px); transition: opacity 0.7s ease, transform 0.7s ease; }
+[data-scroll].visible { opacity: 1; transform: translateY(0); }
+
+@media (max-width: 768px) {
+  .hero { padding: 6rem 1.5rem 3rem; }
+  .features-grid { padding: 3rem 1.5rem; }
+  .grid-3 { grid-template-columns: 1fr; }
+}

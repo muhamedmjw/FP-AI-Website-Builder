@@ -1,0 +1,57 @@
+/* =============================================
+   THEME: Luxury Properties | Category: Real Estate
+   Fonts: Playfair Display (heading), Cormorant Garamond (body)
+   ============================================= */
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700;900&family=Cormorant+Garamond:wght@300;400;700&display=swap');
+
+:root {
+  --bg:           #0a0a0a;
+  --surface:      #141414;
+  --primary:      #d4af37;
+  --secondary:    #ffffff;
+  --text:         #e8e8e8;
+  --muted:        #888888;
+  --border:       rgba(212,175,55,0.3);
+  --font-heading: 'Playfair Display', serif;
+  --font-body:    'Cormorant Garamond', serif;
+  --radius:       0px;
+  --transition:   0.4s ease;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; }
+body { background: var(--bg); color: var(--text); font-family: var(--font-body); font-size: 17px; }
+
+nav {
+  padding: 1.5rem 4rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid var(--border);
+}
+.logo { font-family: var(--font-heading); font-size: 1.5rem; color: var(--primary); }
+nav ul { display: flex; gap: 2.5rem; list-style: none; }
+nav ul a { color: var(--muted); text-decoration: none; }
+
+.hero {
+  padding: 5rem 4rem;
+  text-align: center;
+}
+.hero h1 { font-family: var(--font-heading); font-size: clamp(2.5rem, 5vw, 4rem); margin-bottom: 1rem; }
+.hero p { color: var(--muted); font-size: 1.1rem; }
+
+.properties { padding: 4rem; }
+.properties h2 { font-family: var(--font-heading); font-size: 2rem; text-align: center; margin-bottom: 3rem; color: var(--primary); }
+.property-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 2rem; max-width: 1400px; margin: 0 auto; }
+.property-card { background: var(--surface); border: 1px solid var(--border); }
+.property-image { aspect-ratio: 4/3; background: var(--border); }
+.property-info { padding: 1.5rem; }
+.property-info h3 { font-family: var(--font-heading); font-size: 1.3rem; margin-bottom: 0.5rem; }
+.property-info .price { color: var(--primary); font-size: 1.2rem; margin-bottom: 0.5rem; }
+.property-info p { color: var(--muted); font-size: 0.95rem; }
+
+footer { padding: 3rem; text-align: center; border-top: 1px solid var(--border); color: var(--muted); }
+
+@media (max-width: 768px) {
+  .property-grid { grid-template-columns: 1fr; }
+}

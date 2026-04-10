@@ -1,0 +1,76 @@
+/* =============================================
+   THEME: Clinical Trust | Category: Medical
+   Fonts: Inter (heading & body)
+   ============================================= */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;700&display=swap');
+
+:root {
+  --bg:           #ffffff;
+  --surface:      #f0f9ff;
+  --primary:      #0284c7;
+  --secondary:    #0ea5e9;
+  --text:         #0c4a6e;
+  --muted:        #0369a1;
+  --border:       #bae6fd;
+  --font-heading: 'Inter', sans-serif;
+  --font-body:    'Inter', sans-serif;
+  --radius:       8px;
+  --transition:   0.3s ease;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; }
+body { background: var(--bg); color: var(--text); font-family: var(--font-body); font-size: 16px; }
+
+nav {
+  padding: 1rem 4rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+}
+.logo { font-weight: 700; font-size: 1.3rem; color: var(--primary); }
+nav ul { display: flex; gap: 2rem; list-style: none; }
+nav ul a { color: var(--muted); text-decoration: none; font-size: 0.95rem; }
+
+.hero {
+  padding: 4rem;
+  text-align: center;
+  background: var(--surface);
+}
+.hero h1 { font-size: clamp(2rem, 4vw, 3rem); font-weight: 500; margin-bottom: 1rem; }
+.hero p { color: var(--muted); max-width: 600px; margin: 0 auto 2rem; }
+
+.services { padding: 4rem; max-width: 1000px; margin: 0 auto; }
+.services h2 { font-size: 1.8rem; text-align: center; margin-bottom: 2rem; }
+.grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.5rem; }
+.card {
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 1.5rem;
+  text-align: center;
+}
+.card h3 { font-size: 1.1rem; font-weight: 600; margin-bottom: 0.5rem; color: var(--primary); }
+.card p { color: var(--muted); font-size: 0.95rem; }
+
+.appointment { padding: 4rem; text-align: center; background: var(--surface); }
+.appointment h2 { font-size: 1.8rem; margin-bottom: 1.5rem; }
+
+.btn {
+  display: inline-block;
+  padding: 1rem 2.5rem;
+  background: var(--primary);
+  color: var(--bg);
+  text-decoration: none;
+  font-weight: 600;
+  border-radius: var(--radius);
+  transition: background var(--transition);
+}
+.btn:hover { background: var(--secondary); }
+
+footer { padding: 2rem; text-align: center; color: var(--muted); border-top: 1px solid var(--border); }
+
+@media (max-width: 768px) {
+  .grid-3 { grid-template-columns: 1fr; }
+}

@@ -1,0 +1,77 @@
+/* =============================================
+   THEME: Festival Loud | Category: Event
+   Fonts: Bebas Neue (heading), Outfit (body)
+   ============================================= */
+@import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Outfit:wght@400;700&display=swap');
+
+:root {
+  --bg:           #fef08a;
+  --surface:      #ffffff;
+  --primary:      #dc2626;
+  --secondary:    #7c3aed;
+  --text:         #1a1a1a;
+  --muted:        #525252;
+  --border:       #fde047;
+  --font-heading: 'Bebas Neue', cursive;
+  --font-body:    'Outfit', sans-serif;
+  --radius:       0px;
+  --transition:   0.3s ease;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; }
+body { background: var(--bg); color: var(--text); font-family: var(--font-body); font-size: 16px; }
+
+nav {
+  padding: 1.5rem 3rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.logo { font-family: var(--font-heading); font-size: 2rem; letter-spacing: 0.05em; }
+nav ul { display: flex; gap: 2rem; list-style: none; }
+nav ul a { color: var(--text); text-decoration: none; font-weight: 700; }
+
+.hero {
+  padding: 5rem 3rem;
+  text-align: center;
+}
+.hero h1 { font-family: var(--font-heading); font-size: clamp(4rem, 12vw, 10rem); line-height: 0.9; margin-bottom: 1rem; }
+.hero h1 span { color: var(--primary); }
+.hero p { font-size: 1.2rem; max-width: 600px; margin: 0 auto 2rem; }
+
+.lineup { padding: 4rem 3rem; background: var(--surface); }
+.lineup h2 { font-family: var(--font-heading); font-size: 3rem; text-align: center; margin-bottom: 3rem; }
+.artist-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 2rem; max-width: 1000px; margin: 0 auto; }
+.artist { text-align: center; }
+.artist h3 { font-family: var(--font-heading); font-size: 1.8rem; }
+.artist p { color: var(--muted); }
+
+.tickets {
+  padding: 4rem 3rem;
+  text-align: center;
+}
+.tickets h2 { font-family: var(--font-heading); font-size: 3rem; margin-bottom: 2rem; }
+
+.btn {
+  display: inline-block;
+  padding: 1rem 3rem;
+  background: var(--primary);
+  color: var(--surface);
+  text-decoration: none;
+  font-family: var(--font-heading);
+  font-size: 1.5rem;
+  transition: transform var(--transition);
+}
+.btn:hover { transform: scale(1.05); }
+
+footer { padding: 3rem; text-align: center; background: var(--text); color: var(--bg); }
+
+@keyframes fadeUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes bounceIn { 0% { transform: scale(0.3); opacity: 0; } 50% { transform: scale(1.05); } 70% { transform: scale(0.9); } 100% { transform: scale(1); opacity: 1; } }
+[data-scroll] { opacity: 0; transform: translateY(20px); transition: opacity 0.7s ease, transform 0.7s ease; }
+[data-scroll].visible { opacity: 1; transform: translateY(0); }
+
+@media (max-width: 768px) {
+  .artist-grid { grid-template-columns: 1fr; }
+}

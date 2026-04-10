@@ -1,0 +1,133 @@
+/* =============================================
+   THEME: Editorial Magazine | Category: Portfolio
+   Fonts: DM Serif Display (heading), Libre Baskerville (body)
+   ============================================= */
+@import url('https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=Libre+Baskerville:wght@400;700&display=swap');
+
+:root {
+  --bg:           #f5f2eb;
+  --surface:      #ffffff;
+  --surface-2:    #ede9df;
+  --primary:      #c8392b;
+  --secondary:    #1a1a1a;
+  --text:         #1a1a1a;
+  --muted:        #7a7060;
+  --border:       #d4cfc4;
+  --font-heading: 'DM Serif Display', serif;
+  --font-body:    'Libre Baskerville', serif;
+  --radius:       0px;
+  --transition:   0.4s ease;
+  --max-width:    1100px;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; }
+body { background: var(--bg); color: var(--text); font-family: var(--font-body); font-size: 16px; line-height: 1.8; }
+
+/* NAV — newspaper style top bar */
+nav {
+  border-bottom: 3px double var(--secondary);
+  padding: 0 3rem;
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  min-height: 80px;
+  background: var(--bg);
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+.nav-left { display: flex; gap: 2rem; }
+.nav-left a { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.15em; color: var(--muted); text-decoration: none; }
+.nav-left a:hover { color: var(--primary); }
+.nav-logo {
+  text-align: center;
+  font-family: var(--font-heading);
+  font-size: 2rem;
+  letter-spacing: -0.02em;
+  border-inline: 1px solid var(--border);
+  padding: 0.5rem 2rem;
+}
+.nav-right { display: flex; justify-content: flex-end; gap: 2rem; }
+.nav-right a { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.15em; color: var(--muted); text-decoration: none; }
+
+/* HERO — editorial big text */
+.hero {
+  max-width: var(--max-width);
+  margin: 0 auto;
+  padding: 5rem 3rem;
+  display: grid;
+  grid-template-columns: 3fr 2fr;
+  gap: 4rem;
+  border-bottom: 1px solid var(--border);
+}
+.hero-headline {
+  font-family: var(--font-heading);
+  font-size: clamp(3rem, 6vw, 6.5rem);
+  line-height: 1.0;
+  letter-spacing: -0.03em;
+  color: var(--secondary);
+}
+.hero-headline em { color: var(--primary); font-style: normal; }
+.hero-meta {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  border-inline-start: 1px solid var(--border);
+  padding-inline-start: 3rem;
+}
+.hero-issue { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.2em; color: var(--muted); margin-bottom: 1rem; }
+.hero-bio { font-size: 0.95rem; color: var(--muted); line-height: 1.7; }
+.hero-stat { margin-top: 2rem; }
+.hero-stat strong { display: block; font-family: var(--font-heading); font-size: 3rem; color: var(--secondary); }
+.hero-stat span { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.15em; color: var(--muted); }
+
+/* WORK GRID — magazine layout */
+.work-section { max-width: var(--max-width); margin: 0 auto; padding: 5rem 3rem; }
+.work-header { display: flex; justify-content: space-between; align-items: baseline; border-bottom: 1px solid var(--secondary); margin-bottom: 2rem; padding-bottom: 0.5rem; }
+.work-header h2 { font-family: var(--font-heading); font-size: 1.5rem; }
+.work-header span { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.15em; color: var(--muted); }
+.work-grid { display: grid; grid-template-columns: 2fr 1fr 1fr; grid-template-rows: auto auto; gap: 2px; background: var(--border); }
+.work-item { background: var(--bg); overflow: hidden; }
+.work-item:first-child { grid-row: span 2; }
+.work-item img, .work-item .img-placeholder { width: 100%; height: 100%; min-height: 250px; object-fit: cover; display: block; background: var(--surface-2); }
+.work-caption { padding: 1rem; border-top: 1px solid var(--border); }
+.work-caption h3 { font-family: var(--font-heading); font-size: 1.1rem; margin-bottom: 0.25rem; }
+.work-caption p { font-size: 0.8rem; color: var(--muted); }
+
+/* PULL QUOTE */
+.pull-quote {
+  border-top: 3px solid var(--secondary);
+  border-bottom: 3px solid var(--secondary);
+  padding: 3rem;
+  margin: 0;
+  text-align: center;
+  background: var(--surface);
+}
+.pull-quote blockquote { font-family: var(--font-heading); font-size: clamp(1.5rem, 3vw, 2.5rem); line-height: 1.3; color: var(--secondary); }
+.pull-quote cite { display: block; margin-top: 1.5rem; font-size: 0.8rem; letter-spacing: 0.15em; text-transform: uppercase; color: var(--muted); font-style: normal; }
+
+/* FOOTER */
+footer {
+  border-top: 3px double var(--secondary);
+  padding: 2rem 3rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.8rem;
+  color: var(--muted);
+}
+footer a { color: var(--primary); text-decoration: none; }
+
+/* ANIMATIONS */
+@keyframes fadeUp { from { opacity: 0; transform: translateY(24px); } to { opacity: 1; transform: translateY(0); } }
+[data-scroll] { opacity: 0; transform: translateY(20px); transition: opacity 0.7s ease, transform 0.7s ease; }
+[data-scroll].visible { opacity: 1; transform: translateY(0); }
+
+@media (max-width: 768px) {
+  nav { grid-template-columns: 1fr; text-align: center; gap: 1rem; padding: 1rem; }
+  .hero { grid-template-columns: 1fr; }
+  .hero-meta { border-inline-start: none; border-top: 1px solid var(--border); padding-inline-start: 0; padding-top: 2rem; }
+  .work-grid { grid-template-columns: 1fr; }
+  .work-item:first-child { grid-row: span 1; }
+}

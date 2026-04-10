@@ -1,0 +1,159 @@
+/* =============================================
+   THEME: Retro 80s | Category: Portfolio
+   Fonts: Bebas Neue (heading), Outfit (body)
+   ============================================= */
+@import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Outfit:wght@400;700&display=swap');
+
+:root {
+  --bg:           #0d0015;
+  --surface:      #1a0028;
+  --primary:      #ff006e;
+  --secondary:    #ffbe0b;
+  --accent:       #8338ec;
+  --cyan:         #3a86ff;
+  --text:         #f8f0ff;
+  --muted:        #9966cc;
+  --border:       rgba(255,0,110,0.3);
+  --font-heading: 'Bebas Neue', cursive;
+  --font-body:    'Outfit', sans-serif;
+  --transition:   0.2s ease;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+body { background: var(--bg); color: var(--text); font-family: var(--font-body); overflow-x: hidden; }
+
+/* Grid background */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background-image: linear-gradient(rgba(58,134,255,0.07) 1px, transparent 1px), linear-gradient(90deg, rgba(58,134,255,0.07) 1px, transparent 1px);
+  background-size: 40px 40px;
+  pointer-events: none;
+  z-index: 0;
+}
+
+nav {
+  position: sticky; top: 0; z-index: 100;
+  padding: 1rem 2rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: rgba(13,0,21,0.9);
+  border-bottom: 2px solid var(--primary);
+  backdrop-filter: blur(10px);
+}
+.logo { font-family: var(--font-heading); font-size: 2rem; color: var(--secondary); letter-spacing: 0.1em; }
+nav ul { display: flex; gap: 2rem; list-style: none; }
+nav ul a {
+  color: var(--text); text-decoration: none;
+  font-size: 0.85rem; letter-spacing: 0.1em; text-transform: uppercase;
+  padding: 0.3rem 0.75rem;
+  border: 1px solid transparent;
+  transition: all var(--transition);
+}
+nav ul a:hover { border-color: var(--primary); color: var(--primary); background: rgba(255,0,110,0.1); }
+
+.hero {
+  position: relative;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: flex-start;
+  padding: 6rem 3rem;
+  z-index: 1;
+}
+.hero-title {
+  font-family: var(--font-heading);
+  font-size: clamp(5rem, 15vw, 16rem);
+  line-height: 0.85;
+  letter-spacing: 0.02em;
+  color: transparent;
+  -webkit-text-stroke: 2px var(--primary);
+  margin-bottom: 2rem;
+}
+.hero-title .filled { -webkit-text-stroke: 0; color: var(--secondary); }
+.hero-sub {
+  font-size: 1rem;
+  color: var(--muted);
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  margin-bottom: 3rem;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+.hero-sub::before { content: ''; display: inline-block; width: 40px; height: 2px; background: var(--primary); }
+
+/* Retro badge */
+.retro-badge {
+  position: absolute;
+  right: 5%;
+  top: 50%;
+  transform: translateY(-50%) rotate(12deg);
+  width: 160px; height: 160px;
+  background: var(--secondary);
+  border-radius: 50%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  font-family: var(--font-heading);
+  color: var(--bg);
+  font-size: 1.2rem;
+  line-height: 1.1;
+  box-shadow: 0 0 0 8px var(--bg), 0 0 0 10px var(--secondary);
+}
+
+.grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 2px; margin-top: 3rem; }
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  padding: 2rem;
+  position: relative;
+  overflow: hidden;
+  transition: all var(--transition);
+}
+.card::after {
+  content: '';
+  position: absolute;
+  bottom: 0; left: 0;
+  width: 100%; height: 3px;
+  background: linear-gradient(90deg, var(--primary), var(--cyan), var(--secondary));
+}
+.card:hover { transform: translateY(-6px); border-color: var(--primary); }
+.card h3 { font-family: var(--font-heading); font-size: 1.5rem; letter-spacing: 0.05em; color: var(--secondary); margin-bottom: 0.75rem; }
+
+.btn {
+  display: inline-block;
+  padding: 0.75rem 2rem;
+  font-family: var(--font-heading);
+  font-size: 1rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  text-decoration: none;
+  cursor: pointer;
+  border: none;
+  transition: all var(--transition);
+}
+.btn-primary { background: var(--primary); color: var(--text); }
+.btn-primary:hover { background: var(--secondary); color: var(--bg); }
+
+section { padding: 6rem 3rem; position: relative; z-index: 1; }
+.section-title { font-family: var(--font-heading); font-size: clamp(3rem, 6vw, 5rem); color: var(--text); margin-bottom: 0.5rem; }
+.section-line { width: 80px; height: 3px; background: linear-gradient(90deg, var(--primary), var(--cyan)); margin-bottom: 3rem; }
+
+footer { border-top: 2px solid var(--border); padding: 2rem 3rem; display: flex; justify-content: space-between; font-size: 0.85rem; color: var(--muted); position: relative; z-index: 1; }
+
+@keyframes fadeUp { from { opacity: 0; transform: translateY(30px); } to { opacity: 1; transform: translateY(0); } }
+[data-scroll] { opacity: 0; transform: translateY(20px); transition: opacity 0.6s ease, transform 0.6s ease; }
+[data-scroll].visible { opacity: 1; transform: translateY(0); }
+
+@media (max-width: 768px) {
+  .hero-title { font-size: clamp(4rem, 20vw, 8rem); }
+  .retro-badge { display: none; }
+  .grid-3 { grid-template-columns: 1fr; }
+  section { padding: 4rem 1.5rem; }
+}

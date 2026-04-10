@@ -1,0 +1,87 @@
+/* =============================================
+   THEME: SaaS Gradient | Category: Landing
+   Fonts: Plus Jakarta Sans (heading), Inter (body)
+   ============================================= */
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;700&family=Inter:wght@300;400;500&display=swap');
+
+:root {
+  --bg:           #0f172a;
+  --surface:      #1e293b;
+  --primary:      #8b5cf6;
+  --secondary:    #06b6d4;
+  --text:         #f8fafc;
+  --muted:        #94a3b8;
+  --border:       rgba(139,92,246,0.3);
+  --font-heading: 'Plus Jakarta Sans', sans-serif;
+  --font-body:    'Inter', sans-serif;
+  --radius:       12px;
+  --transition:   0.3s ease;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; }
+body { background: var(--bg); color: var(--text); font-family: var(--font-body); font-size: 16px; }
+
+nav {
+  padding: 1.5rem 4rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.logo { font-family: var(--font-heading); font-size: 1.5rem; font-weight: 700; }
+nav ul { display: flex; gap: 2rem; list-style: none; }
+nav ul a { color: var(--muted); text-decoration: none; }
+
+.hero {
+  padding: 6rem 4rem;
+  text-align: center;
+  background: linear-gradient(135deg, var(--bg) 0%, var(--surface) 100%);
+  position: relative;
+  overflow: hidden;
+}
+.hero::before {
+  content: '';
+  position: absolute;
+  width: 600px; height: 600px;
+  background: radial-gradient(circle, rgba(139,92,237,0.15) 0%, transparent 70%);
+  top: -200px; left: 50%;
+  transform: translateX(-50%);
+}
+.hero h1 { font-family: var(--font-heading); font-size: clamp(2.5rem, 6vw, 4.5rem); font-weight: 700; margin-bottom: 1.5rem; position: relative; }
+.hero h1 span { background: linear-gradient(90deg, var(--primary), var(--secondary)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+.hero p { font-size: 1.2rem; color: var(--muted); max-width: 600px; margin: 0 auto 2rem; position: relative; }
+
+.btn {
+  display: inline-block;
+  padding: 1rem 2.5rem;
+  background: linear-gradient(90deg, var(--primary), var(--secondary));
+  color: var(--text);
+  text-decoration: none;
+  font-weight: 600;
+  border-radius: var(--radius);
+  position: relative;
+  transition: transform var(--transition);
+}
+.btn:hover { transform: translateY(-2px); }
+
+.features { padding: 5rem 4rem; }
+.features h2 { font-family: var(--font-heading); font-size: 2.5rem; text-align: center; margin-bottom: 3rem; }
+.grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 2rem; max-width: 1200px; margin: 0 auto; }
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 2rem;
+}
+.card h3 { font-family: var(--font-heading); font-size: 1.2rem; margin-bottom: 0.75rem; }
+.card p { color: var(--muted); }
+
+footer { padding: 3rem; text-align: center; color: var(--muted); border-top: 1px solid var(--border); }
+
+@keyframes fadeUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+[data-scroll] { opacity: 0; transform: translateY(20px); transition: opacity 0.7s ease, transform 0.7s ease; }
+[data-scroll].visible { opacity: 1; transform: translateY(0); }
+
+@media (max-width: 768px) {
+  .grid-3 { grid-template-columns: 1fr; }
+}

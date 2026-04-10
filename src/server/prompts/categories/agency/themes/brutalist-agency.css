@@ -1,0 +1,72 @@
+/* =============================================
+   THEME: Brutalist Agency | Category: Agency
+   Fonts: Space Grotesk (heading), Inter (body)
+   ============================================= */
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;700&family=Inter:wght@300;400;500&display=swap');
+
+:root {
+  --bg:           #ffffff;
+  --surface:      #f0f0f0;
+  --primary:      #000000;
+  --secondary:    #ff0000;
+  --text:         #000000;
+  --muted:        #666666;
+  --border:       #000000;
+  --font-heading: 'Space Grotesk', sans-serif;
+  --font-body:    'Inter', sans-serif;
+  --radius:       0px;
+  --transition:   0.2s ease;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; }
+body { background: var(--bg); color: var(--text); font-family: var(--font-body); font-size: 16px; }
+
+nav {
+  padding: 1.5rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border: 3px solid var(--border);
+  margin: 1rem;
+}
+.logo { font-family: var(--font-heading); font-size: 1.5rem; font-weight: 700; }
+nav ul { display: flex; gap: 2rem; list-style: none; }
+nav ul a { color: var(--text); text-decoration: none; font-weight: 500; border-bottom: 2px solid transparent; }
+nav ul a:hover { border-bottom-color: var(--secondary); }
+
+.hero {
+  padding: 6rem 2rem;
+  border: 3px solid var(--border);
+  border-top: none;
+  margin: 0 1rem;
+  min-height: 80vh;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+.hero h1 { font-family: var(--font-heading); font-size: clamp(3rem, 8vw, 7rem); line-height: 0.9; margin-bottom: 2rem; }
+.hero h1 span { color: var(--secondary); }
+.hero p { font-size: 1.2rem; max-width: 600px; }
+
+section { padding: 4rem 2rem; border-bottom: 3px solid var(--border); margin: 0 1rem; }
+.section-title { font-family: var(--font-heading); font-size: 2.5rem; margin-bottom: 2rem; }
+
+.grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.5rem; }
+.card {
+  border: 3px solid var(--border);
+  padding: 2rem;
+  transition: background var(--transition);
+}
+.card:hover { background: var(--surface); }
+.card h3 { font-family: var(--font-heading); font-size: 1.3rem; margin-bottom: 1rem; }
+
+footer { padding: 3rem; text-align: center; margin: 0 1rem; border: 3px solid var(--border); border-top: none; }
+
+@keyframes fadeUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+[data-scroll] { opacity: 0; transform: translateY(20px); transition: opacity 0.7s ease, transform 0.7s ease; }
+[data-scroll].visible { opacity: 1; transform: translateY(0); }
+
+@media (max-width: 768px) {
+  .grid-3 { grid-template-columns: 1fr; }
+}

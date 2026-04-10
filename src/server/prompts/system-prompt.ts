@@ -1,5 +1,22 @@
+// Master exports for the new theme-based architecture
+export { 
+  detectLanguage, 
+  LANGUAGE_RULES,
+  detectCategory,
+  getThemeForCategory,
+  buildSystemPrompt,
+} from './index';
+export type { 
+  Category, 
+  SystemPromptResult,
+  WebsiteTheme, 
+  ThemeFont, 
+  ThemeColors, 
+  LayoutType 
+} from './index';
+
+// Legacy exports for backward compatibility
 export { PERSONALITY } from "./personality";
-export { LANGUAGE_RULES } from "./language";
 export { OUTPUT_FORMAT } from "./output-format";
 export { APP_KNOWLEDGE } from "./app-knowledge";
 export { THEMES } from "./design/themes";

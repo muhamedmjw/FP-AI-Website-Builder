@@ -1,0 +1,71 @@
+/* =============================================
+   THEME: Luxury Boutique | Category: Ecommerce
+   Fonts: Playfair Display (heading), Cormorant Garamond (body)
+   ============================================= */
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700;900&family=Cormorant+Garamond:wght@300;400;700&display=swap');
+
+:root {
+  --bg:           #faf9f7;
+  --surface:      #ffffff;
+  --primary:      #1a1a1a;
+  --secondary:    #c9a227;
+  --text:         #1a1a1a;
+  --muted:        #666666;
+  --border:       #e8e6e1;
+  --font-heading: 'Playfair Display', serif;
+  --font-body:    'Cormorant Garamond', serif;
+  --radius:       0px;
+  --transition:   0.4s ease;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; }
+body { background: var(--bg); color: var(--text); font-family: var(--font-body); font-size: 16px; line-height: 1.7; }
+
+nav {
+  padding: 1.5rem 4rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid var(--border);
+}
+.logo { font-family: var(--font-heading); font-size: 1.8rem; font-weight: 700; }
+nav ul { display: flex; gap: 2.5rem; list-style: none; }
+nav ul a { color: var(--muted); text-decoration: none; font-size: 0.9rem; }
+
+.hero {
+  padding: 4rem;
+  text-align: center;
+  background: var(--surface);
+}
+.hero h1 { font-family: var(--font-heading); font-size: clamp(2rem, 5vw, 3.5rem); margin-bottom: 1rem; }
+.hero p { color: var(--muted); font-size: 1.1rem; }
+
+.product-grid {
+  padding: 4rem;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 2rem;
+  max-width: 1400px;
+  margin: 0 auto;
+}
+.product-card { text-align: center; }
+.product-image {
+  aspect-ratio: 3/4;
+  background: var(--border);
+  margin-bottom: 1rem;
+  transition: transform var(--transition);
+}
+.product-card:hover .product-image { transform: scale(1.02); }
+.product-card h3 { font-family: var(--font-heading); font-size: 1.1rem; margin-bottom: 0.5rem; }
+.product-card .price { color: var(--secondary); font-weight: 700; }
+
+footer { padding: 3rem; text-align: center; border-top: 1px solid var(--border); color: var(--muted); }
+
+@keyframes fadeUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+[data-scroll] { opacity: 0; transform: translateY(20px); transition: opacity 0.7s ease, transform 0.7s ease; }
+[data-scroll].visible { opacity: 1; transform: translateY(0); }
+
+@media (max-width: 768px) {
+  .product-grid { grid-template-columns: repeat(2, 1fr); padding: 2rem; }
+}

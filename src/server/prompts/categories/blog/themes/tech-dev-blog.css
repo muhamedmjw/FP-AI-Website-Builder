@@ -1,0 +1,63 @@
+/* =============================================
+   THEME: Tech Dev Blog | Category: Blog
+   Fonts: Space Grotesk (heading), Inter (body)
+   ============================================= */
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;700&family=Inter:wght@300;400;500&display=swap');
+
+:root {
+  --bg:           #0d1117;
+  --surface:      #161b22;
+  --primary:      #58a6ff;
+  --secondary:    #238636;
+  --text:         #c9d1d9;
+  --muted:        #8b949e;
+  --border:       #30363d;
+  --font-heading: 'Space Grotesk', sans-serif;
+  --font-body:    'Inter', sans-serif;
+  --radius:       8px;
+  --transition:   0.3s ease;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; }
+body { background: var(--bg); color: var(--text); font-family: var(--font-body); font-size: 16px; line-height: 1.7; }
+
+.container { display: grid; grid-template-columns: 280px 1fr; min-height: 100vh; }
+
+.sidebar {
+  background: var(--surface);
+  padding: 2rem;
+  border-right: 1px solid var(--border);
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  overflow-y: auto;
+}
+.sidebar .logo { font-family: var(--font-heading); font-size: 1.3rem; color: var(--primary); margin-bottom: 2rem; }
+.sidebar h4 { font-size: 0.75rem; text-transform: uppercase; color: var(--muted); margin-bottom: 1rem; letter-spacing: 0.1em; }
+.sidebar ul { list-style: none; margin-bottom: 2rem; }
+.sidebar li { margin-bottom: 0.5rem; }
+.sidebar a { color: var(--text); text-decoration: none; font-size: 0.95rem; }
+.sidebar a:hover { color: var(--primary); }
+
+.main { padding: 3rem; }
+article { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 2rem; margin-bottom: 2rem; }
+article h2 { font-family: var(--font-heading); font-size: 1.5rem; margin-bottom: 0.5rem; }
+article h2 a { color: var(--text); text-decoration: none; }
+article h2 a:hover { color: var(--primary); }
+article .meta { font-size: 0.85rem; color: var(--muted); margin-bottom: 1rem; }
+article p { color: var(--text); margin-bottom: 1rem; }
+article code {
+  background: var(--bg);
+  padding: 0.2rem 0.4rem;
+  border-radius: 4px;
+  font-family: 'Monaco', 'Consolas', monospace;
+  font-size: 0.9rem;
+  color: var(--secondary);
+}
+
+@media (max-width: 768px) {
+  .container { grid-template-columns: 1fr; }
+  .sidebar { position: static; height: auto; border-right: none; border-bottom: 1px solid var(--border); }
+  .main { padding: 1.5rem; }
+}

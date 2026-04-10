@@ -1,0 +1,53 @@
+/* =============================================
+   THEME: Dark Gallery | Category: Photography
+   Fonts: Space Grotesk (heading), Inter (body)
+   ============================================= */
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;700&family=Inter:wght@300;400;500&display=swap');
+
+:root {
+  --bg:           #0a0a0a;
+  --surface:      #141414;
+  --primary:      #ffffff;
+  --secondary:    #888888;
+  --text:         #e8e8e8;
+  --muted:        #666666;
+  --border:       #1a1a1a;
+  --font-heading: 'Space Grotesk', sans-serif;
+  --font-body:    'Inter', sans-serif;
+  --radius:       0px;
+  --transition:   0.3s ease;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; }
+body { background: var(--bg); color: var(--text); font-family: var(--font-body); font-size: 16px; }
+
+nav {
+  padding: 2rem 4rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.logo { font-family: var(--font-heading); font-size: 1.3rem; }
+nav ul { display: flex; gap: 2rem; list-style: none; }
+nav ul a { color: var(--muted); text-decoration: none; font-size: 0.9rem; }
+
+.gallery {
+  padding: 2rem 4rem;
+  column-count: 3;
+  column-gap: 1rem;
+}
+.gallery-item {
+  break-inside: avoid;
+  margin-bottom: 1rem;
+  background: var(--surface);
+  aspect-ratio: 3/4;
+  transition: transform var(--transition);
+}
+.gallery-item:hover { transform: scale(1.02); }
+
+footer { padding: 3rem; text-align: center; color: var(--muted); border-top: 1px solid var(--border); }
+
+@media (max-width: 768px) {
+  .gallery { column-count: 2; padding: 1rem; }
+}

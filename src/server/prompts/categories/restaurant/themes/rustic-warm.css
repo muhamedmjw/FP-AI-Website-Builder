@@ -1,0 +1,89 @@
+/* =============================================
+   THEME: Rustic Warm | Category: Restaurant
+   Fonts: Playfair Display (heading), Libre Baskerville (body)
+   ============================================= */
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700;900&family=Libre+Baskerville:wght@400;700&display=swap');
+
+:root {
+  --bg:           #faf6f1;
+  --surface:      #ffffff;
+  --surface-2:    #f5ebe0;
+  --primary:      #8b4513;
+  --secondary:    #2c1810;
+  --accent:       #d4a574;
+  --text:         #3d2914;
+  --muted:        #8b7355;
+  --border:       #d4c4b0;
+  --font-heading: 'Playfair Display', serif;
+  --font-body:    'Libre Baskerville', serif;
+  --radius:       8px;
+  --transition:   0.4s ease;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; }
+body { background: var(--bg); color: var(--text); font-family: var(--font-body); font-size: 16px; line-height: 1.8; }
+
+nav {
+  position: sticky; top: 0; z-index: 100;
+  padding: 1.5rem 3rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+}
+.logo { font-family: var(--font-heading); font-size: 1.8rem; font-weight: 700; color: var(--primary); }
+nav ul { display: flex; gap: 2rem; list-style: none; }
+nav ul a { font-size: 0.9rem; color: var(--muted); text-decoration: none; transition: color var(--transition); }
+nav ul a:hover { color: var(--primary); }
+
+.hero {
+  min-height: 80vh;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+  padding: 4rem;
+  background: linear-gradient(135deg, var(--surface-2) 0%, var(--bg) 100%);
+}
+.hero h1 { font-family: var(--font-heading); font-size: clamp(3rem, 6vw, 5rem); color: var(--secondary); margin-bottom: 1rem; }
+.hero p { font-size: 1.1rem; color: var(--muted); max-width: 600px; margin-bottom: 2rem; }
+
+.menu-section { padding: 5rem 3rem; max-width: 1000px; margin: 0 auto; }
+.menu-section h2 { font-family: var(--font-heading); font-size: 2.5rem; text-align: center; margin-bottom: 3rem; color: var(--secondary); }
+.menu-category { margin-bottom: 3rem; }
+.menu-category h3 { font-family: var(--font-heading); font-size: 1.3rem; color: var(--primary); border-bottom: 2px solid var(--border); padding-bottom: 0.5rem; margin-bottom: 1.5rem; }
+.menu-item { display: flex; justify-content: space-between; padding: 1rem 0; border-bottom: 1px dashed var(--border); }
+.menu-item-name { font-weight: 600; }
+.menu-item-price { color: var(--primary); font-weight: 700; }
+.menu-item-desc { font-size: 0.9rem; color: var(--muted); margin-top: 0.25rem; }
+
+.reservation { background: var(--secondary); color: var(--bg); padding: 5rem 3rem; text-align: center; }
+.reservation h2 { font-family: var(--font-heading); font-size: 2.5rem; margin-bottom: 1rem; }
+.reservation p { color: rgba(250,246,241,0.8); margin-bottom: 2rem; }
+.btn {
+  display: inline-block;
+  padding: 1rem 2.5rem;
+  background: var(--accent);
+  color: var(--secondary);
+  text-decoration: none;
+  font-family: var(--font-heading);
+  font-weight: 700;
+  border-radius: var(--radius);
+  transition: transform var(--transition);
+}
+.btn:hover { transform: translateY(-2px); }
+
+footer { padding: 3rem; text-align: center; color: var(--muted); font-size: 0.9rem; }
+
+@keyframes fadeUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+[data-scroll] { opacity: 0; transform: translateY(20px); transition: opacity 0.7s ease, transform 0.7s ease; }
+[data-scroll].visible { opacity: 1; transform: translateY(0); }
+
+@media (max-width: 768px) {
+  nav { padding: 1rem 1.5rem; flex-direction: column; gap: 1rem; }
+  .hero { padding: 3rem 1.5rem; }
+  .menu-section { padding: 3rem 1.5rem; }
+}

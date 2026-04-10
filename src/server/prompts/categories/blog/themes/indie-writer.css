@@ -1,0 +1,48 @@
+/* =============================================
+   THEME: Indie Writer | Category: Blog
+   Fonts: Libre Baskerville (heading & body)
+   ============================================= */
+@import url('https://fonts.googleapis.com/css2?family=Libre+Baskerville:wght@400;700&display=swap');
+
+:root {
+  --bg:           #faf8f5;
+  --surface:      #ffffff;
+  --primary:      #8b4513;
+  --secondary:    #2c1810;
+  --text:         #3d2914;
+  --muted:        #8b7355;
+  --border:       #e8e0d8;
+  --font-heading: 'Libre Baskerville', serif;
+  --font-body:    'Libre Baskerville', serif;
+  --radius:       4px;
+  --transition:   0.3s ease;
+  --max-width:    680px;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; }
+body { background: var(--bg); color: var(--text); font-family: var(--font-body); font-size: 18px; line-height: 1.9; }
+
+header {
+  padding: 3rem 2rem;
+  text-align: center;
+  border-bottom: 1px solid var(--border);
+}
+header .logo { font-family: var(--font-heading); font-size: 1.5rem; font-weight: 700; color: var(--primary); margin-bottom: 1rem; }
+header p { font-size: 0.95rem; color: var(--muted); font-style: italic; }
+
+main { max-width: var(--max-width); margin: 0 auto; padding: 3rem 2rem; }
+
+article { margin-bottom: 4rem; }
+article h2 { font-family: var(--font-heading); font-size: 1.8rem; margin-bottom: 0.5rem; }
+article h2 a { color: var(--secondary); text-decoration: none; }
+article h2 a:hover { color: var(--primary); }
+article .meta { font-size: 0.85rem; color: var(--muted); margin-bottom: 1.5rem; font-style: italic; }
+article p { margin-bottom: 1.5rem; }
+article .read-more { color: var(--primary); text-decoration: none; font-size: 0.9rem; }
+
+footer { padding: 3rem 2rem; text-align: center; border-top: 1px solid var(--border); color: var(--muted); font-size: 0.9rem; }
+
+@keyframes fadeUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+[data-scroll] { opacity: 0; transform: translateY(20px); transition: opacity 0.7s ease, transform 0.7s ease; }
+[data-scroll].visible { opacity: 1; transform: translateY(0); }

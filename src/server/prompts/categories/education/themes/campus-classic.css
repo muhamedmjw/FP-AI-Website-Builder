@@ -1,0 +1,58 @@
+/* =============================================
+   THEME: Campus Classic | Category: Education
+   Fonts: Libre Baskerville (heading & body)
+   ============================================= */
+@import url('https://fonts.googleapis.com/css2?family=Libre+Baskerville:wght@400;700&display=swap');
+
+:root {
+  --bg:           #fafaf9;
+  --surface:      #ffffff;
+  --primary:      #7f1d1d;
+  --secondary:    #b45309;
+  --text:         #1c1917;
+  --muted:        #57534e;
+  --border:       #e7e5e4;
+  --font-heading: 'Libre Baskerville', serif;
+  --font-body:    'Libre Baskerville', serif;
+  --radius:       0px;
+  --transition:   0.3s ease;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; }
+body { background: var(--bg); color: var(--text); font-family: var(--font-body); font-size: 16px; line-height: 1.8; }
+
+nav {
+  padding: 1.5rem 4rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 3px solid var(--primary);
+}
+.logo { font-family: var(--font-heading); font-size: 1.3rem; font-weight: 700; color: var(--primary); }
+nav ul { display: flex; gap: 2.5rem; list-style: none; }
+nav ul a { color: var(--muted); text-decoration: none; font-size: 0.9rem; }
+
+.container { display: grid; grid-template-columns: 280px 1fr; min-height: calc(100vh - 80px); }
+
+.sidebar {
+  background: var(--surface);
+  border-right: 1px solid var(--border);
+  padding: 2rem;
+}
+.sidebar h3 { font-family: var(--font-heading); font-size: 1rem; margin-bottom: 1rem; color: var(--primary); }
+.sidebar ul { list-style: none; }
+.sidebar li { margin-bottom: 0.75rem; }
+.sidebar a { color: var(--muted); text-decoration: none; font-size: 0.9rem; }
+.sidebar a:hover { color: var(--primary); }
+
+.main { padding: 3rem; }
+.main h1 { font-family: var(--font-heading); font-size: 2rem; margin-bottom: 1.5rem; color: var(--primary); }
+.main p { margin-bottom: 1rem; }
+
+footer { padding: 2rem 4rem; text-align: center; border-top: 1px solid var(--border); color: var(--muted); font-size: 0.9rem; }
+
+@media (max-width: 768px) {
+  .container { grid-template-columns: 1fr; }
+  .sidebar { display: none; }
+}

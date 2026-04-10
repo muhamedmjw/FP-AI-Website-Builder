@@ -1,0 +1,90 @@
+/* =============================================
+   THEME: Corporate Trust | Category: Business
+   Fonts: DM Serif Display (heading), Inter (body)
+   ============================================= */
+@import url('https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=Inter:wght@300;400;500;700&display=swap');
+
+:root {
+  --bg:           #ffffff;
+  --surface:      #f8fafc;
+  --primary:      #1e3a8a;
+  --secondary:    #64748b;
+  --text:         #1e293b;
+  --muted:        #64748b;
+  --border:       #e2e8f0;
+  --font-heading: 'DM Serif Display', serif;
+  --font-body:    'Inter', sans-serif;
+  --radius:       8px;
+  --transition:   0.3s ease;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; }
+body { background: var(--bg); color: var(--text); font-family: var(--font-body); font-size: 16px; line-height: 1.7; }
+
+nav {
+  padding: 1.5rem 4rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid var(--border);
+}
+.logo { font-family: var(--font-heading); font-size: 1.8rem; color: var(--primary); }
+nav ul { display: flex; gap: 2.5rem; list-style: none; }
+nav ul a { color: var(--muted); text-decoration: none; font-size: 0.95rem; transition: color var(--transition); }
+nav ul a:hover { color: var(--primary); }
+
+.hero {
+  padding: 6rem 4rem;
+  text-align: center;
+  background: var(--surface);
+}
+.hero h1 { font-family: var(--font-heading); font-size: clamp(2.5rem, 5vw, 4rem); color: var(--primary); margin-bottom: 1.5rem; }
+.hero p { font-size: 1.15rem; color: var(--muted); max-width: 700px; margin: 0 auto 2rem; }
+
+.services { padding: 5rem 4rem; max-width: 1200px; margin: 0 auto; }
+.services h2 { font-family: var(--font-heading); font-size: 2.5rem; text-align: center; margin-bottom: 3rem; }
+.services-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 2rem; }
+.service-card {
+  padding: 2.5rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  transition: box-shadow var(--transition);
+}
+.service-card:hover { box-shadow: 0 10px 40px rgba(30,58,138,0.1); }
+.service-card h3 { font-family: var(--font-heading); font-size: 1.3rem; margin-bottom: 1rem; color: var(--primary); }
+.service-card p { color: var(--muted); font-size: 0.95rem; }
+
+.cta {
+  background: var(--primary);
+  color: var(--bg);
+  padding: 5rem 4rem;
+  text-align: center;
+}
+.cta h2 { font-family: var(--font-heading); font-size: 2.5rem; margin-bottom: 1rem; }
+.cta p { opacity: 0.9; margin-bottom: 2rem; }
+
+.btn {
+  display: inline-block;
+  padding: 1rem 2.5rem;
+  background: var(--bg);
+  color: var(--primary);
+  text-decoration: none;
+  font-weight: 600;
+  border-radius: var(--radius);
+  transition: transform var(--transition);
+}
+.btn:hover { transform: translateY(-2px); }
+
+footer { padding: 3rem 4rem; text-align: center; color: var(--muted); border-top: 1px solid var(--border); }
+
+@keyframes fadeUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+[data-scroll] { opacity: 0; transform: translateY(20px); transition: opacity 0.7s ease, transform 0.7s ease; }
+[data-scroll].visible { opacity: 1; transform: translateY(0); }
+
+@media (max-width: 768px) {
+  nav { padding: 1rem 1.5rem; flex-direction: column; gap: 1rem; }
+  .hero { padding: 4rem 1.5rem; }
+  .services { padding: 3rem 1.5rem; }
+  .services-grid { grid-template-columns: 1fr; }
+}

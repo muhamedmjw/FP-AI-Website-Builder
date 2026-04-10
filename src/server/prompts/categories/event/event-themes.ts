@@ -1,0 +1,74 @@
+// src/server/prompts/categories/event/event-themes.ts
+import type { WebsiteTheme } from '../../theme-types';
+
+export const EVENT_THEMES: WebsiteTheme[] = [
+  {
+    id: 'festival-loud',
+    name: 'Festival Loud',
+    cssFile: 'festival-loud.css',
+    category: 'event',
+    personality: 'Vibrant colors, energy, music festival vibes.',
+    fonts: { heading: 'Bebas Neue', body: 'Outfit', googleFontsUrl: 'https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Outfit:wght@400;700&display=swap' },
+    colors: { bg: '#fef08a', surface: '#ffffff', primary: '#dc2626', secondary: '#7c3aed', text: '#1a1a1a', muted: '#525252', border: '#fde047' },
+    layout: 'full-bleed',
+    animations: ['fadeUp', 'bounceIn'],
+    jsFeatures: [],
+    rtlSafe: true,
+  },
+  {
+    id: 'corporate-conference',
+    name: 'Corporate Conference',
+    cssFile: 'corporate-conference.css',
+    category: 'event',
+    personality: 'Professional, schedule-focused, networking emphasis.',
+    fonts: { heading: 'Inter', body: 'Inter', googleFontsUrl: 'https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;700&display=swap' },
+    colors: { bg: '#ffffff', surface: '#f8fafc', primary: '#1e3a8a', secondary: '#3b82f6', text: '#1e293b', muted: '#64748b', border: '#e2e8f0' },
+    layout: 'sidebar',
+    animations: ['fadeUp'],
+    jsFeatures: [],
+    rtlSafe: true,
+  },
+  {
+    id: 'tech-summit',
+    name: 'Tech Summit',
+    cssFile: 'tech-summit.css',
+    category: 'event',
+    personality: 'Dark mode, futuristic, speaker-focused.',
+    fonts: { heading: 'Space Grotesk', body: 'Inter', googleFontsUrl: 'https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;700&family=Inter:wght@300;400;500&display=swap' },
+    colors: { bg: '#0f172a', surface: '#1e293b', primary: '#22d3ee', secondary: '#818cf8', text: '#f1f5f9', muted: '#94a3b8', border: '#334155' },
+    layout: 'grid-heavy',
+    animations: ['fadeUp'],
+    jsFeatures: [],
+    rtlSafe: true,
+  },
+  {
+    id: 'wedding-elegant',
+    name: 'Wedding Elegant',
+    cssFile: 'wedding-elegant.css',
+    category: 'event',
+    personality: 'Romantic, soft colors, RSVP focused.',
+    fonts: { heading: 'Playfair Display', body: 'Cormorant Garamond', googleFontsUrl: 'https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700;900&family=Cormorant+Garamond:wght@300;400;700&display=swap' },
+    colors: { bg: '#fdf2f8', surface: '#ffffff', primary: '#be185d', secondary: '#f9a8d4', text: '#831843', muted: '#9d174d', border: '#fbcfe8' },
+    layout: 'single-column',
+    animations: ['fadeUp'],
+    jsFeatures: [],
+    rtlSafe: true,
+  },
+  {
+    id: 'community-meetup',
+    name: 'Community Meetup',
+    cssFile: 'community-meetup.css',
+    category: 'event',
+    personality: 'Friendly, inclusive, casual gathering vibe.',
+    fonts: { heading: 'Poppins', body: 'Outfit', googleFontsUrl: 'https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&family=Outfit:wght@300;400;500&display=swap' },
+    colors: { bg: '#ecfdf5', surface: '#ffffff', primary: '#059669', secondary: '#10b981', text: '#064e3b', muted: '#065f46', border: '#a7f3d0' },
+    layout: 'centered',
+    animations: ['fadeUp'],
+    jsFeatures: [],
+    rtlSafe: true,
+  },
+];
+
+export function getRandomEventTheme(): WebsiteTheme {
+  return EVENT_THEMES[Math.floor(Math.random() * EVENT_THEMES.length)];
+}

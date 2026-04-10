@@ -1,0 +1,85 @@
+/* =============================================
+   THEME: Finance Serious | Category: Business
+   Fonts: Cinzel (heading), Libre Baskerville (body)
+   ============================================= */
+@import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700;900&family=Libre+Baskerville:wght@400;700&display=swap');
+
+:root {
+  --bg:           #ffffff;
+  --surface:      #f0fdf4;
+  --primary:      #14532d;
+  --secondary:    #ca8a04;
+  --text:         #1a1a1a;
+  --muted:        #525252;
+  --border:       #dcfce7;
+  --font-heading: 'Cinzel', serif;
+  --font-body:    'Libre Baskerville', serif;
+  --radius:       0px;
+  --transition:   0.4s ease;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; }
+body { background: var(--bg); color: var(--text); font-family: var(--font-body); font-size: 16px; line-height: 1.8; }
+
+nav {
+  padding: 1.5rem 4rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid var(--border);
+}
+.logo { font-family: var(--font-heading); font-size: 1.5rem; color: var(--primary); letter-spacing: 0.1em; }
+nav ul { display: flex; gap: 2.5rem; list-style: none; }
+nav ul a { color: var(--muted); text-decoration: none; font-size: 0.9rem; transition: color var(--transition); }
+nav ul a:hover { color: var(--primary); }
+
+.hero {
+  padding: 6rem 4rem;
+  background: var(--surface);
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 4rem;
+  align-items: center;
+}
+.hero h1 { font-family: var(--font-heading); font-size: clamp(2rem, 4vw, 3.5rem); color: var(--primary); margin-bottom: 1.5rem; line-height: 1.2; }
+.hero p { color: var(--muted); margin-bottom: 2rem; }
+.hero-stat { border-left: 3px solid var(--secondary); padding-left: 1.5rem; }
+.hero-stat strong { font-family: var(--font-heading); font-size: 2.5rem; color: var(--primary); }
+.hero-stat span { display: block; color: var(--muted); font-size: 0.9rem; }
+
+.services-sidebar { padding: 5rem 4rem; max-width: 1200px; margin: 0 auto; display: grid; grid-template-columns: 300px 1fr; gap: 4rem; }
+.sidebar-nav { position: sticky; top: 100px; }
+.sidebar-nav h3 { font-family: var(--font-heading); font-size: 1rem; margin-bottom: 1.5rem; color: var(--primary); }
+.sidebar-nav ul { list-style: none; }
+.sidebar-nav li { padding: 0.75rem 0; border-bottom: 1px solid var(--border); }
+.sidebar-nav a { color: var(--muted); text-decoration: none; transition: color var(--transition); }
+.sidebar-nav a:hover { color: var(--primary); }
+
+.service-detail h2 { font-family: var(--font-heading); font-size: 1.8rem; color: var(--primary); margin-bottom: 1rem; }
+.service-detail p { color: var(--muted); margin-bottom: 1.5rem; }
+
+.btn {
+  display: inline-block;
+  padding: 1rem 2rem;
+  background: var(--primary);
+  color: var(--bg);
+  text-decoration: none;
+  font-family: var(--font-heading);
+  font-size: 0.85rem;
+  letter-spacing: 0.1em;
+  transition: background var(--transition);
+}
+.btn:hover { background: var(--secondary); }
+
+footer { padding: 3rem 4rem; text-align: center; color: var(--muted); border-top: 1px solid var(--border); }
+
+@keyframes fadeUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+[data-scroll] { opacity: 0; transform: translateY(20px); transition: opacity 0.7s ease, transform 0.7s ease; }
+[data-scroll].visible { opacity: 1; transform: translateY(0); }
+
+@media (max-width: 768px) {
+  .hero { grid-template-columns: 1fr; padding: 4rem 1.5rem; }
+  .services-sidebar { grid-template-columns: 1fr; padding: 3rem 1.5rem; }
+  .sidebar-nav { position: static; }
+}

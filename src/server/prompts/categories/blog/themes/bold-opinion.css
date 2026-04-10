@@ -1,0 +1,66 @@
+/* =============================================
+   THEME: Bold Opinion | Category: Blog
+   Fonts: DM Serif Display (heading), Libre Baskerville (body)
+   ============================================= */
+@import url('https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=Libre+Baskerville:wght@400;700&display=swap');
+
+:root {
+  --bg:           #1a1a1a;
+  --surface:      #2a2a2a;
+  --primary:      #ff6b6b;
+  --secondary:    #ffffff;
+  --text:         #f0f0f0;
+  --muted:        #888888;
+  --border:       #3a3a3a;
+  --font-heading: 'DM Serif Display', serif;
+  --font-body:    'Libre Baskerville', serif;
+  --radius:       0px;
+  --transition:   0.3s ease;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; }
+body { background: var(--bg); color: var(--text); font-family: var(--font-body); font-size: 17px; line-height: 1.8; }
+
+nav {
+  padding: 2rem 3rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid var(--border);
+}
+.logo { font-family: var(--font-heading); font-size: 1.5rem; }
+.logo span { color: var(--primary); }
+nav ul { display: flex; gap: 2rem; list-style: none; }
+nav ul a { color: var(--muted); text-decoration: none; }
+
+.hero-featured {
+  padding: 4rem 3rem;
+  background: var(--surface);
+}
+.hero-featured .tag { color: var(--primary); font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 1rem; }
+.hero-featured h1 { font-family: var(--font-heading); font-size: clamp(2rem, 5vw, 3.5rem); line-height: 1.1; margin-bottom: 1.5rem; }
+.hero-featured p { color: var(--muted); font-size: 1.1rem; max-width: 600px; }
+
+.magazine-grid {
+  padding: 3rem;
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: 2rem;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+.featured-post { padding: 2rem; border-bottom: 1px solid var(--border); }
+.featured-post h2 { font-family: var(--font-heading); font-size: 1.8rem; margin-bottom: 1rem; }
+.featured-post h2 a { color: var(--text); text-decoration: none; }
+.side-posts { border-left: 1px solid var(--border); padding-left: 2rem; }
+.side-post { padding: 1.5rem 0; border-bottom: 1px solid var(--border); }
+.side-post h3 { font-family: var(--font-heading); font-size: 1.2rem; margin-bottom: 0.5rem; }
+.side-post h3 a { color: var(--text); text-decoration: none; }
+
+footer { padding: 3rem; text-align: center; color: var(--muted); border-top: 1px solid var(--border); }
+
+@media (max-width: 768px) {
+  .magazine-grid { grid-template-columns: 1fr; padding: 1.5rem; }
+  .side-posts { border-left: none; padding-left: 0; border-top: 1px solid var(--border); }
+}
