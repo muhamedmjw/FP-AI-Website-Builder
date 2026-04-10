@@ -14,6 +14,7 @@ import { getRandomEducationTheme } from './categories/education/education-themes
 import { getRandomMedicalTheme } from './categories/medical/medical-themes';
 import { getRandomRealestateTheme } from './categories/realestate/realestate-themes';
 import { getRandomPhotographyTheme } from './categories/photography/photography-themes';
+import type { AppLanguage } from '@/shared/types/database';
 import type { WebsiteTheme } from './theme-types';
 
 export type Category = 
@@ -32,42 +33,133 @@ export type Category =
   | 'realestate' 
   | 'photography';
 
-export function detectCategory(userMessage: string): Category {
-  const m = userMessage.toLowerCase();
-  if (m.includes('portfolio') || m.includes('پۆرتفۆلیۆ')) return 'portfolio';
-  if (m.includes('restaurant') || m.includes('food') || m.includes('چێشتخانە')) return 'restaurant';
-  if (m.includes('shop') || m.includes('store') || m.includes('ecommerce') || m.includes('فرۆشگا')) return 'ecommerce';
-  if (m.includes('blog') || m.includes('بلۆگ')) return 'blog';
-  if (m.includes('agency') || m.includes('studio') || m.includes('design')) return 'agency';
-  if (m.includes('landing') || m.includes('coming soon')) return 'landing';
-  if (m.includes('event') || m.includes('conference') || m.includes('wedding')) return 'event';
-  if (m.includes('saas') || m.includes('software') || m.includes('app')) return 'saas';
-  if (m.includes('clinic') || m.includes('medical') || m.includes('health') || m.includes('doctor')) return 'medical';
-  if (m.includes('real estate') || m.includes('property') || m.includes('خانوو') || m.includes('خانووبەرە')) return 'realestate';
-  if (m.includes('photo') || m.includes('gallery') || m.includes('camera')) return 'photography';
-  if (m.includes('charity') || m.includes('nonprofit') || m.includes('ngo')) return 'nonprofit';
-  if (m.includes('school') || m.includes('course') || m.includes('education') || m.includes('class')) return 'education';
-  return 'business';
+const CATEGORY_KEYWORDS: Record<Category, string[]> = {
+  portfolio: ['portfolio', 'پۆرتفۆلیۆ', 'my work', 'showcase', 'personal site', 'designer', 'developer portfolio', 'resume site'],
+  restaurant: ['restaurant', 'food', 'چێشتخانە', 'cafe', 'bistro', 'menu', 'dining', 'bakery', 'coffee shop', 'bar', 'eatery', 'cuisine'],
+  ecommerce: ['shop', 'store', 'ecommerce', 'فرۆشگا', 'boutique', 'buy', 'sell', 'product', 'cart', 'checkout', 'luxury store', 'fashion store', 'clothing', 'accessories', 'online store'],
+  blog: ['blog', 'بلۆگ', 'article', 'post', 'writing', 'journal', 'newsletter'],
+  agency: ['agency', 'studio', 'design agency', 'creative', 'branding', 'marketing agency'],
+  landing: ['landing', 'coming soon', 'waitlist', 'launch', 'pre-launch', 'single page'],
+  event: ['event', 'conference', 'wedding', 'festival', 'meetup', 'concert', 'party', 'ceremony', 'hackathon'],
+  saas: ['saas', 'software', 'app', 'platform', 'tool', 'dashboard', 'subscription'],
+  medical: ['clinic', 'medical', 'health', 'doctor', 'dentist', 'hospital', 'pharmacy', 'wellness', 'spa', 'therapy'],
+  realestate: ['real estate', 'property', 'خانوو', 'خانووبەرە', 'housing', 'apartment', 'rent', 'mortgage', 'listings'],
+  photography: ['photo', 'photography', 'gallery', 'camera', 'portraits', 'photographer', 'visual'],
+  nonprofit: ['charity', 'nonprofit', 'ngo', 'donation', 'volunteer', 'foundation', 'cause'],
+  education: ['school', 'course', 'education', 'learn', 'class', 'university', 'tutor', 'training', 'e-learning'],
+  business: ['business', 'company', 'firm', 'corporate', 'service', 'consulting', 'professional'],
+};
+
+const CATEGORY_SPECIFICITY: Record<Category, number> = {
+  ecommerce: 14,
+  realestate: 13,
+  medical: 12,
+  nonprofit: 11,
+  education: 10,
+  photography: 9,
+  restaurant: 8,
+  event: 7,
+  saas: 6,
+  portfolio: 5,
+  agency: 4,
+  blog: 3,
+  landing: 2,
+  business: 1,
+};
+
+function toAppLanguage(language: 'sorani' | 'arabic' | 'english'): AppLanguage {
+  if (language === 'sorani') return 'ku';
+  if (language === 'arabic') return 'ar';
+  return 'en';
 }
 
-export function getThemeForCategory(category: Category): WebsiteTheme {
-  switch (category) {
-    case 'portfolio':   return getRandomPortfolioTheme();
-    case 'restaurant':  return getRandomRestaurantTheme();
-    case 'business':    return getRandomBusinessTheme();
-    case 'blog':        return getRandomBlogTheme();
-    case 'ecommerce':   return getRandomEcommerceTheme();
-    case 'agency':      return getRandomAgencyTheme();
-    case 'landing':     return getRandomLandingTheme();
-    case 'event':       return getRandomEventTheme();
-    case 'saas':        return getRandomSaasTheme();
-    case 'nonprofit':   return getRandomNonprofitTheme();
-    case 'education':   return getRandomEducationTheme();
-    case 'medical':     return getRandomMedicalTheme();
-    case 'realestate':  return getRandomRealestateTheme();
-    case 'photography': return getRandomPhotographyTheme();
-    default:            return getRandomBusinessTheme();
+export function detectCategory(userMessage: string): Category {
+  const message = userMessage.toLowerCase();
+  let bestCategory: Category = 'business';
+  let bestScore = 0;
+
+  for (const category of Object.keys(CATEGORY_KEYWORDS) as Category[]) {
+    const score = CATEGORY_KEYWORDS[category].reduce((total, keyword) => {
+      return total + (message.includes(keyword) ? 1 : 0);
+    }, 0);
+
+    const winsByHigherScore = score > bestScore;
+    const winsByTieBreaker =
+      score > 0 &&
+      score === bestScore &&
+      CATEGORY_SPECIFICITY[category] > CATEGORY_SPECIFICITY[bestCategory];
+
+    if (winsByHigherScore || winsByTieBreaker) {
+      bestCategory = category;
+      bestScore = score;
+    }
   }
+
+  return bestScore > 0 ? bestCategory : 'business';
+}
+
+export function getThemeForCategory(category: Category, language?: AppLanguage): WebsiteTheme {
+  let theme: WebsiteTheme;
+
+  switch (category) {
+    case 'portfolio':
+      theme = getRandomPortfolioTheme();
+      break;
+    case 'restaurant':
+      theme = getRandomRestaurantTheme();
+      break;
+    case 'business':
+      theme = getRandomBusinessTheme();
+      break;
+    case 'blog':
+      theme = getRandomBlogTheme();
+      break;
+    case 'ecommerce':
+      theme = getRandomEcommerceTheme();
+      break;
+    case 'agency':
+      theme = getRandomAgencyTheme();
+      break;
+    case 'landing':
+      theme = getRandomLandingTheme();
+      break;
+    case 'event':
+      theme = getRandomEventTheme();
+      break;
+    case 'saas':
+      theme = getRandomSaasTheme();
+      break;
+    case 'nonprofit':
+      theme = getRandomNonprofitTheme();
+      break;
+    case 'education':
+      theme = getRandomEducationTheme();
+      break;
+    case 'medical':
+      theme = getRandomMedicalTheme();
+      break;
+    case 'realestate':
+      theme = getRandomRealestateTheme();
+      break;
+    case 'photography':
+      theme = getRandomPhotographyTheme();
+      break;
+    default:
+      theme = getRandomBusinessTheme();
+  }
+
+  if (language === 'ku') {
+    return {
+      ...theme,
+      fonts: {
+        heading: 'NRT',
+        body: 'NRT',
+        googleFontsUrl: '',
+      },
+    };
+  }
+
+  return theme;
 }
 
 export interface SystemPromptResult {
@@ -77,11 +169,11 @@ export interface SystemPromptResult {
   language: 'sorani' | 'arabic' | 'english';
 }
 
-export function buildSystemPrompt(userMessage: string): SystemPromptResult {
+export function buildSystemPrompt(userMessage: string, websiteLanguage?: AppLanguage): SystemPromptResult {
   const lang = detectLanguage(userMessage);
   const rules = LANGUAGE_RULES[lang];
   const category = detectCategory(userMessage);
-  const theme = getThemeForCategory(category);
+  const theme = getThemeForCategory(category, websiteLanguage ?? toAppLanguage(lang));
 
   const prompt = `
 You are an expert web developer building a ${category} website.

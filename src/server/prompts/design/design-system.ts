@@ -2,9 +2,10 @@ export const DESIGN_SYSTEM = `
 DESIGN SYSTEM:
 
 TYPOGRAPHY:
-- Always import from Google Fonts via @import in <style>
-- English sites: Inter or Plus Jakarta Sans
-- Arabic/Kurdish sites: Cairo or Tajawal
+- Fonts are determined by the selected theme. Always use the HEADING FONT and
+    BODY FONT specified in the SELECTED THEME block above. Never override them.
+- If GOOGLE FONTS URL is provided in the theme, import it as the first CSS line;
+    if it is empty, use local @font-face rules instead.
 - Hero heading: 3rem–4rem, weight 700
 - Section heading: 2rem–2.5rem, weight 700
 - Body: 1rem, weight 400, line-height 1.6
@@ -31,6 +32,10 @@ VISUAL STYLE:
 - Card shadow: 0 4px 20px rgba(0,0,0,0.08)
 - Card hover shadow: 0 8px 30px rgba(0,0,0,0.12)
 - All interactive elements: transition: all 0.3s ease
+- Add visual depth with layered backgrounds, contrast bands, and elevated surfaces.
+- Use gradients derived from the selected theme colors (primary/secondary/background), not random unrelated hues.
+- Apply gradients intentionally: hero or page backdrop plus one interactive accent (buttons/badges/callouts).
+- Keep gradients readable with sufficient text contrast and overlays when needed.
 - Scroll fade-in: use Intersection Observer in <script>,
   add class "fade-in" to sections, animate opacity 0→1 
   with translateY(20px)→0

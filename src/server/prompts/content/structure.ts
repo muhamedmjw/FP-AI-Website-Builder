@@ -12,8 +12,16 @@ ICONS CDN — use when needed:
 6.4.0/css/all.min.css">
 
 SECTION ORDER — include what fits the business:
+- This is a component checklist, NOT a fixed vertical sequence.
+- You may reorder, combine, or nest sections to match the selected layout.
+- Required anchors for most sites: Navigation, Hero, Core offering section, Contact CTA, Footer.
+- On desktop, avoid a repetitive full-width stacked pattern across all sections.
+- Use at least 3 different section geometries (examples: split 50/50, dense grid, sidebar + content, feature band, editorial collage).
+- If selected layout is sidebar/masonry/grid-heavy/magazine/split-screen, the DOM structure must visibly reflect that layout.
+
+SECTION POOL — include what fits the business:
 1. Navigation (sticky, logo + links + mobile hamburger)
-2. Hero (headline, subtext, CTA button, image)
+2. Hero (headline, subtext, CTA button, image/media)
 3. About / Our Story
 4. Services / Features / Menu / Products
 5. Stats / Numbers (optional)

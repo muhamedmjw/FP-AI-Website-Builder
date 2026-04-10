@@ -1,3 +1,11 @@
+/* NRT — primary Kurdish Sorani font */
+@font-face {
+  font-family: 'NRT';
+  src: url('/fonts/kurdish/NRT-Reg.ttf') format('truetype');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
 @font-face {
   font-family: 'NRT';
   src: url('/fonts/kurdish/NRT-Bd.ttf') format('truetype');
@@ -6,13 +14,29 @@
   font-display: swap;
 }
 
+/* Rudaw — alternative Kurdish font */
 @font-face {
-  font-family: 'NRT';
-  src: url('/fonts/kurdish/NRT-Reg.ttf') format('truetype');
+  font-family: 'Rudaw';
+  src: url('/fonts/kurdish/Rudaw-Regular.ttf') format('truetype');
   font-weight: 400;
   font-style: normal;
   font-display: swap;
-  unicode-range: U+0600-06FF, U+FB50-FDFF, U+FE70-FEFF;
+}
+@font-face {
+  font-family: 'Rudaw';
+  src: url('/fonts/kurdish/Rudaw-Bold.ttf') format('truetype');
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
+/* Unikurd — fallback Kurdish web font */
+@font-face {
+  font-family: 'Unikurd';
+  src: url('/fonts/kurdish/Unikurd-Web.ttf') format('truetype');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
 }
 
 @import "tailwindcss";
