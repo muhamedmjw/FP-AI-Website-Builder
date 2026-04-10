@@ -2,53 +2,70 @@
 
 import { ReactNode, useState } from "react";
 import { Bot, User } from "lucide-react";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
+import remarkBreaks from "remark-breaks";
 
 /**
  * Chat message bubble — displays a single user or assistant message.
  * User messages align right, assistant messages align left with an icon.
  */
 
-/**
- * Simple regex-based markdown renderer for assistant messages.
- * Supports bold, italic, inline code, links, and line breaks.
- */
-function renderMarkdown(text: string): string {
-  let html = text
-    // Escape HTML entities first to prevent XSS
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;");
+function MarkdownMessage({
+  content,
+}: {
+  content: string;
+}) {
+  return (
+    <ReactMarkdown
+      remarkPlugins={[remarkGfm, remarkBreaks]}
+      components={{
+        p: ({ children }) => <p className="my-1.5 first:mt-0 last:mb-0">{children}</p>,
+        h1: ({ children }) => <h1 className="my-2 text-lg font-semibold">{children}</h1>,
+        h2: ({ children }) => <h2 className="my-2 text-base font-semibold">{children}</h2>,
+        h3: ({ children }) => <h3 className="my-1.5 text-sm font-semibold">{children}</h3>,
+        ul: ({ children }) => <ul className="my-1.5 list-disc pl-5 space-y-1">{children}</ul>,
+        ol: ({ children }) => <ol className="my-1.5 list-decimal pl-5 space-y-1">{children}</ol>,
+        li: ({ children }) => <li>{children}</li>,
+        blockquote: ({ children }) => (
+          <blockquote className="my-2 border-l-2 border-white/25 pl-3 opacity-90">
+            {children}
+          </blockquote>
+        ),
+        hr: () => <hr className="my-2 border-white/15" />,
+        a: ({ children, href }) => (
+          <a
+            href={href}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="underline text-(--app-link-text,#67e8f9) hover:opacity-80"
+          >
+            {children}
+          </a>
+        ),
+        code: ({ children, className }) => {
+          const isCodeBlock = Boolean(className?.includes("language-"));
 
-  // Inline code (backticks) — process before bold/italic so backtick content is preserved
-  html = html.replace(
-    /`([^`]+)`/g,
-    '<code class="rounded bg-black/20 px-1.5 py-0.5 text-[0.85em] font-mono">$1</code>'
+          if (isCodeBlock) {
+            return (
+              <code className="block overflow-x-auto rounded-lg bg-black/30 px-3 py-2 font-mono text-[0.85em]">
+                {children}
+              </code>
+            );
+          }
+
+          return (
+            <code className="rounded bg-black/20 px-1.5 py-0.5 font-mono text-[0.85em]">
+              {children}
+            </code>
+          );
+        },
+        pre: ({ children }) => <pre className="my-2 overflow-x-auto">{children}</pre>,
+      }}
+    >
+      {content}
+    </ReactMarkdown>
   );
-
-  // Bold: **text**
-  html = html.replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>");
-
-  // Italic: *text* (but not inside already-processed bold tags)
-  html = html.replace(/(?<!\*)\*(?!\*)(.+?)(?<!\*)\*(?!\*)/g, "<em>$1</em>");
-
-  // Links: [text](url)
-  html = html.replace(
-    /\[([^\]]+)\]\(([^)]+)\)/g,
-    (_, text, url) => {
-      const safeUrl = /^https?:\/\//i.test(url) &&
-        !/javascript:|data:|vbscript:/i.test(url)
-        ? url
-        : "#";
-      const blockedAttribute = safeUrl === "#" ? ' data-blocked="true"' : "";
-      return `<a href="${safeUrl}"${blockedAttribute} target="_blank" rel="noopener noreferrer" class="underline text-[var(--app-link-text,#67e8f9)] hover:opacity-80">${text}</a>`;
-    }
-  );
-
-  // Line breaks
-  html = html.replace(/\n/g, "<br/>");
-
-  return html;
 }
 
 type ChatBubbleProps = {
@@ -113,8 +130,8 @@ export default function ChatBubble({
         <div
           className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full sm:h-9 sm:w-9 ${
             isUser && !userAvatarUrl
-              ? "bg-[var(--app-avatar-user-bg)] text-[var(--app-avatar-user-text)]"
-              : "bg-[var(--app-avatar-bot-bg)] text-[var(--app-avatar-bot-text)]"
+              ? "bg-(--app-avatar-user-bg) text-(--app-avatar-user-text)"
+              : "bg-(--app-avatar-bot-bg) text-(--app-avatar-bot-text)"
           }`}
         >
           {/* Avatar icon */}
@@ -130,10 +147,10 @@ export default function ChatBubble({
           <div className="min-w-0 space-y-2">
             <div
               dir="auto"
-              className="min-w-0 overflow-hidden break-words rounded-2xl px-3 py-2.5 text-sm leading-relaxed shadow-[var(--app-shadow-md)] sm:px-4 sm:py-3.5 sm:text-base bg-[var(--app-bubble-user-bg)] text-[var(--app-bubble-user-text)]"
+              className="min-w-0 overflow-hidden wrap-break-word whitespace-pre-wrap rounded-2xl px-3 py-2.5 text-sm leading-relaxed shadow-(--app-shadow-md) sm:px-4 sm:py-3.5 sm:text-base bg-(--app-bubble-user-bg) text-(--app-bubble-user-text)"
               style={{ overflowWrap: "anywhere" }}
             >
-              {content}
+              <MarkdownMessage content={content} />
             </div>
 
             {hasAttachedImages ? (
@@ -143,7 +160,7 @@ export default function ChatBubble({
                     <button
                       type="button"
                       onClick={() => setZoomedImage({ src: image.dataUri, fileName: image.fileName })}
-                      className="h-16 w-16 overflow-hidden rounded-lg border border-[var(--app-card-border)] bg-[var(--app-card-bg)]"
+                      className="h-16 w-16 overflow-hidden rounded-lg border border-(--app-card-border) bg-(--app-card-bg)"
                       title="Open image"
                       aria-label={`Open ${image.label}`}
                     >
@@ -154,7 +171,7 @@ export default function ChatBubble({
                         className="h-full w-full object-cover"
                       />
                     </button>
-                    <p className="mt-1 truncate text-center text-[10px] text-[var(--app-text-tertiary)]">
+                    <p className="mt-1 truncate text-center text-[10px] text-(--app-text-tertiary)">
                       {image.label}
                     </p>
                   </div>
@@ -165,16 +182,17 @@ export default function ChatBubble({
         ) : (
           <div
             dir="auto"
-            className="min-w-0 overflow-hidden break-words rounded-2xl px-3 py-2.5 text-sm leading-relaxed shadow-[var(--app-shadow-md)] sm:px-4 sm:py-3.5 sm:text-base bg-[var(--app-bubble-bot-bg)] text-[var(--app-bubble-bot-text)]"
+            className="min-w-0 overflow-hidden wrap-break-word whitespace-pre-wrap rounded-2xl px-3 py-2.5 text-sm leading-relaxed shadow-(--app-shadow-md) sm:px-4 sm:py-3.5 sm:text-base bg-(--app-bubble-bot-bg) text-(--app-bubble-bot-text)"
             style={{ overflowWrap: "anywhere" }}
-            dangerouslySetInnerHTML={{ __html: renderMarkdown(content) }}
-          />
+          >
+            <MarkdownMessage content={content} />
+          </div>
         )}
       </div>
 
       {zoomedImage ? (
         <div
-          className="fixed inset-0 z-[90] flex items-center justify-center bg-black/75 p-4"
+          className="fixed inset-0 z-90 flex items-center justify-center bg-black/75 p-4"
           onClick={() => setZoomedImage(null)}
           role="dialog"
           aria-modal="true"

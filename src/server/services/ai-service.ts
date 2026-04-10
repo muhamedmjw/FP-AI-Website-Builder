@@ -86,6 +86,7 @@ const MODEL_NAME = PRIMARY_MODEL;
 const MAX_RETRIES = 2;
 const RETRY_DELAYS = [1000, 2000];
 const MAX_PROMPT_CHARS = 400_000;
+const DEEPSEEK_MAX_OUTPUT_TOKENS = 8192;
 
 function isAppLanguage(value: unknown): value is AppLanguage {
   return value === "en" || value === "ar" || value === "ku";
@@ -249,9 +250,9 @@ async function callModelOnce(
   totalTokens: number | null;
   modelUsed: string;
 }> {
-  // deepseek-reasoner has a hard cap of 8192 max_tokens
-  const effectiveMaxTokens = model.includes("reasoner")
-    ? Math.min(maxTokens, 8192)
+  // DeepSeek currently enforces max_tokens <= 8192 on chat/reasoner endpoints.
+  const effectiveMaxTokens = model.includes("deepseek")
+    ? Math.min(maxTokens, DEEPSEEK_MAX_OUTPUT_TOKENS)
     : maxTokens;
 
   const response = await getDeepSeekClient().chat.completions.create({
@@ -293,6 +294,42 @@ async function callModelOnce(
   };
 }
 
+function getErrorStatus(error: unknown): number | null {
+  if (!error || typeof error !== "object") {
+    return null;
+  }
+
+  const status = (error as { status?: unknown }).status;
+  return typeof status === "number" ? status : null;
+}
+
+function getErrorMessage(error: unknown): string {
+  if (error instanceof Error) {
+    return error.message.toLowerCase();
+  }
+
+  if (typeof error === "string") {
+    return error.toLowerCase();
+  }
+
+  return "";
+}
+
+function isNonRetriableModelError(error: unknown): boolean {
+  const status = getErrorStatus(error);
+  const message = getErrorMessage(error);
+
+  if (status === 400 || status === 401 || status === 403) {
+    return true;
+  }
+
+  return (
+    message.includes("invalid max_tokens") ||
+    message.includes("valid range of max_tokens") ||
+    message.includes("max_tokens value")
+  );
+}
+
 async function callDeepSeekWithRetry(
   messages: AIMessage[],
   maxTokens: number,
@@ -313,6 +350,10 @@ async function callDeepSeekWithRetry(
         return await callModelOnce(model, messages, maxTokens, temperature);
       } catch (error) {
         lastError = error instanceof Error ? error : new Error("Unknown AI error");
+
+        if (isNonRetriableModelError(error)) {
+          break;
+        }
 
         if (attempt < MAX_RETRIES) {
           await new Promise((resolve) =>

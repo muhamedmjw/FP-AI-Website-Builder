@@ -206,7 +206,8 @@ export default function ChatPanel({
               hasPreview={hasPreview}
               chatId={chatId}
               onImagesChange={onImagesChange}
-              disabled={isSending || disableInput}
+              disableTyping={disableInput}
+              disableSend={isSending || disableInput}
               placeholder={resolvedInputPlaceholder}
               isSticky={false}
               autoFocus
@@ -307,7 +308,8 @@ export default function ChatPanel({
               hasPreview={hasPreview}
               chatId={chatId}
               onImagesChange={onImagesChange}
-              disabled={isSending || disableInput}
+              disableTyping={disableInput}
+              disableSend={isSending || disableInput}
               placeholder={resolvedInputPlaceholder}
               isSticky
               showDisclaimer={showInputDisclaimer}

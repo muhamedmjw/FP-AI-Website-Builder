@@ -63,7 +63,8 @@ type ChatInputProps = {
   hasPreview?: boolean;
   chatId?: string;
   onImagesChange?: (images: UserImage[]) => void;
-  disabled?: boolean;
+  disableTyping?: boolean;
+  disableSend?: boolean;
   placeholder?: string;
   isSticky?: boolean;
   autoFocus?: boolean;
@@ -80,7 +81,8 @@ export default function ChatInput({
   hasPreview = false,
   chatId,
   onImagesChange,
-  disabled = false,
+  disableTyping = false,
+  disableSend = false,
   placeholder,
   isSticky = true,
   autoFocus = false,
@@ -138,6 +140,8 @@ export default function ChatInput({
     [images]
   );
   const hasLargeImagePayload = totalImageBytes > 2 * 1024 * 1024;
+  const isInputDisabled = disableTyping;
+  const isSendDisabled = disableSend || isInputDisabled;
 
   useEffect(() => {
     if (onImagesChange) {
@@ -174,6 +178,10 @@ export default function ChatInput({
 
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+
+    if (isSendDisabled) {
+      return;
+    }
 
     const message = inputValue.trim();
     if (!message) return;
@@ -246,7 +254,7 @@ export default function ChatInput({
         className={`${isSticky ? "sticky bottom-0 z-10" : ""} bg-transparent px-3 pt-3 pb-4 sm:px-5 sm:pt-4 sm:pb-3`}
       >
         <div className="mx-auto flex w-full max-w-4xl items-end gap-2">
-          <div className={`flex min-w-0 flex-1 flex-col gap-1 rounded-2xl bg-[var(--app-card-bg)]/80 p-1.5 shadow-[var(--app-shadow-lg)] backdrop-blur-sm transition-opacity sm:p-2 ${disabled ? "opacity-70" : "opacity-100"}`}>
+          <div className={`flex min-w-0 flex-1 flex-col gap-1 rounded-2xl bg-[var(--app-card-bg)]/80 p-1.5 shadow-[var(--app-shadow-lg)] backdrop-blur-sm transition-opacity sm:p-2 ${isInputDisabled ? "opacity-70" : "opacity-100"}`}>
             <div className="flex min-w-0 flex-1 flex-col">
               {images.length > 0 ? (
                 <div className="px-2.5 pb-1.5 pt-1 sm:px-3">
@@ -296,8 +304,8 @@ export default function ChatInput({
                 onKeyDown={handleKeyDown}
                 maxLength={MAX_PROMPT_LENGTH}
                 placeholder={resolvedPlaceholder}
-                disabled={disabled}
-                aria-busy={disabled}
+                disabled={isInputDisabled}
+                aria-busy={isSendDisabled}
                 autoFocus={autoFocus}
                 className="w-full resize-none overflow-hidden rounded-xl bg-transparent px-2.5 py-2.5 text-sm leading-relaxed text-[var(--app-input-text)] placeholder:text-[var(--app-text-tertiary)] focus:outline-none disabled:opacity-50 sm:px-3 sm:py-3 sm:text-base"
                 style={{
@@ -332,7 +340,7 @@ export default function ChatInput({
                 <button
                   type="button"
                   onClick={handleOpenImagePicker}
-                  disabled={disabled || isImageLoading}
+                  disabled={isInputDisabled || isImageLoading}
                   className="flex h-10 w-10 shrink-0 items-center justify-center text-2xl leading-none text-[var(--app-text-secondary)] transition hover:text-[var(--app-text-heading)] disabled:opacity-50 sm:h-11 sm:w-11"
                   title="Upload image"
                   aria-label="Upload image"
@@ -394,7 +402,7 @@ export default function ChatInput({
 
                 <button
                   type="submit"
-                  disabled={disabled}
+                  disabled={isSendDisabled}
                   className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[var(--app-btn-primary-bg)] text-[var(--app-btn-primary-text)] shadow-[var(--app-shadow-sm)] transition hover:bg-[var(--app-btn-primary-hover)] hover:shadow-[var(--app-shadow-md)] hover:-translate-y-px active:translate-y-0 disabled:opacity-50 sm:h-11 sm:w-11"
                   title="Send"
                   aria-label="Send message"

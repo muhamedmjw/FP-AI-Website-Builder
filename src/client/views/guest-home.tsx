@@ -215,7 +215,7 @@ function GuestLimitBanner({
   return (
     <div className="mx-auto mb-2 w-full max-w-4xl rounded-2xl border border-[var(--app-card-border)] bg-[var(--app-card-bg)] p-4">
       <h3 className="font-semibold text-[var(--app-text-heading)]">
-        You've used your 3 free prompts
+        You&apos;ve used your 3 free prompts
       </h3>
       <p className="mt-1 text-sm text-[var(--app-text-secondary)]">
         Create a free account to keep building - no credit card required.
