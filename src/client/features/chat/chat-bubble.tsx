@@ -1,7 +1,7 @@
 "use client";
 
 import { ReactNode, useState } from "react";
-import { Bot, User } from "lucide-react";
+import { Bot, Check, Copy, User } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import remarkBreaks from "remark-breaks";
@@ -114,6 +114,32 @@ function UserAvatar({ src, fallbackIcon }: UserAvatarProps) {
   );
 }
 
+function CopyButton({ content }: { content: string }) {
+  const [copied, setCopied] = useState(false);
+
+  const handleCopy = async () => {
+    try {
+      await navigator.clipboard.writeText(content);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      // Silently fail if clipboard is not available
+    }
+  };
+
+  return (
+    <button
+      type="button"
+      onClick={handleCopy}
+      className="rounded-md p-1.5 text-(--app-text-secondary) opacity-0 transition-opacity duration-200 hover:bg-(--app-surface-hover) hover:text-(--app-text-primary) group-hover:opacity-100"
+      aria-label={copied ? "Copied" : "Copy message"}
+      title={copied ? "Copied" : "Copy message"}
+    >
+      {copied ? <Check size={14} /> : <Copy size={14} />}
+    </button>
+  );
+}
+
 export default function ChatBubble({
   role,
   content,
@@ -130,7 +156,7 @@ export default function ChatBubble({
     <>
       <div
         dir="ltr"
-        className={`ui-fade-up flex min-w-0 max-w-[92%] items-start gap-2 sm:max-w-[78%] sm:gap-2.5 ${
+        className={`group ui-fade-up flex min-w-0 max-w-[92%] items-start gap-2 sm:max-w-[78%] sm:gap-2.5 ${
           isUser
             ? "ml-auto flex-row-reverse chat-bubble-user"
             : "mr-auto"
@@ -157,10 +183,13 @@ export default function ChatBubble({
           <div className="min-w-0 space-y-2">
             <div
               dir="auto"
-              className="min-w-0 break-words whitespace-normal rounded-2xl px-3 py-2.5 text-sm leading-relaxed shadow-(--app-shadow-md) sm:px-4 sm:py-3.5 sm:text-base bg-(--app-bubble-user-bg) text-(--app-bubble-user-text)"
+              className="relative min-w-0 break-words whitespace-normal rounded-2xl px-3 py-2.5 text-sm leading-relaxed shadow-(--app-shadow-md) sm:px-4 sm:py-3.5 sm:text-base bg-(--app-bubble-user-bg) text-(--app-bubble-user-text)"
               style={{ overflowWrap: "anywhere" }}
             >
               <MarkdownMessage content={content} />
+              <div className="absolute -bottom-7 right-0">
+                <CopyButton content={content} />
+              </div>
             </div>
 
             {hasAttachedImages ? (
@@ -190,12 +219,17 @@ export default function ChatBubble({
             ) : null}
           </div>
         ) : (
-          <div
-            dir="auto"
-            className="min-w-0 break-words whitespace-normal rounded-2xl px-3 py-2.5 text-sm leading-relaxed shadow-(--app-shadow-md) sm:px-4 sm:py-3.5 sm:text-base bg-(--app-bubble-bot-bg) text-(--app-bubble-bot-text)"
-            style={{ overflowWrap: "anywhere" }}
-          >
-            <MarkdownMessage content={content} />
+          <div className="relative min-w-0">
+            <div
+              dir="auto"
+              className="min-w-0 break-words whitespace-normal rounded-2xl px-3 py-2.5 text-sm leading-relaxed shadow-(--app-shadow-md) sm:px-4 sm:py-3.5 sm:text-base bg-(--app-bubble-bot-bg) text-(--app-bubble-bot-text)"
+              style={{ overflowWrap: "anywhere" }}
+            >
+              <MarkdownMessage content={content} />
+            </div>
+            <div className="absolute -bottom-7 left-0">
+              <CopyButton content={content} />
+            </div>
           </div>
         )}
       </div>
