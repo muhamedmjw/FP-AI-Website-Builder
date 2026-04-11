@@ -87,7 +87,7 @@ const MODEL_NAME = PRIMARY_MODEL;
 const MAX_RETRIES = 2;
 const RETRY_DELAYS = [1000, 2000];
 const MAX_PROMPT_CHARS = 400_000;
-const DEEPSEEK_MAX_OUTPUT_TOKENS = 8192;
+const DEEPSEEK_MAX_OUTPUT_TOKENS = 65536; 
 
 function isAppLanguage(value: unknown): value is AppLanguage {
   return value === "en" || value === "ar" || value === "ku";
@@ -386,7 +386,7 @@ async function classifyIntent(
       const response = await getDeepSeekClient().chat.completions.create({
         model,
         messages,
-        max_tokens: 60,
+        max_tokens: 1024, //
         temperature: 0.1,
       });
 
@@ -956,7 +956,7 @@ async function getChatTitleFromModel(
       },
       { role: "user", content: trimmedMessage },
     ],
-    max_tokens: 20,
+    max_tokens: 256, // 
     temperature: 0.5,
   });
 
