@@ -80,6 +80,9 @@ export default function HomePage() {
     [images]
   );
   const hasLargeImagePayload = totalImageBytes > 2 * 1024 * 1024;
+  const charCount = inputValue.length;
+  const shouldShowCounter = charCount > MAX_PROMPT_LENGTH * 0.8;
+  const isAtPromptLimit = charCount >= MAX_PROMPT_LENGTH;
 
   /**
    * Ensures there is exactly one in-flight draft chat creation call.
@@ -551,6 +554,16 @@ export default function HomePage() {
                   overflowY: "auto",
                 }}
               />
+              {shouldShowCounter ? (
+                <p
+                  className={`px-2.5 pb-0.5 text-right text-[10px] sm:px-3 ${
+                    isAtPromptLimit ? "text-rose-400" : "text-(--app-text-muted)"
+                  }`}
+                  aria-live="polite"
+                >
+                  {charCount}/{MAX_PROMPT_LENGTH}
+                </p>
+              ) : null}
               <div className="flex items-center justify-between px-1 pb-1">
                 <button
                   type="button"
