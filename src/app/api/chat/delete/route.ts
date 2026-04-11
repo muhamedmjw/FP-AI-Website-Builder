@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSupabaseServerClient } from "@/server/supabase/server-client";
 import { getCurrentUser } from "@/shared/services/user-service";
+import { abortGeneration } from "@/server/services/generation-manager";
 
 async function parseErrorMessage(response: Response, fallback: string) {
   const contentType = response.headers.get("content-type") ?? "";
@@ -78,6 +79,9 @@ export async function POST(request: NextRequest) {
     if (chatLookupError || !ownedChat) {
       return NextResponse.json({ error: "Chat not found." }, { status: 404 });
     }
+
+    // Abort any active generation for this chat before deleting
+    abortGeneration(chatId);
 
     if (unpublishLiveSite) {
       const token = process.env.NETLIFY_API_TOKEN;

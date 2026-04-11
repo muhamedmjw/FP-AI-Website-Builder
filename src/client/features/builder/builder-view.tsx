@@ -126,6 +126,7 @@ export default function BuilderView({
     isSending,
     pendingGenerationStartedAt,
     handleSend,
+    handleStop,
     handleInputImagesChange,
   } = useBuilderState({
     chatId,
@@ -283,6 +284,7 @@ export default function BuilderView({
             messages={messages}
             messageImages={messageImages}
             onSend={handleSend}
+            onStop={handleStop}
             onImagesChange={handleInputImagesChange}
             onTogglePreview={() => setPreviewOpen((prev) => !prev)}
             previewOpen={previewOpen}
@@ -348,6 +350,7 @@ export default function BuilderView({
             messages={messages}
             messageImages={messageImages}
             onSend={handleSend}
+            onStop={handleStop}
             onImagesChange={handleInputImagesChange}
             onTogglePreview={() => setPreviewOpen((prev) => !prev)}
             previewOpen={previewOpen}

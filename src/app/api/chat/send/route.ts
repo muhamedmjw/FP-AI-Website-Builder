@@ -3,7 +3,7 @@ import { createServerClient } from "@supabase/ssr";
 import { SupabaseClient } from "@supabase/supabase-js";
 import { addMessage, getChatMessages } from "@/shared/services/chat-service";
 import { getCurrentUser } from "@/shared/services/user-service";
-import { generateAIResponse, generateChatTitle } from "@/server/services/ai-service";
+import { generateAIResponse, generateChatTitle, GenerationCancelledError } from "@/server/services/ai-service";
 import { renameChat } from "@/shared/services/chat-service";
 import {
   getWebsiteByChatId,
@@ -594,6 +594,14 @@ export async function POST(request: NextRequest) {
             : undefined,
     });
   } catch (error) {
+    // Handle generation cancellation
+    if (error instanceof GenerationCancelledError) {
+      return NextResponse.json(
+        { error: "Generation cancelled by user.", cancelled: true },
+        { status: 499 } // 499 Client Closed Request
+      );
+    }
+
     console.error("POST /api/chat/send error:", error);
 
     const message =

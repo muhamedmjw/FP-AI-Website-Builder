@@ -18,6 +18,11 @@ export type SendChatMessageResponse = {
   html?: string | null;
 };
 
+export type AbortGenerationResponse = {
+  success: boolean;
+  wasActive: boolean;
+};
+
 /** Sends a chat message through the API and returns the latest conversation state. */
 export async function sendChatMessage(
   chatId: string,
@@ -53,4 +58,28 @@ export async function sendChatMessage(
   }
 
   return data as unknown as SendChatMessageResponse;
+}
+
+/** Aborts an active AI generation for a chat. */
+export async function abortGeneration(chatId: string): Promise<AbortGenerationResponse> {
+  const response = await fetch("/api/chat/abort", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ chatId }),
+  });
+
+  let data: Record<string, unknown> | null = null;
+  try {
+    data = await response.json();
+  } catch {
+    // Response body is not JSON — handled below.
+  }
+
+  if (!response.ok) {
+    const message =
+      typeof data?.error === "string" ? data.error : "Failed to abort generation.";
+    throw new ChatApiError(message, response.status);
+  }
+
+  return data as unknown as AbortGenerationResponse;
 }

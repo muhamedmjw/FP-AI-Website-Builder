@@ -58,6 +58,7 @@ type ChatInputProps = {
   onSend: (message: string) => void;
   onTogglePreview?: () => void;
   onPreviewRequest?: () => void;
+  onStop?: () => void;
   showPreviewGateButton?: boolean;
   previewOpen?: boolean;
   hasPreview?: boolean;
@@ -65,6 +66,7 @@ type ChatInputProps = {
   onImagesChange?: (images: UserImage[]) => void;
   disableTyping?: boolean;
   disableSend?: boolean;
+  isGenerating?: boolean;
   placeholder?: string;
   isSticky?: boolean;
   autoFocus?: boolean;
@@ -76,6 +78,7 @@ export default function ChatInput({
   onSend,
   onTogglePreview,
   onPreviewRequest,
+  onStop,
   showPreviewGateButton = false,
   previewOpen = false,
   hasPreview = false,
@@ -83,6 +86,7 @@ export default function ChatInput({
   onImagesChange,
   disableTyping = false,
   disableSend = false,
+  isGenerating = false,
   placeholder,
   isSticky = true,
   autoFocus = false,
@@ -400,28 +404,48 @@ export default function ChatInput({
                   </button>
                 ) : null}
 
-                <button
-                  type="submit"
-                  disabled={isSendDisabled}
-                  className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[var(--app-btn-primary-bg)] text-[var(--app-btn-primary-text)] shadow-[var(--app-shadow-sm)] transition hover:bg-[var(--app-btn-primary-hover)] hover:shadow-[var(--app-shadow-md)] hover:-translate-y-px active:translate-y-0 disabled:opacity-50 sm:h-11 sm:w-11"
-                  title="Send"
-                  aria-label="Send message"
-                >
-                  <svg
-                    viewBox="0 0 24 24"
-                    width="18"
-                    height="18"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2.2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    aria-hidden="true"
+                {isGenerating && onStop ? (
+                  <button
+                    type="button"
+                    onClick={onStop}
+                    className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[var(--app-text-tertiary)] text-[var(--app-btn-primary-text)] shadow-[var(--app-shadow-sm)] transition hover:bg-rose-500 hover:shadow-[var(--app-shadow-md)] hover:-translate-y-px active:translate-y-0 sm:h-11 sm:w-11"
+                    title="Stop generation"
+                    aria-label="Stop generation"
                   >
-                    <path d="M12 19V6" />
-                    <path d="M6.5 11.5L12 6l5.5 5.5" />
-                  </svg>
-                </button>
+                    <svg
+                      viewBox="0 0 24 24"
+                      width="18"
+                      height="18"
+                      fill="currentColor"
+                      aria-hidden="true"
+                    >
+                      <rect x="4" y="4" width="16" height="16" rx="2" />
+                    </svg>
+                  </button>
+                ) : (
+                  <button
+                    type="submit"
+                    disabled={isSendDisabled}
+                    className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[var(--app-btn-primary-bg)] text-[var(--app-btn-primary-text)] shadow-[var(--app-shadow-sm)] transition hover:bg-[var(--app-btn-primary-hover)] hover:shadow-[var(--app-shadow-md)] hover:-translate-y-px active:translate-y-0 disabled:opacity-50 sm:h-11 sm:w-11"
+                    title="Send"
+                    aria-label="Send message"
+                  >
+                    <svg
+                      viewBox="0 0 24 24"
+                      width="18"
+                      height="18"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2.2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      aria-hidden="true"
+                    >
+                      <path d="M12 19V6" />
+                      <path d="M6.5 11.5L12 6l5.5 5.5" />
+                    </svg>
+                  </button>
+                )}
               </div>
             </div>
           </div>

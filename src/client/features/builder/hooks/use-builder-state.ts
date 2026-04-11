@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { ChatApiError, sendChatMessage } from "@/client/lib/api/chat-api";
+import { ChatApiError, sendChatMessage, abortGeneration } from "@/client/lib/api/chat-api";
 import {
   getPendingChatGeneration,
   markChatGenerationPending,
@@ -256,7 +256,13 @@ export function useBuilderState({
     return subscribePendingChatGenerations(syncPendingGenerationState);
   }, [syncPendingGenerationState]);
 
+  // Track if the user intentionally stopped the generation
+  const intentionallyStoppedRef = useRef(false);
+
   const handleSend = useCallback(async (content: string) => {
+    // Reset the intentionally stopped flag at the start of a new send
+    intentionallyStoppedRef.current = false;
+
     const preSendMessages = messages;
     const preSendMessageImages = messageImages;
     const preSendMessageImageFileIds = messageImageFileIds;
@@ -333,6 +339,14 @@ export function useBuilderState({
       resolveChatGeneration(chatId);
       setPendingGenerationStartedAt(null);
     } catch (error) {
+      // If user intentionally stopped, don't show error message
+      if (intentionallyStoppedRef.current) {
+        resolveChatGeneration(chatId);
+        setPendingGenerationStartedAt(null);
+        // Don't restore messages or show error - user chose to stop
+        return;
+      }
+
       const status = error instanceof ChatApiError ? error.status : null;
       const raw = error instanceof Error ? error.message : "";
       const normalizedRaw = raw.toLowerCase();
@@ -391,12 +405,34 @@ export function useBuilderState({
     currentInputImagesRef.current = images;
   }, []);
 
+  const handleStop = useCallback(async () => {
+    if (!isSending) {
+      return;
+    }
+
+    // Mark that user intentionally stopped - this prevents error messages
+    intentionallyStoppedRef.current = true;
+
+    // Call the abort API
+    try {
+      await abortGeneration(chatId);
+    } catch (error) {
+      console.error("Failed to abort generation:", error);
+    }
+
+    // Clean up local state regardless of API success
+    resolveChatGeneration(chatId);
+    setPendingGenerationStartedAt(null);
+    setIsRequestInFlight(false);
+  }, [chatId, isSending]);
+
   return {
     messages,
     messageImages,
     isSending,
     pendingGenerationStartedAt,
     handleSend,
+    handleStop,
     handleInputImagesChange,
   };
 }

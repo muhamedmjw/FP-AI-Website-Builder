@@ -15,6 +15,19 @@ import {
 } from "@/server/prompts/prompt-builder";
 import { detectLanguage } from "@/server/prompts/language-rules";
 import { enrichHtmlWithBraveImages } from "@/server/services/brave-image-service";
+import {
+  completeGeneration,
+  logCancelledGeneration,
+  registerGeneration,
+  setGenerationRequest,
+} from "@/server/services/generation-manager";
+
+export class GenerationCancelledError extends Error {
+  constructor() {
+    super("Generation cancelled by user");
+    this.name = "GenerationCancelledError";
+  }
+}
 
 export type AIResponseQuestions = {
   type: "questions";
@@ -243,7 +256,8 @@ async function callModelOnce(
   model: string,
   messages: AIMessage[],
   maxTokens: number,
-  temperature: number
+  temperature: number,
+  abortSignal?: AbortSignal
 ): Promise<{
   parsed: AIResponse;
   promptTokens: number | null;
@@ -256,12 +270,15 @@ async function callModelOnce(
     ? Math.min(maxTokens, DEEPSEEK_MAX_OUTPUT_TOKENS)
     : maxTokens;
 
-  const response = await getDeepSeekClient().chat.completions.create({
-    model,
-    messages,
-    max_tokens: effectiveMaxTokens,
-    temperature,
-  });
+  const response = await getDeepSeekClient().chat.completions.create(
+    {
+      model,
+      messages,
+      max_tokens: effectiveMaxTokens,
+      temperature,
+    },
+    { signal: abortSignal }
+  );
 
   const rawText =
     typeof response.choices[0]?.message?.content === "string"
@@ -334,7 +351,8 @@ function isNonRetriableModelError(error: unknown): boolean {
 async function callDeepSeekWithRetry(
   messages: AIMessage[],
   maxTokens: number,
-  temperature: number
+  temperature: number,
+  abortSignal?: AbortSignal
 ): Promise<{
   parsed: AIResponse;
   promptTokens: number | null;
@@ -345,12 +363,22 @@ async function callDeepSeekWithRetry(
   let lastError: Error | null = null;
   const modelsToTry = MODEL_CANDIDATES;
 
+  // Check if aborted before starting
+  if (abortSignal?.aborted) {
+    throw new GenerationCancelledError();
+  }
+
   for (const model of modelsToTry) {
     for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
       try {
-        return await callModelOnce(model, messages, maxTokens, temperature);
+        return await callModelOnce(model, messages, maxTokens, temperature, abortSignal);
       } catch (error) {
         lastError = error instanceof Error ? error : new Error("Unknown AI error");
+
+        // Check if this is an abort error
+        if (error instanceof GenerationCancelledError || abortSignal?.aborted) {
+          throw new GenerationCancelledError();
+        }
 
         if (isNonRetriableModelError(error)) {
           break;
@@ -560,9 +588,15 @@ async function generateAIResponseOnce(
   history: HistoryMessage[],
   language: "en" | "ar" | "ku" = "en",
   existingHtml: string | null = null,
-  userImages: Array<{ fileName: string; dataUri: string }> = []
+  userImages: Array<{ fileName: string; dataUri: string }> = [],
+  abortSignal?: AbortSignal
 ): Promise<AIResponse> {
   const startTime = Date.now();
+
+  // Check if aborted before starting
+  if (abortSignal?.aborted) {
+    throw new GenerationCancelledError();
+  }
 
   const latestUserMessage =
     history.filter((m) => m.role === "user").at(-1)?.content ?? "";
@@ -593,7 +627,8 @@ async function generateAIResponseOnce(
     const workerResult = await callDeepSeekWithRetry(
       config.messages,
       config.maxTokens,
-      config.temperature
+      config.temperature,
+      abortSignal
     );
 
     const parsed = await enrichWebsiteResponse(
@@ -616,6 +651,11 @@ async function generateAIResponseOnce(
 
     return parsed;
   } catch (error) {
+    // Check if this was a cancellation
+    if (error instanceof GenerationCancelledError || abortSignal?.aborted) {
+      throw new GenerationCancelledError();
+    }
+
     const durationMs = Date.now() - startTime;
     const errorMessage =
       error instanceof Error ? error.message : "Unknown AI error";
@@ -643,6 +683,35 @@ export async function generateAIResponse(
   existingHtml: string | null = null,
   userImages: Array<{ fileName: string; dataUri: string }> = []
 ): Promise<AIResponse> {
+  // Create abort controller and register this generation
+  const abortController = new AbortController();
+  registerGeneration(chatId, abortController);
+
+  try {
+    const result = await generateAIResponseWithAbort(
+      supabase,
+      chatId,
+      history,
+      language,
+      existingHtml,
+      userImages,
+      abortController.signal
+    );
+    return result;
+  } finally {
+    completeGeneration(chatId);
+  }
+}
+
+async function generateAIResponseWithAbort(
+  supabase: SupabaseClient,
+  chatId: string,
+  history: HistoryMessage[],
+  language: "en" | "ar" | "ku" = "en",
+  existingHtml: string | null = null,
+  userImages: Array<{ fileName: string; dataUri: string }> = [],
+  abortSignal?: AbortSignal
+): Promise<AIResponse> {
   try {
     return await generateAIResponseOnce(
       supabase,
@@ -650,9 +719,16 @@ export async function generateAIResponse(
       history,
       language,
       existingHtml,
-      userImages
+      userImages,
+      abortSignal
     );
   } catch (error) {
+    // Check if this was a cancellation
+    if (error instanceof GenerationCancelledError || abortSignal?.aborted) {
+      await logCancelledGeneration(supabase, chatId, MODEL_NAME);
+      throw new GenerationCancelledError();
+    }
+
     const message = error instanceof Error ? error.message.toLowerCase() : "";
     const shouldRetryWithoutImages =
       userImages.length > 0 &&
@@ -677,7 +753,8 @@ export async function generateAIResponse(
       history,
       language,
       existingHtml,
-      []
+      [],
+      abortSignal
     );
   }
 }

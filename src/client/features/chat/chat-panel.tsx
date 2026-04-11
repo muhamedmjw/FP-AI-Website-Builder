@@ -54,6 +54,7 @@ type ChatPanelProps = {
     label: string;
   }>>;
   onSend: (message: string) => void;
+  onStop?: () => void;
   onImagesChange?: (images: UserImage[]) => void;
   onTogglePreview?: () => void;
   onPreviewRequest?: () => void;
@@ -87,6 +88,7 @@ export default function ChatPanel({
   messages,
   messageImages = EMPTY_MESSAGE_IMAGES,
   onSend,
+  onStop,
   onImagesChange,
   onTogglePreview,
   onPreviewRequest,
@@ -204,6 +206,7 @@ export default function ChatPanel({
             ) : null}
             <ChatInput
               onSend={onSend}
+              onStop={onStop}
               onTogglePreview={onTogglePreview}
               onPreviewRequest={onPreviewRequest}
               showPreviewGateButton={showPreviewGateButton}
@@ -213,6 +216,7 @@ export default function ChatPanel({
               onImagesChange={onImagesChange}
               disableTyping={disableInput}
               disableSend={isSending || disableInput}
+              isGenerating={isSending}
               placeholder={resolvedInputPlaceholder}
               isSticky={false}
               autoFocus
@@ -298,6 +302,7 @@ export default function ChatPanel({
             ) : null}
             <ChatInput
               onSend={onSend}
+              onStop={onStop}
               onTogglePreview={onTogglePreview}
               onPreviewRequest={onPreviewRequest}
               showPreviewGateButton={showPreviewGateButton}
@@ -307,6 +312,7 @@ export default function ChatPanel({
               onImagesChange={onImagesChange}
               disableTyping={disableInput}
               disableSend={isSending || disableInput}
+              isGenerating={isSending}
               placeholder={resolvedInputPlaceholder}
               isSticky
               showDisclaimer={showInputDisclaimer}
