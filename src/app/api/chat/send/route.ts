@@ -4,14 +4,17 @@ import { addMessage, getChatMessages } from "@/shared/services/chat-service";
 import { getCurrentUser } from "@/shared/services/user-service";
 import { generateAIResponse, generateChatTitle, GenerationCancelledError } from "@/server/services/ai-service";
 import { renameChat } from "@/shared/services/chat-service";
-import { getWebsiteByChatId, getGeneratedHtml, saveWebsiteRecord } from "@/server/services/website-service";
-import { AI_CONFIG } from "@/shared/constants/ai";
+import { getWebsiteByChatId, getGeneratedHtml } from "@/server/services/website-service";
 import { MAX_PROMPT_LENGTH } from "@/shared/constants/limits";
 import type { AppLanguage, HistoryMessage } from "@/shared/types/database";
 import { extractBooleanField, extractStringArrayField, extractStringField } from "@/shared/utils/request-helpers";
-import { resolveUserImages } from "@/shared/utils/user-images";
-import { handleHtmlGeneration } from "@/app/api/chat/send/handle-html-generation";
 import { getSupabaseRouteClient } from "@/server/supabase/server-client";
+import {
+  checkUserTokenBudget,
+  handleHtmlGeneration,
+  resolveUserImages,
+  saveWebsiteRecord,
+} from "@/server/services/chat-send-service";
 
 const MAX_EXISTING_HTML_PROMPT_CHARS = 140_000;
 
@@ -41,48 +44,6 @@ function normalizeExistingHtmlForPrompt(html: string | null): string | null {
     "\n<!-- existing html truncated for AI prompt size -->\n",
     normalized.slice(-tailLength),
   ].join("");
-}
-
-async function checkUserTokenBudget(
-  supabase: SupabaseClient,
-  userId: string
-): Promise<{ allowed: boolean; reason?: string }> {
-  const today = new Date().toISOString().split("T")[0];
-
-  const { data: userChats, error: chatsError } = await supabase
-    .from("chats")
-    .select("id")
-    .eq("user_id", userId);
-
-  if (chatsError || !userChats || userChats.length === 0) {
-    return { allowed: true };
-  }
-
-  const chatIds = userChats.map((c) => c.id);
-
-  const { data: generations, error: genError } = await supabase
-    .from("ai_generations")
-    .select("total_tokens")
-    .in("chat_id", chatIds)
-    .eq("status", "success")
-    .gte("created_at", `${today}T00:00:00.000Z`)
-    .lte("created_at", `${today}T23:59:59.999Z`);
-
-  if (genError) return { allowed: true };
-
-  const tokensUsedToday = (generations ?? []).reduce(
-    (sum, row) => sum + (row.total_tokens ?? 0),
-    0
-  );
-
-  if (tokensUsedToday >= AI_CONFIG.DAILY_TOKEN_LIMIT) {
-    return {
-      allowed: false,
-      reason: `You've used your daily 500,000 token budget. Resets at midnight UTC. (Used: ${tokensUsedToday.toLocaleString()} / 500,000)`,
-    };
-  }
-
-  return { allowed: true };
 }
 
 type ValidatedSendRequest = {
@@ -136,31 +97,6 @@ function validateRequest(body: unknown): {
       selectedImageFileIds,
     },
   };
-}
-
-function createAuthenticatedSupabaseClient(request: NextRequest): SupabaseClient {
-  const { supabase } = getSupabaseRouteClient(request);
-  return supabase;
-}
-
-async function authorizeUserAndChat(
-  supabase: SupabaseClient,
-  chatId: string
-): Promise<{ userId: string } | NextResponse> {
-  const [user, { data: chat, error: chatError }] = await Promise.all([
-    getCurrentUser(supabase),
-    supabase.from("chats").select("id").eq("id", chatId).single(),
-  ]);
-
-  if (!user) {
-    return NextResponse.json({ error: "Unauthorized." }, { status: 401 });
-  }
-
-  if (chatError || !chat) {
-    return NextResponse.json({ error: "Chat not found." }, { status: 404 });
-  }
-
-  return { userId: user.id };
 }
 
 async function resolveUserMessageAndHistory(params: {
@@ -221,104 +157,6 @@ async function maybeRenameNewChat(
   }
 }
 
-async function runSendPipeline(
-  request: NextRequest,
-  sendRequest: ValidatedSendRequest
-): Promise<NextResponse> {
-  const trimmedContent = sendRequest.content.trim();
-
-  const supabase = createAuthenticatedSupabaseClient(request);
-  const accessResult = await authorizeUserAndChat(supabase, sendRequest.chatId);
-  if (accessResult instanceof NextResponse) {
-    return accessResult;
-  }
-
-  const budget = await checkUserTokenBudget(supabase, accessResult.userId);
-  if (!budget.allowed) {
-    return NextResponse.json(
-      { error: budget.reason ?? "Daily token limit reached. Try again tomorrow." },
-      { status: 429 }
-    );
-  }
-
-  const { userMessage, historyForAI } = await resolveUserMessageAndHistory({
-    supabase,
-    chatId: sendRequest.chatId,
-    content: trimmedContent,
-    shouldSkipUserMessageSave: sendRequest.shouldSkipUserMessageSave,
-  });
-
-  const existingWebsite = await getWebsiteByChatId(supabase, sendRequest.chatId);
-  const effectiveLanguage: AppLanguage = isAppLanguage(sendRequest.language)
-    ? sendRequest.language
-    : existingWebsite?.language ?? "en";
-  const existingHtml = existingWebsite
-    ? await getGeneratedHtml(supabase, existingWebsite.id)
-    : null;
-
-  const { userImages, websiteImagePool } = await resolveUserImages(
-    supabase,
-    existingWebsite?.id ?? null,
-    sendRequest.selectedImageFileIds
-  );
-
-  const aiResponse = await generateAIResponse(
-    supabase,
-    sendRequest.chatId,
-    historyForAI,
-    effectiveLanguage,
-    normalizeExistingHtmlForPrompt(existingHtml),
-    userImages
-  );
-
-  const { htmlToSave, htmlForPreview } = handleHtmlGeneration({
-    aiResponse,
-    existingWebsiteId: existingWebsite?.id ?? null,
-    existingHtml,
-    content: trimmedContent,
-    userImages,
-    websiteImagePool,
-  });
-
-  await saveWebsiteRecord({
-    supabase,
-    chatId: sendRequest.chatId,
-    businessPrompt: trimmedContent,
-    language: effectiveLanguage,
-    existingWebsite,
-    htmlToSave,
-  });
-
-  const assistantMessage = await addMessage(
-    supabase,
-    sendRequest.chatId,
-    "assistant",
-    aiResponse.message
-  );
-
-  await maybeRenameNewChat(
-    supabase,
-    sendRequest.chatId,
-    historyForAI,
-    trimmedContent,
-    effectiveLanguage
-  );
-
-  const messages = await getChatMessages(supabase, sendRequest.chatId);
-  return NextResponse.json({
-    userMessage,
-    assistantMessage,
-    messages,
-    aiResponseType: aiResponse.type,
-    html:
-      typeof htmlForPreview === "string"
-        ? htmlForPreview
-        : aiResponse.type === "website"
-          ? aiResponse.html
-          : undefined,
-  });
-}
-
 /**
  * POST /api/chat/send
  *
@@ -330,13 +168,136 @@ async function runSendPipeline(
  */
 export async function POST(request: NextRequest) {
   try {
+    // Validate request payload.
     const body = await request.json();
     const validation = validateRequest(body);
     if (validation.errorResponse) {
       return validation.errorResponse;
     }
 
-    return runSendPipeline(request, validation.data as ValidatedSendRequest);
+    const sendRequest = validation.data as ValidatedSendRequest;
+    const trimmedContent = sendRequest.content.trim();
+
+    // Create authenticated Supabase client.
+    const { supabase } = getSupabaseRouteClient(request);
+
+    // Verify authenticated user.
+    const user = await getCurrentUser(supabase);
+    if (!user) {
+      return NextResponse.json({ error: "Unauthorized." }, { status: 401 });
+    }
+
+    // Verify chat ownership.
+    const { data: chat, error: chatError } = await supabase
+      .from("chats")
+      .select("id")
+      .eq("id", sendRequest.chatId)
+      .eq("user_id", user.id)
+      .single();
+
+    if (chatError || !chat) {
+      return NextResponse.json({ error: "Chat not found." }, { status: 404 });
+    }
+
+    // Enforce daily token budget.
+    const budget = await checkUserTokenBudget(supabase, user.id);
+    if (!budget.allowed) {
+      return NextResponse.json(
+        { error: budget.reason ?? "Daily token limit reached. Try again tomorrow." },
+        { status: 429 }
+      );
+    }
+
+    // Resolve user message and full history context.
+    const { userMessage, historyForAI } = await resolveUserMessageAndHistory({
+      supabase,
+      chatId: sendRequest.chatId,
+      content: trimmedContent,
+      shouldSkipUserMessageSave: sendRequest.shouldSkipUserMessageSave,
+    });
+
+    // Load website context and selected images.
+    const existingWebsite = await getWebsiteByChatId(supabase, sendRequest.chatId);
+    const effectiveLanguage: AppLanguage = isAppLanguage(sendRequest.language)
+      ? sendRequest.language
+      : existingWebsite?.language ?? "en";
+    const existingHtml = existingWebsite
+      ? await getGeneratedHtml(supabase, existingWebsite.id)
+      : null;
+
+    const { userImages, websiteImagePool } = await resolveUserImages(
+      supabase,
+      existingWebsite?.id ?? null,
+      sendRequest.selectedImageFileIds
+    );
+
+    // Generate AI response for the current chat.
+    const aiResponse = await generateAIResponse(
+      supabase,
+      sendRequest.chatId,
+      historyForAI,
+      effectiveLanguage,
+      normalizeExistingHtmlForPrompt(existingHtml),
+      userImages
+    );
+
+    // Handle cancellation without surfacing as a server error.
+    if ((aiResponse as { type: string }).type === "cancelled") {
+      return NextResponse.json(
+        { error: "Generation cancelled by user.", cancelled: true },
+        { status: 499 }
+      );
+    }
+
+    // Transform and persist generated HTML output.
+    const { htmlToSave, htmlForPreview } = handleHtmlGeneration({
+      aiResponse,
+      existingWebsiteId: existingWebsite?.id ?? null,
+      existingHtml,
+      content: trimmedContent,
+      userImages,
+      websiteImagePool,
+    });
+
+    await saveWebsiteRecord({
+      supabase,
+      chatId: sendRequest.chatId,
+      businessPrompt: trimmedContent,
+      language: effectiveLanguage,
+      existingWebsite,
+      htmlToSave,
+    });
+
+    // Save assistant message and update title for brand-new chats.
+    const assistantMessage = await addMessage(
+      supabase,
+      sendRequest.chatId,
+      "assistant",
+      aiResponse.message
+    );
+
+    await maybeRenameNewChat(
+      supabase,
+      sendRequest.chatId,
+      historyForAI,
+      trimmedContent,
+      effectiveLanguage
+    );
+
+    // Assemble and return response payload.
+    const messages = await getChatMessages(supabase, sendRequest.chatId);
+    return NextResponse.json({
+      userMessage,
+      assistantMessage,
+      messages,
+      aiResponseType: aiResponse.type,
+      html:
+        typeof htmlForPreview === "string"
+          ? htmlForPreview
+          : aiResponse.type === "website"
+            ? aiResponse.html
+            : undefined,
+    });
   } catch (error) {
     // Handle generation cancellation
     if (error instanceof GenerationCancelledError) {
