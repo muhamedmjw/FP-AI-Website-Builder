@@ -156,7 +156,7 @@ export default function ChatBubble({
     <>
       <div
         dir="ltr"
-        className={`group ui-fade-up flex min-w-0 max-w-[92%] items-start gap-2 sm:max-w-[78%] sm:gap-2.5 ${
+        className={`group ui-fade-up mb-8 flex min-w-0 max-w-[92%] items-start gap-2 sm:max-w-[78%] sm:gap-2.5 ${
           isUser
             ? "ml-auto flex-row-reverse chat-bubble-user"
             : "mr-auto"
