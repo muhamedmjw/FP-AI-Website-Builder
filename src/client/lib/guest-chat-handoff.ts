@@ -1,6 +1,23 @@
 import { HistoryMessage } from "@/shared/types/database";
 
-const PENDING_GUEST_CHAT_KEY = "pending_guest_chat_session";
+/**
+ * GUEST STATE ARCHITECTURE NOTE
+ *
+ * Guest state is currently split across three systems:
+ * 1. localStorage key "pending_guest_chat_session" (this file) — stores messages + HTML
+ *    for handoff when a guest signs up.
+ * 2. localStorage key "guest_mode_session_v1" (guest-home.tsx) — stores the active
+ *    guest session during the chat itself.
+ * 3. Cookie "guest_token" + database table "guest_usage" — tracks rate limit identity.
+ *
+ * These two localStorage keys serve different purposes and should not be merged
+ * without careful testing of the sign-up handoff flow.
+ *
+ * Future improvement: consolidate guest session state into a single localStorage
+ * key with a clear schema, and derive the handoff payload from it at sign-up time.
+ */
+export const GUEST_HANDOFF_STORAGE_KEY = "pending_guest_chat_session";
+// guest-home.tsx uses a separate key intentionally — see architecture note above
 const IMPORTED_GUEST_CHAT_MAP_KEY = "imported_guest_chat_map_v1";
 const MAX_IMPORTED_GUEST_CHAT_ENTRIES = 50;
 
@@ -151,7 +168,7 @@ export function savePendingGuestChatSession(
     createdAt: new Date().toISOString(),
   };
 
-  localStorage.setItem(PENDING_GUEST_CHAT_KEY, JSON.stringify(payload));
+  localStorage.setItem(GUEST_HANDOFF_STORAGE_KEY, JSON.stringify(payload));
 }
 
 export function readPendingGuestChatSession(): PendingGuestChatSession | null {
@@ -159,7 +176,7 @@ export function readPendingGuestChatSession(): PendingGuestChatSession | null {
     return null;
   }
 
-  const raw = localStorage.getItem(PENDING_GUEST_CHAT_KEY);
+  const raw = localStorage.getItem(GUEST_HANDOFF_STORAGE_KEY);
   if (!raw) {
     return null;
   }
@@ -233,7 +250,7 @@ export function clearPendingGuestChatSession() {
     return;
   }
 
-  localStorage.removeItem(PENDING_GUEST_CHAT_KEY);
+  localStorage.removeItem(GUEST_HANDOFF_STORAGE_KEY);
 }
 
 export function getImportedGuestChatId(sessionId: string): string | null {

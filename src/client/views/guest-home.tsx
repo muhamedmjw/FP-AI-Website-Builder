@@ -34,6 +34,22 @@ async function fetchGuestUsage(): Promise<GuestUsageResponse | null> {
   }
 }
 
+/**
+ * GUEST STATE ARCHITECTURE NOTE
+ *
+ * Guest state is currently split across three systems:
+ * 1. localStorage key "pending_guest_chat_session" (guest-chat-handoff.ts) — stores messages + HTML
+ *    for handoff when a guest signs up.
+ * 2. localStorage key "guest_mode_session_v1" (this file) — stores the active
+ *    guest session during the chat itself.
+ * 3. Cookie "guest_token" + database table "guest_usage" — tracks rate limit identity.
+ *
+ * These two localStorage keys serve different purposes and should not be merged
+ * without careful testing of the sign-up handoff flow.
+ *
+ * Future improvement: consolidate guest session state into a single localStorage
+ * key with a clear schema, and derive the handoff payload from it at sign-up time.
+ */
 const GUEST_SESSION_STORAGE_KEY = "guest_mode_session_v1";
 
 type PersistedGuestSession = {
