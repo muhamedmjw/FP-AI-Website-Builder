@@ -273,6 +273,11 @@ Language values: "en", "ar", "ku"
 Arabic script disambiguation:
 Arabic, Kurdish Sorani, and Persian all use Arabic script.
 Use websiteLanguage hint to disambiguate: "${websiteLanguage}"
+KURDISH SORANI - HIGHEST PRIORITY RULE:
+If the input contains ANY of these Unicode characters: ۆ ێ ڕ ڵ
+-> detectedLanguage MUST be "ku". No exceptions.
+These characters are exclusive to Kurdish Sorani and do not appear in Arabic or Persian.
+This rule overrides ALL other signals including the websiteLanguage hint.
 - websiteLanguage "ar" → detectedLanguage "ar"
 - websiteLanguage "ku" → detectedLanguage "ku"
 - websiteLanguage "en" + Arabic script → "ar"
@@ -290,14 +295,14 @@ Return exactly:
 
 export function buildGenerationMessages(
   history: HistoryMessage[],
-  websiteLanguage: AppLanguage,
+  contentLanguage: AppLanguage,
   detectedUserLanguage: AppLanguage,
   userImages?: PromptUserImage[]
 ): ChatMessage[] {
-  const isRtl = websiteLanguage === "ar" || websiteLanguage === "ku";
+  const isRtl = contentLanguage === "ar" || contentLanguage === "ku";
   const latestUserMessage =
     history.filter((m) => m.role === "user").at(-1)?.content ?? "";
-  const { theme, category } = buildSystemPrompt(latestUserMessage, websiteLanguage);
+  const { theme, category } = buildSystemPrompt(latestUserMessage, contentLanguage);
   const themeInjection = buildThemeInjection(theme, category);
   const layoutInstruction = buildLayoutInstruction(theme.layout);
   const visualStyleInstruction = buildVisualStyleInstruction(theme);
@@ -321,7 +326,7 @@ export function buildGenerationMessages(
     isRtl ? RTL_RULES : "",
     WEBSITE_STRUCTURE,
     OUTPUT_FORMAT,
-    `Website content language: ${websiteLanguage}`,
+    `Website content language: ${contentLanguage}`,
     `Conversation reply language: ${detectedUserLanguage}`,
   ].filter(Boolean);
 
@@ -336,14 +341,14 @@ export function buildGenerationMessages(
 export function buildEditMessages(
   history: HistoryMessage[],
   existingHtml: string,
-  websiteLanguage: AppLanguage,
+  contentLanguage: AppLanguage,
   detectedUserLanguage: AppLanguage,
   userImages?: PromptUserImage[]
 ): ChatMessage[] {
-  const isRtl = websiteLanguage === "ar" || websiteLanguage === "ku";
+  const isRtl = contentLanguage === "ar" || contentLanguage === "ku";
   const latestUserMessage =
     history.filter((m) => m.role === "user").at(-1)?.content ?? "";
-  const { theme, category } = buildSystemPrompt(latestUserMessage, websiteLanguage);
+  const { theme, category } = buildSystemPrompt(latestUserMessage, contentLanguage);
   const themeInjection = buildThemeInjection(theme, category);
   const layoutInstruction = buildLayoutInstruction(theme.layout);
   const visualStyleInstruction = buildVisualStyleInstruction(theme);
@@ -364,7 +369,7 @@ export function buildEditMessages(
     IMAGE_RULES,
     isRtl ? RTL_RULES : "",
     OUTPUT_FORMAT,
-    `Website content language: ${websiteLanguage}`,
+    `Website content language: ${contentLanguage}`,
     `Conversation reply language: ${detectedUserLanguage}`,
     `CURRENT HTML:\n${existingHtml}`,
   ]

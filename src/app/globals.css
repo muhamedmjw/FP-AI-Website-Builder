@@ -547,6 +547,26 @@ html[data-nav-loading="true"] * {
   margin-right: auto;
 }
 
+.chat-markdown {
+  line-height: 1.72;
+  text-wrap: pretty;
+  word-break: normal;
+}
+
+.chat-markdown ul,
+.chat-markdown ol {
+  padding-inline-start: 0.2rem;
+}
+
+.chat-markdown li > p {
+  display: inline;
+  margin: 0;
+}
+
+.chat-markdown pre {
+  white-space: pre;
+}
+
 .generating-bubble {
   background: var(--app-generating-bubble-bg);
 }

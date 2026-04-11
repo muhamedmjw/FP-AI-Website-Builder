@@ -17,54 +17,64 @@ function MarkdownMessage({
   content: string;
 }) {
   return (
-    <ReactMarkdown
-      remarkPlugins={[remarkGfm, remarkBreaks]}
-      components={{
-        p: ({ children }) => <p className="my-1.5 first:mt-0 last:mb-0">{children}</p>,
-        h1: ({ children }) => <h1 className="my-2 text-lg font-semibold">{children}</h1>,
-        h2: ({ children }) => <h2 className="my-2 text-base font-semibold">{children}</h2>,
-        h3: ({ children }) => <h3 className="my-1.5 text-sm font-semibold">{children}</h3>,
-        ul: ({ children }) => <ul className="my-1.5 list-disc pl-5 space-y-1">{children}</ul>,
-        ol: ({ children }) => <ol className="my-1.5 list-decimal pl-5 space-y-1">{children}</ol>,
-        li: ({ children }) => <li>{children}</li>,
-        blockquote: ({ children }) => (
-          <blockquote className="my-2 border-l-2 border-white/25 pl-3 opacity-90">
-            {children}
-          </blockquote>
-        ),
-        hr: () => <hr className="my-2 border-white/15" />,
-        a: ({ children, href }) => (
-          <a
-            href={href}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="underline text-(--app-link-text,#67e8f9) hover:opacity-80"
-          >
-            {children}
-          </a>
-        ),
-        code: ({ children, className }) => {
-          const isCodeBlock = Boolean(className?.includes("language-"));
+    <div className="chat-markdown">
+      <ReactMarkdown
+        remarkPlugins={[remarkGfm, remarkBreaks]}
+        components={{
+          p: ({ children }) => <p className="my-2 first:mt-0 last:mb-0">{children}</p>,
+          h1: ({ children }) => <h1 className="my-2.5 text-lg font-semibold">{children}</h1>,
+          h2: ({ children }) => <h2 className="my-2.5 text-base font-semibold">{children}</h2>,
+          h3: ({ children }) => <h3 className="my-2 text-sm font-semibold">{children}</h3>,
+          ul: ({ children }) => (
+            <ul className="my-2 list-inside list-disc space-y-1.5 ps-1 marker:opacity-70">
+              {children}
+            </ul>
+          ),
+          ol: ({ children }) => (
+            <ol className="my-2 list-inside list-decimal space-y-1.5 ps-1 marker:opacity-70">
+              {children}
+            </ol>
+          ),
+          li: ({ children }) => <li className="leading-7">{children}</li>,
+          blockquote: ({ children }) => (
+            <blockquote className="my-2 border-s-2 border-white/25 ps-3 opacity-90">
+              {children}
+            </blockquote>
+          ),
+          hr: () => <hr className="my-2 border-white/15" />,
+          a: ({ children, href }) => (
+            <a
+              href={href}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="underline text-(--app-link-text,#67e8f9) hover:opacity-80"
+            >
+              {children}
+            </a>
+          ),
+          code: ({ children, className }) => {
+            const isCodeBlock = Boolean(className?.includes("language-"));
 
-          if (isCodeBlock) {
+            if (isCodeBlock) {
+              return (
+                <code className="block overflow-x-auto rounded-lg bg-black/30 px-3 py-2 font-mono text-[0.85em]">
+                  {children}
+                </code>
+              );
+            }
+
             return (
-              <code className="block overflow-x-auto rounded-lg bg-black/30 px-3 py-2 font-mono text-[0.85em]">
+              <code className="rounded bg-black/20 px-1.5 py-0.5 font-mono text-[0.85em]">
                 {children}
               </code>
             );
-          }
-
-          return (
-            <code className="rounded bg-black/20 px-1.5 py-0.5 font-mono text-[0.85em]">
-              {children}
-            </code>
-          );
-        },
-        pre: ({ children }) => <pre className="my-2 overflow-x-auto">{children}</pre>,
-      }}
-    >
-      {content}
-    </ReactMarkdown>
+          },
+          pre: ({ children }) => <pre className="my-2 overflow-x-auto rounded-lg">{children}</pre>,
+        }}
+      >
+        {content}
+      </ReactMarkdown>
+    </div>
   );
 }
 
@@ -147,7 +157,7 @@ export default function ChatBubble({
           <div className="min-w-0 space-y-2">
             <div
               dir="auto"
-              className="min-w-0 overflow-hidden wrap-break-word whitespace-pre-wrap rounded-2xl px-3 py-2.5 text-sm leading-relaxed shadow-(--app-shadow-md) sm:px-4 sm:py-3.5 sm:text-base bg-(--app-bubble-user-bg) text-(--app-bubble-user-text)"
+              className="min-w-0 break-words whitespace-normal rounded-2xl px-3 py-2.5 text-sm leading-relaxed shadow-(--app-shadow-md) sm:px-4 sm:py-3.5 sm:text-base bg-(--app-bubble-user-bg) text-(--app-bubble-user-text)"
               style={{ overflowWrap: "anywhere" }}
             >
               <MarkdownMessage content={content} />
@@ -182,7 +192,7 @@ export default function ChatBubble({
         ) : (
           <div
             dir="auto"
-            className="min-w-0 overflow-hidden wrap-break-word whitespace-pre-wrap rounded-2xl px-3 py-2.5 text-sm leading-relaxed shadow-(--app-shadow-md) sm:px-4 sm:py-3.5 sm:text-base bg-(--app-bubble-bot-bg) text-(--app-bubble-bot-text)"
+            className="min-w-0 break-words whitespace-normal rounded-2xl px-3 py-2.5 text-sm leading-relaxed shadow-(--app-shadow-md) sm:px-4 sm:py-3.5 sm:text-base bg-(--app-bubble-bot-bg) text-(--app-bubble-bot-text)"
             style={{ overflowWrap: "anywhere" }}
           >
             <MarkdownMessage content={content} />

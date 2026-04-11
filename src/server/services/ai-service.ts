@@ -13,6 +13,7 @@ import {
   buildEditMessages,
   buildGenerationMessages,
 } from "@/server/prompts/prompt-builder";
+import { detectLanguage } from "@/server/prompts/language-rules";
 import { enrichHtmlWithBraveImages } from "@/server/services/brave-image-service";
 
 export type AIResponseQuestions = {
@@ -423,7 +424,7 @@ async function classifyIntent(
 function buildIntentExecutionConfig(
   intent: ClassifiedIntent,
   history: HistoryMessage[],
-  language: AppLanguage,
+  contentLanguage: AppLanguage,
   detectedLanguage: AppLanguage,
   existingHtml: string | null,
   selectedUserImages: Array<{ fileName: string; dataUri: string }>
@@ -432,7 +433,7 @@ function buildIntentExecutionConfig(
     return {
       messages: buildGenerationMessages(
         history,
-        language,
+        contentLanguage,
         detectedLanguage,
         selectedUserImages
       ) as AIMessage[],
@@ -447,7 +448,7 @@ function buildIntentExecutionConfig(
         messages: buildEditMessages(
           history,
           existingHtml,
-          language,
+          contentLanguage,
           detectedLanguage,
           selectedUserImages
         ) as AIMessage[],
@@ -459,7 +460,7 @@ function buildIntentExecutionConfig(
     return {
       messages: buildGenerationMessages(
         history,
-        language,
+        contentLanguage,
         detectedLanguage,
         selectedUserImages
       ) as AIMessage[],
@@ -478,7 +479,7 @@ function buildIntentExecutionConfig(
 function trimImagesToPromptLimit(
   intent: ClassifiedIntent,
   history: HistoryMessage[],
-  language: AppLanguage,
+  contentLanguage: AppLanguage,
   detectedLanguage: AppLanguage,
   existingHtml: string | null,
   userImages: Array<{ fileName: string; dataUri: string }>
@@ -490,7 +491,7 @@ function trimImagesToPromptLimit(
   let config = buildIntentExecutionConfig(
     intent,
     history,
-    language,
+    contentLanguage,
     detectedLanguage,
     existingHtml,
     effectiveUserImages
@@ -507,7 +508,7 @@ function trimImagesToPromptLimit(
     config = buildIntentExecutionConfig(
       intent,
       history,
-      language,
+      contentLanguage,
       detectedLanguage,
       existingHtml,
       effectiveUserImages
@@ -566,17 +567,24 @@ async function generateAIResponseOnce(
   const latestUserMessage =
     history.filter((m) => m.role === "user").at(-1)?.content ?? "";
 
+  const heuristicLang = detectLanguage(latestUserMessage);
+  const promptContentLanguage: AppLanguage =
+    heuristicLang === "sorani" ? "ku" : heuristicLang === "arabic" ? "ar" : "en";
+
   const { intent, detectedLanguage } = await classifyIntent(
     latestUserMessage,
     existingHtml !== null,
-    language
+    promptContentLanguage
   );
+
+  const contentLanguage: AppLanguage =
+    promptContentLanguage !== "en" ? promptContentLanguage : language;
 
   try {
     const { effectiveUserImages, config } = trimImagesToPromptLimit(
       intent,
       history,
-      language,
+      contentLanguage,
       detectedLanguage,
       existingHtml,
       userImages
@@ -691,11 +699,18 @@ export async function generateGuestAIResponse(
     const latestUserMessage =
       historyMessages.filter((m) => m.role === "user").at(-1)?.content ?? "";
 
+    const heuristicLang = detectLanguage(latestUserMessage);
+    const promptContentLanguage: AppLanguage =
+      heuristicLang === "sorani" ? "ku" : heuristicLang === "arabic" ? "ar" : "en";
+
     const { intent, detectedLanguage } = await classifyIntent(
       latestUserMessage,
       false,
-      language
+      promptContentLanguage
     );
+
+    const contentLanguage: AppLanguage =
+      promptContentLanguage !== "en" ? promptContentLanguage : language;
 
     let messages: AIMessage[];
     let maxTokens: number;
@@ -704,7 +719,7 @@ export async function generateGuestAIResponse(
     if (intent === "build") {
       messages = buildGenerationMessages(
         historyMessages,
-        language,
+        contentLanguage,
         detectedLanguage,
         userImages
       ) as AIMessage[];
@@ -717,7 +732,7 @@ export async function generateGuestAIResponse(
     } else {
       messages = buildGenerationMessages(
         historyMessages,
-        language,
+        contentLanguage,
         detectedLanguage,
         userImages
       ) as AIMessage[];

@@ -197,6 +197,11 @@ export default function ChatPanel({
               </p>
               {emptyStateSuggestions}
             </div>
+            {inputErrorMessage ? (
+              <p className="mx-auto max-w-4xl px-5 pb-2 text-sm text-rose-400" role="alert">
+                {inputErrorMessage}
+              </p>
+            ) : null}
             <ChatInput
               onSend={onSend}
               onTogglePreview={onTogglePreview}
@@ -215,14 +220,6 @@ export default function ChatPanel({
               pinDisclaimerToBottomOnMobile={pinDisclaimerToBottomOnMobile}
             />
             {inputBanner}
-            {inputErrorMessage ? (
-              <p
-                className="mx-auto mt-1 max-w-4xl px-5 text-sm text-rose-400"
-                role="alert"
-              >
-                {inputErrorMessage}
-              </p>
-            ) : null}
           </div>
         </div>
       ) : (
@@ -295,7 +292,7 @@ export default function ChatPanel({
           <div>
             {inputBanner}
             {inputErrorMessage ? (
-              <p className="mx-auto max-w-4xl px-5 text-sm text-rose-400" role="alert">
+              <p className="mx-auto max-w-4xl px-5 pb-2 text-sm text-rose-400" role="alert">
                 {inputErrorMessage}
               </p>
             ) : null}

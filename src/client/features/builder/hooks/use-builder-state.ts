@@ -27,6 +27,60 @@ type UseBuilderStateParams = {
   onApplyGeneratedHtml: (generatedHtml: string) => void;
 };
 
+function getLatestMessageTimestamp(messages: HistoryMessage[]): number | null {
+  let latestTimestamp: number | null = null;
+
+  for (const message of messages) {
+    const timestamp = Date.parse(message.created_at);
+    if (!Number.isFinite(timestamp)) {
+      continue;
+    }
+
+    latestTimestamp = latestTimestamp === null ? timestamp : Math.max(latestTimestamp, timestamp);
+  }
+
+  return latestTimestamp;
+}
+
+function shouldApplyServerMessages(
+  currentMessages: HistoryMessage[],
+  incomingMessages: HistoryMessage[]
+): boolean {
+  if (incomingMessages.length === 0) {
+    return currentMessages.length === 0;
+  }
+
+  if (currentMessages.length === 0) {
+    return true;
+  }
+
+  const currentLatest = getLatestMessageTimestamp(currentMessages);
+  const incomingLatest = getLatestMessageTimestamp(incomingMessages);
+
+  if (incomingLatest !== null && currentLatest !== null) {
+    if (incomingLatest > currentLatest) {
+      return true;
+    }
+
+    if (incomingLatest < currentLatest) {
+      return false;
+    }
+  }
+
+  if (incomingMessages.length > currentMessages.length) {
+    return true;
+  }
+
+  if (incomingMessages.length < currentMessages.length) {
+    return false;
+  }
+
+  const incomingLastMessageId = incomingMessages.at(-1)?.id;
+  const currentLastMessageId = currentMessages.at(-1)?.id;
+
+  return incomingLastMessageId !== currentLastMessageId;
+}
+
 export function useBuilderState({
   chatId,
   initialMessages,
@@ -44,17 +98,30 @@ export function useBuilderState({
   const [pendingGenerationStartedAt, setPendingGenerationStartedAt] = useState<number | null>(
     null
   );
+  const previousChatIdRef = useRef(chatId);
 
   const isSending = isRequestInFlight || pendingGenerationStartedAt !== null;
   const hasOptimisticMessage = messages.some((message) => message.id.startsWith("temp-"));
 
   useEffect(() => {
-    if (hasOptimisticMessage) {
+    if (previousChatIdRef.current !== chatId) {
+      previousChatIdRef.current = chatId;
+      setMessages(initialMessages);
       return;
     }
 
-    setMessages(initialMessages);
-  }, [chatId, hasOptimisticMessage, initialMessages]);
+    if (hasOptimisticMessage || isRequestInFlight) {
+      return;
+    }
+
+    setMessages((currentMessages) => {
+      if (!shouldApplyServerMessages(currentMessages, initialMessages)) {
+        return currentMessages;
+      }
+
+      return initialMessages;
+    });
+  }, [chatId, hasOptimisticMessage, initialMessages, isRequestInFlight]);
 
   useEffect(() => {
     currentInputImagesRef.current = [];
@@ -272,10 +339,8 @@ export function useBuilderState({
       const isAbortLikeError =
         normalizedRaw.includes("abort") || normalizedRaw.includes("aborted");
 
-      if (!isAbortLikeError) {
-        resolveChatGeneration(chatId);
-        setPendingGenerationStartedAt(null);
-      }
+      resolveChatGeneration(chatId);
+      setPendingGenerationStartedAt(null);
 
       let friendly = "Failed to send message. Please try again.";
       if (
