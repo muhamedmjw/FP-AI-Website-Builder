@@ -409,6 +409,8 @@ export default function HomePage() {
 
       shouldResetLoadingState = false;
       router.push(`/chat/${chatIdToUse}`);
+      // Refresh to sync the sidebar chat list immediately with the new chat
+      router.refresh();
 
       void sendChatMessage(chatIdToUse, trimmedMessage, language, {
         skipUserMessageSave: true,
