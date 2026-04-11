@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createServerClient } from "@supabase/ssr";
 import { getCurrentUser } from "@/shared/services/user-service";
 import { abortGeneration } from "@/server/services/generation-manager";
+import { getSupabaseRouteClient } from "@/server/supabase/server-client";
 
 /**
  * POST /api/chat/abort
@@ -31,24 +31,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Create authenticated Supabase client from request cookies
-    const supabaseResponse = NextResponse.next();
-
-    const supabase = createServerClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-      {
-        cookies: {
-          getAll() {
-            return request.cookies.getAll();
-          },
-          setAll(cookiesToSet) {
-            cookiesToSet.forEach(({ name, value, options }) => {
-              supabaseResponse.cookies.set(name, value, options);
-            });
-          },
-        },
-      }
-    );
+    const { supabase } = getSupabaseRouteClient(request);
 
     // Verify auth
     const user = await getCurrentUser(supabase);

@@ -1,5 +1,4 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createServerClient } from "@supabase/ssr";
 import { SupabaseClient } from "@supabase/supabase-js";
 import { addMessage, getChatMessages } from "@/shared/services/chat-service";
 import { getCurrentUser } from "@/shared/services/user-service";
@@ -12,6 +11,7 @@ import type { AppLanguage, HistoryMessage } from "@/shared/types/database";
 import { extractBooleanField, extractStringArrayField, extractStringField } from "@/shared/utils/request-helpers";
 import { resolveUserImages } from "@/shared/utils/user-images";
 import { handleHtmlGeneration } from "@/app/api/chat/send/handle-html-generation";
+import { getSupabaseRouteClient } from "@/server/supabase/server-client";
 
 const MAX_EXISTING_HTML_PROMPT_CHARS = 140_000;
 
@@ -139,24 +139,8 @@ function validateRequest(body: unknown): {
 }
 
 function createAuthenticatedSupabaseClient(request: NextRequest): SupabaseClient {
-  const supabaseResponse = NextResponse.next();
-
-  return createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    {
-      cookies: {
-        getAll() {
-          return request.cookies.getAll();
-        },
-        setAll(cookiesToSet) {
-          cookiesToSet.forEach(({ name, value, options }) => {
-            supabaseResponse.cookies.set(name, value, options);
-          });
-        },
-      },
-    }
-  );
+  const { supabase } = getSupabaseRouteClient(request);
+  return supabase;
 }
 
 async function authorizeUserAndChat(
