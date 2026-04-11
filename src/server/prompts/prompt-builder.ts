@@ -27,6 +27,10 @@ type PromptUserImage = {
   dataUri: string;
 };
 
+// Keep prompt payload size under model limits while still preserving recent uploads.
+const MAX_USER_IMAGE_PROMPT_BYTES = 1.5 * 1024 * 1024;
+const RECENT_USER_IMAGES_WHEN_OVERSIZED = 3;
+
 const LAYOUT_DESCRIPTIONS: Record<string, string> = {
   "grid-heavy": "Use a dominant product/card grid as the main content area. Hero is compact. Sections are wide multi-column grids. Ideal for shops and galleries.",
   masonry:
@@ -226,7 +230,6 @@ function buildUserImagesBlock(userImages?: PromptUserImage[]): string {
     return "No user-uploaded images were provided.";
   }
 
-  const maxTotalBytes = 1.5 * 1024 * 1024;
   const estimateBytes = (dataUri: string) => {
     const payload = dataUri.split(",")[1]?.replace(/\s+/g, "") ?? "";
     if (!payload) {
@@ -242,7 +245,9 @@ function buildUserImagesBlock(userImages?: PromptUserImage[]): string {
   }, 0);
 
   const imagesForPrompt =
-    totalBytes > maxTotalBytes ? userImages.slice(-3) : userImages;
+    totalBytes > MAX_USER_IMAGE_PROMPT_BYTES
+      ? userImages.slice(-RECENT_USER_IMAGES_WHEN_OVERSIZED)
+      : userImages;
 
   const pathLines = imagesForPrompt.map((image) => {
     return `${image.fileName} - user uploaded image (use for hero / gallery / product sections)`;
@@ -255,6 +260,9 @@ function buildUserImagesBlock(userImages?: PromptUserImage[]): string {
   ].join("\n");
 }
 
+/**
+ * Builds the classifier prompt that decides whether the user wants build/edit/chat.
+ */
 export function buildClassifierMessages(
   userMessage: string,
   websiteLanguage: AppLanguage = "en"
@@ -293,6 +301,9 @@ Return exactly:
   ];
 }
 
+/**
+ * Builds system and history messages for full website generation.
+ */
 export function buildGenerationMessages(
   history: HistoryMessage[],
   contentLanguage: AppLanguage,
@@ -338,6 +349,9 @@ export function buildGenerationMessages(
   ];
 }
 
+/**
+ * Builds system and history messages for editing an existing website HTML.
+ */
 export function buildEditMessages(
   history: HistoryMessage[],
   existingHtml: string,
@@ -382,6 +396,9 @@ export function buildEditMessages(
   ];
 }
 
+/**
+ * Builds conversational (non-HTML) assistant prompt messages.
+ */
 export function buildChatMessages(
   history: HistoryMessage[],
   detectedUserLanguage: AppLanguage

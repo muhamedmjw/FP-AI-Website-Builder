@@ -43,6 +43,9 @@ type SettingsModalProps = {
   onToggleLanguageMenu: () => void;
 };
 
+/**
+ * Profile settings modal used by the sidebar footer menu.
+ */
 export default function SettingsModal({
   isOpen,
   language,
@@ -115,7 +118,7 @@ export default function SettingsModal({
                 alt="Profile preview"
                 loading="lazy"
                 onError={onAvatarError}
-                className="h-16 w-16 rounded-full object-cover border border-[var(--app-card-border)]"
+                className="h-16 w-16 rounded-full object-cover border border-(--app-card-border)"
               />
             ) : (
               <div className={avatarPlaceholderClass}>
@@ -184,7 +187,7 @@ export default function SettingsModal({
                 <span className="font-semibold">{currentLanguageLabel}</span>
                 <ChevronDown
                   size={16}
-                  className={`shrink-0 text-[var(--app-text-tertiary)] transition ${
+                  className={`shrink-0 text-(--app-text-tertiary) transition ${
                     isLanguageMenuOpen ? "rotate-180" : ""
                   }`}
                   aria-hidden="true"
@@ -202,7 +205,7 @@ export default function SettingsModal({
             <button
               type="submit"
               disabled={isSaving}
-              className="rounded-lg bg-[var(--app-btn-primary-bg)] px-4 py-2.5 text-sm font-semibold text-[var(--app-btn-primary-text)] shadow-[var(--app-shadow-sm)] transition hover:bg-[var(--app-btn-primary-hover)] hover:shadow-[var(--app-shadow-md)] hover:-translate-y-px active:translate-y-0 disabled:cursor-not-allowed disabled:opacity-60"
+              className="rounded-lg bg-(--app-btn-primary-bg) px-4 py-2.5 text-sm font-semibold text-(--app-btn-primary-text) shadow-(--app-shadow-sm) transition hover:bg-(--app-btn-primary-hover) hover:shadow-(--app-shadow-md) hover:-translate-y-px active:translate-y-0 disabled:cursor-not-allowed disabled:opacity-60"
             >
               {isSaving ? `${t("saveChanges", language)}...` : t("saveChanges", language)}
             </button>

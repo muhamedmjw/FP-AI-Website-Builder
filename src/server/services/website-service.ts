@@ -7,6 +7,11 @@
 
 import { SupabaseClient } from "@supabase/supabase-js";
 import { Website, FileRecord, FileVersionRecord } from "@/shared/types/database";
+import type { AppLanguage } from "@/shared/types/database";
+
+type PostgresLikeError = {
+  code?: string;
+};
 
 /** Create a website record linked to a chat. */
 export async function createWebsite(
@@ -38,6 +43,66 @@ export async function getWebsiteByChatId(
 
   if (error) throw error;
   return data as Website | null;
+}
+
+/**
+ * Ensures a website exists for a chat and saves generated HTML when present.
+ * Handles create-race conflicts safely and keeps website language in sync.
+ */
+export async function saveWebsiteRecord(params: {
+  supabase: SupabaseClient;
+  chatId: string;
+  businessPrompt: string;
+  language: AppLanguage;
+  existingWebsite: Website | null;
+  htmlToSave: string | null;
+}): Promise<Website | null> {
+  const {
+    supabase,
+    chatId,
+    businessPrompt,
+    language,
+    existingWebsite,
+    htmlToSave,
+  } = params;
+
+  if (!htmlToSave) {
+    return existingWebsite;
+  }
+
+  let website = existingWebsite;
+
+  if (!website) {
+    try {
+      website = await createWebsite(supabase, chatId, businessPrompt.trim(), language);
+    } catch (error) {
+      const maybePostgresError = error as PostgresLikeError;
+
+      if (maybePostgresError.code === "23505") {
+        website = await getWebsiteByChatId(supabase, chatId);
+      } else {
+        throw error;
+      }
+    }
+  }
+
+  if (!website) {
+    throw new Error("Failed to resolve website after creation race.");
+  }
+
+  if (website.language !== language) {
+    const { error: updateLanguageError } = await supabase
+      .from("websites")
+      .update({ language })
+      .eq("id", website.id);
+
+    if (updateLanguageError) {
+      throw updateLanguageError;
+    }
+  }
+
+  await saveGeneratedHtml(supabase, website.id, htmlToSave);
+  return website;
 }
 
 /** Save (upsert) the generated HTML file for a website. */

@@ -4,19 +4,9 @@ import { createPortal } from "react-dom";
 import { Check, ExternalLink, PencilLine, RefreshCw, X } from "lucide-react";
 import { t } from "@/shared/constants/translations";
 import type { AppLanguage } from "@/shared/types/database";
+import type { DeploymentRow } from "@/shared/types/sidebar";
 
-export type DeploymentModalRow = {
-  websiteId: string;
-  chatId: string | null;
-  websiteName: string;
-  deployUrl: string | null;
-  status: string;
-  deployCount: number;
-  firstDeployedAt: string;
-  lastDeployedAt: string;
-  updatedAt: string;
-  netlifySiteId: string | null;
-};
+export type DeploymentModalRow = DeploymentRow;
 
 type DeploymentsModalProps = {
   isOpen: boolean;
@@ -42,6 +32,9 @@ type DeploymentsModalProps = {
   getDeploymentStatusClass: (status: string) => string;
 };
 
+/**
+ * Displays deployed websites with quick rename and open actions.
+ */
 export default function DeploymentsModal({
   isOpen,
   language,
@@ -79,7 +72,7 @@ export default function DeploymentsModal({
       }}
     >
       <div className={deploymentsModalClass}>
-        <div className="flex items-center justify-between gap-3 border-b border-[var(--app-card-border)] px-6 py-4">
+        <div className="flex items-center justify-between gap-3 border-b border-(--app-card-border) px-6 py-4">
           <div>
             <h3 className={settingsTitleClass}>{t("deployedWebsitesTitle", language)}</h3>
             <p className={settingsSubtitleClass}>{t("deployedWebsitesSubtitle", language)}</p>
@@ -88,7 +81,7 @@ export default function DeploymentsModal({
             <button
               type="button"
               onClick={onRefresh}
-              className="inline-flex items-center gap-1.5 rounded-lg bg-[var(--app-hover-bg)] px-3 py-2 text-xs font-medium text-[var(--app-text-secondary)] transition hover:bg-[var(--app-hover-bg-strong)]"
+              className="inline-flex items-center gap-1.5 rounded-lg bg-(--app-hover-bg) px-3 py-2 text-xs font-medium text-(--app-text-secondary) transition hover:bg-(--app-hover-bg-strong)"
             >
               <RefreshCw size={14} />
               {t("refresh", language)}
@@ -101,15 +94,15 @@ export default function DeploymentsModal({
 
         <div className="max-h-[calc(90vh-90px)] overflow-y-auto px-6 py-5">
           {isLoading ? (
-            <p className="text-sm text-[var(--app-text-secondary)]">{t("loadingDeployedWebsites", language)}</p>
+            <p className="text-sm text-(--app-text-secondary)">{t("loadingDeployedWebsites", language)}</p>
           ) : deployments.length === 0 ? (
-            <div className="rounded-xl border border-[var(--app-card-border)] bg-[var(--app-card-bg)] p-6 text-center text-sm text-[var(--app-text-secondary)]">
+            <div className="rounded-xl border border-(--app-card-border) bg-(--app-card-bg) p-6 text-center text-sm text-(--app-text-secondary)">
               {t("noDeployedWebsites", language)}
             </div>
           ) : (
-            <div className="overflow-x-auto rounded-xl border border-[var(--app-card-border)] bg-[var(--app-card-bg)]">
+            <div className="overflow-x-auto rounded-xl border border-(--app-card-border) bg-(--app-card-bg)">
               <table className="min-w-full text-sm">
-                <thead className="border-b border-[var(--app-card-border)] bg-[var(--app-hover-bg)]/70 text-left text-xs uppercase tracking-wide text-[var(--app-text-tertiary)]">
+                <thead className="border-b border-(--app-card-border) bg-(--app-hover-bg)/70 text-left text-xs uppercase tracking-wide text-(--app-text-tertiary)">
                   <tr>
                     <th className="px-4 py-3">{t("websiteName", language)}</th>
                     <th className="px-4 py-3">{t("deploymentDomain", language)}</th>
@@ -129,7 +122,7 @@ export default function DeploymentsModal({
                     return (
                       <tr
                         key={row.websiteId}
-                        className="border-b border-[var(--app-card-border)]/70 text-[var(--app-text-secondary)] last:border-b-0"
+                        className="border-b border-(--app-card-border)/70 text-(--app-text-secondary) last:border-b-0"
                       >
                         <td className="px-4 py-3 align-top">
                           {isEditing ? (
@@ -138,14 +131,14 @@ export default function DeploymentsModal({
                                 type="text"
                                 value={editingWebsiteName}
                                 onChange={(event) => setEditingWebsiteName(event.target.value)}
-                                className="w-full rounded-lg border border-[var(--app-input-border)] bg-[var(--app-input-bg)] px-3 py-2 text-sm text-[var(--app-input-text)] focus:border-[var(--app-input-focus-border)] focus:outline-none"
+                                className="w-full rounded-lg border border-(--app-input-border) bg-(--app-input-bg) px-3 py-2 text-sm text-(--app-input-text) focus:border-(--app-input-focus-border) focus:outline-none"
                               />
                               <div className="flex items-center gap-2">
                                 <button
                                   type="button"
                                   onClick={() => onSaveWebsiteName(row)}
                                   disabled={isRenaming}
-                                  className="inline-flex items-center gap-1.5 rounded-md bg-[var(--app-btn-primary-bg)] px-2.5 py-1.5 text-xs font-semibold text-[var(--app-btn-primary-text)] transition hover:bg-[var(--app-btn-primary-hover)] disabled:opacity-60"
+                                  className="inline-flex items-center gap-1.5 rounded-md bg-(--app-btn-primary-bg) px-2.5 py-1.5 text-xs font-semibold text-(--app-btn-primary-text) transition hover:bg-(--app-btn-primary-hover) disabled:opacity-60"
                                 >
                                   <Check size={12} />
                                   {isRenaming
@@ -155,7 +148,7 @@ export default function DeploymentsModal({
                                 <button
                                   type="button"
                                   onClick={onCancelRename}
-                                  className="rounded-md bg-[var(--app-hover-bg)] px-2.5 py-1.5 text-xs text-[var(--app-text-secondary)] transition hover:bg-[var(--app-hover-bg-strong)]"
+                                  className="rounded-md bg-(--app-hover-bg) px-2.5 py-1.5 text-xs text-(--app-text-secondary) transition hover:bg-(--app-hover-bg-strong)"
                                 >
                                   {t("cancel", language)}
                                 </button>
@@ -163,8 +156,8 @@ export default function DeploymentsModal({
                             </div>
                           ) : (
                             <>
-                              <p className="font-semibold text-[var(--app-text-heading)]">{row.websiteName}</p>
-                              <p className="mt-1 text-xs text-[var(--app-text-muted)]">
+                              <p className="font-semibold text-(--app-text-heading)">{row.websiteName}</p>
+                              <p className="mt-1 text-xs text-(--app-text-muted)">
                                 {t("firstDeployed", language)}: {formatDateTime(row.firstDeployedAt)}
                               </p>
                             </>
@@ -177,13 +170,13 @@ export default function DeploymentsModal({
                               href={row.deployUrl}
                               target="_blank"
                               rel="noopener noreferrer"
-                              className="inline-flex max-w-[220px] items-center gap-1.5 truncate text-[var(--app-text-heading)] hover:underline"
+                              className="inline-flex max-w-55 items-center gap-1.5 truncate text-(--app-text-heading) hover:underline"
                             >
                               <span className="truncate">{row.deployUrl}</span>
                               <ExternalLink size={12} className="shrink-0" />
                             </a>
                           ) : (
-                            <span className="text-[var(--app-text-muted)]">-</span>
+                            <span className="text-(--app-text-muted)">-</span>
                           )}
                         </td>
 
@@ -198,10 +191,10 @@ export default function DeploymentsModal({
                             {row.status}
                           </span>
                         </td>
-                        <td className="px-4 py-3 text-center font-medium text-[var(--app-text-heading)]">
+                        <td className="px-4 py-3 text-center font-medium text-(--app-text-heading)">
                           {row.deployCount}
                         </td>
-                        <td className="px-4 py-3 font-mono text-xs text-[var(--app-text-muted)]">
+                        <td className="px-4 py-3 font-mono text-xs text-(--app-text-muted)">
                           {row.netlifySiteId ? `${row.netlifySiteId.slice(0, 8)}...` : "-"}
                         </td>
                         <td className="px-4 py-3">
@@ -210,7 +203,7 @@ export default function DeploymentsModal({
                               <button
                                 type="button"
                                 onClick={() => onStartRename(row)}
-                                className="inline-flex items-center gap-1 rounded-md bg-[var(--app-hover-bg)] px-2.5 py-1.5 text-xs text-[var(--app-text-secondary)] transition hover:bg-[var(--app-hover-bg-strong)]"
+                                className="inline-flex items-center gap-1 rounded-md bg-(--app-hover-bg) px-2.5 py-1.5 text-xs text-(--app-text-secondary) transition hover:bg-(--app-hover-bg-strong)"
                               >
                                 <PencilLine size={12} />
                                 {t("rename", language)}
@@ -222,7 +215,7 @@ export default function DeploymentsModal({
                                 href={row.deployUrl}
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                className="inline-flex items-center gap-1 rounded-md bg-[var(--app-btn-primary-bg)] px-2.5 py-1.5 text-xs font-semibold text-[var(--app-btn-primary-text)] transition hover:bg-[var(--app-btn-primary-hover)]"
+                                className="inline-flex items-center gap-1 rounded-md bg-(--app-btn-primary-bg) px-2.5 py-1.5 text-xs font-semibold text-(--app-btn-primary-text) transition hover:bg-(--app-btn-primary-hover)"
                               >
                                 <ExternalLink size={12} />
                                 {t("open", language)}

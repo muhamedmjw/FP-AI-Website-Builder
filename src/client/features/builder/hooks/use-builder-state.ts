@@ -27,6 +27,118 @@ type UseBuilderStateParams = {
   onApplyGeneratedHtml: (generatedHtml: string) => void;
 };
 
+type PreSendSnapshot = {
+  messages: HistoryMessage[];
+  messageImages: Record<string, MessageAttachment[]>;
+  messageImageFileIds: Record<string, string[]>;
+};
+
+type OptimisticSendState = {
+  outgoingImages: MessageAttachment[];
+  tempUserMessage: HistoryMessage;
+  latestAssistantCreatedAt: string | null;
+};
+
+function buildOutgoingImageAttachments(
+  inputImages: UserImage[],
+  language: AppLanguage
+): MessageAttachment[] {
+  return inputImages.map((image, index) => ({
+    fileId: image.fileId,
+    fileName: image.fileName,
+    dataUri: image.dataUri,
+    label: `${t("imageLabel", language)} ${index + 1}`,
+  }));
+}
+
+function createOptimisticSendState(params: {
+  chatId: string;
+  content: string;
+  language: AppLanguage;
+  inputImages: UserImage[];
+  messages: HistoryMessage[];
+}): OptimisticSendState {
+  const outgoingImages = buildOutgoingImageAttachments(
+    params.inputImages,
+    params.language
+  );
+
+  const tempUserMessage: HistoryMessage = {
+    id: `temp-${Date.now()}`,
+    chat_id: params.chatId,
+    role: "user",
+    content: params.content,
+    created_at: new Date().toISOString(),
+  };
+
+  const latestAssistantCreatedAt =
+    [...params.messages]
+      .reverse()
+      .find((message) => message.role === "assistant")
+      ?.created_at ?? null;
+
+  return {
+    outgoingImages,
+    tempUserMessage,
+    latestAssistantCreatedAt,
+  };
+}
+
+function buildFriendlySendErrorMessage(error: unknown): string {
+  const status = error instanceof ChatApiError ? error.status : null;
+  const rawMessage = error instanceof Error ? error.message : "";
+  const normalizedRawMessage = rawMessage.toLowerCase();
+  const isAbortLikeError =
+    normalizedRawMessage.includes("abort") ||
+    normalizedRawMessage.includes("aborted");
+
+  if (
+    status === 429 ||
+    rawMessage.includes("429") ||
+    rawMessage.includes("rate limit") ||
+    rawMessage.includes("Rate limit")
+  ) {
+    return "\u23f3 Too many requests. Please wait a moment and try again.";
+  }
+
+  if (
+    rawMessage.includes("token budget") ||
+    rawMessage.includes("Daily token") ||
+    rawMessage.includes("500,000")
+  ) {
+    return "\ud83d\udcc5 You've used your 500,000 daily token budget. Come back tomorrow!";
+  }
+
+  if (
+    status === 401 ||
+    rawMessage.includes("401") ||
+    rawMessage.includes("Unauthorized")
+  ) {
+    return "\ud83d\udd12 Session expired. Please sign in again.";
+  }
+
+  if (
+    status === 500 ||
+    rawMessage.includes("500") ||
+    rawMessage.includes("Internal")
+  ) {
+    return "\u26a0\ufe0f Something went wrong on our end. Please try again.";
+  }
+
+  if (
+    normalizedRawMessage.includes("too large to process") ||
+    normalizedRawMessage.includes("uploaded images")
+  ) {
+    return "\u26a0\ufe0f Images are too large to send together. Try removing some uploaded images and sending again.";
+  }
+
+  if (isAbortLikeError) {
+    return "Connection interrupted. Checking if your AI reply finishes in the background...";
+  }
+
+  return "Failed to send message. Please try again.";
+}
+
 function getLatestMessageTimestamp(messages: HistoryMessage[]): number | null {
   let latestTimestamp: number | null = null;
 
@@ -46,10 +158,12 @@ function shouldApplyServerMessages(
   currentMessages: HistoryMessage[],
   incomingMessages: HistoryMessage[]
 ): boolean {
+  // If server has no messages, only apply when local is also empty.
   if (incomingMessages.length === 0) {
     return currentMessages.length === 0;
   }
 
+  // An empty local list should always accept server state.
   if (currentMessages.length === 0) {
     return true;
   }
@@ -57,16 +171,19 @@ function shouldApplyServerMessages(
   const currentLatest = getLatestMessageTimestamp(currentMessages);
   const incomingLatest = getLatestMessageTimestamp(incomingMessages);
 
+  // Prefer whichever side has the newer message timestamp.
   if (incomingLatest !== null && currentLatest !== null) {
     if (incomingLatest > currentLatest) {
       return true;
     }
 
+    // Never overwrite newer local messages with older server snapshots.
     if (incomingLatest < currentLatest) {
       return false;
     }
   }
 
+  // If timestamps tie or are unavailable, compare list lengths.
   if (incomingMessages.length > currentMessages.length) {
     return true;
   }
@@ -78,9 +195,17 @@ function shouldApplyServerMessages(
   const incomingLastMessageId = incomingMessages.at(-1)?.id;
   const currentLastMessageId = currentMessages.at(-1)?.id;
 
+  // Final tie-breaker: different tail IDs means the states diverged.
   return incomingLastMessageId !== currentLastMessageId;
 }
 
+/**
+ * Builder chat state machine:
+ * 1) Optimistically append a user message and image attachments.
+ * 2) Mark the generation as pending while request is in-flight.
+ * 3) Reconcile with server messages on success.
+ * 4) Roll back optimistic state on failure unless user intentionally stopped.
+ */
 export function useBuilderState({
   chatId,
   initialMessages,
@@ -263,24 +388,20 @@ export function useBuilderState({
     // Reset the intentionally stopped flag at the start of a new send
     intentionallyStoppedRef.current = false;
 
-    const preSendMessages = messages;
-    const preSendMessageImages = messageImages;
-    const preSendMessageImageFileIds = messageImageFileIds;
-
-    const outgoingImages = currentInputImagesRef.current.map((image, index) => ({
-      fileId: image.fileId,
-      fileName: image.fileName,
-      dataUri: image.dataUri,
-      label: `${t("imageLabel", language)} ${index + 1}`,
-    }));
-
-    const tempUserMessage: HistoryMessage = {
-      id: `temp-${Date.now()}`,
-      chat_id: chatId,
-      role: "user",
-      content,
-      created_at: new Date().toISOString(),
+    const preSendSnapshot: PreSendSnapshot = {
+      messages,
+      messageImages,
+      messageImageFileIds,
     };
+
+    const { outgoingImages, tempUserMessage, latestAssistantCreatedAt } =
+      createOptimisticSendState({
+        chatId,
+        content,
+        language,
+        inputImages: currentInputImagesRef.current,
+        messages,
+      });
 
     if (outgoingImages.length > 0) {
       setMessageImages((prev) => ({
@@ -293,12 +414,6 @@ export function useBuilderState({
         [tempUserMessage.id]: outgoingImages.map((image) => image.fileId),
       }));
     }
-
-    const latestAssistantCreatedAt =
-      [...messages]
-        .reverse()
-        .find((message) => message.role === "assistant")
-        ?.created_at ?? null;
 
     setMessages((prev) => [...prev, tempUserMessage]);
     const startedAt = Date.now();
@@ -347,47 +462,13 @@ export function useBuilderState({
         return;
       }
 
-      const status = error instanceof ChatApiError ? error.status : null;
-      const raw = error instanceof Error ? error.message : "";
-      const normalizedRaw = raw.toLowerCase();
-      const isAbortLikeError =
-        normalizedRaw.includes("abort") || normalizedRaw.includes("aborted");
-
       resolveChatGeneration(chatId);
       setPendingGenerationStartedAt(null);
 
-      let friendly = "Failed to send message. Please try again.";
-      if (
-        status === 429 ||
-        raw.includes("429") ||
-        raw.includes("rate limit") ||
-        raw.includes("Rate limit")
-      ) {
-        friendly = "\u23f3 Too many requests. Please wait a moment and try again.";
-      } else if (
-        raw.includes("token budget") ||
-        raw.includes("Daily token") ||
-        raw.includes("500,000")
-      ) {
-        friendly = "\ud83d\udcc5 You've used your 500,000 daily token budget. Come back tomorrow!";
-      } else if (status === 401 || raw.includes("401") || raw.includes("Unauthorized")) {
-        friendly = "\ud83d\udd12 Session expired. Please sign in again.";
-      } else if (status === 500 || raw.includes("500") || raw.includes("Internal")) {
-        friendly = "\u26a0\ufe0f Something went wrong on our end. Please try again.";
-      } else if (
-        normalizedRaw.includes("too large to process") ||
-        normalizedRaw.includes("uploaded images")
-      ) {
-        friendly =
-          "\u26a0\ufe0f Images are too large to send together. Try removing some uploaded images and sending again.";
-      } else if (isAbortLikeError) {
-        friendly = "Connection interrupted. Checking if your AI reply finishes in the background...";
-      }
-
-      setInputErrorMessage(friendly);
-      setMessages(preSendMessages);
-      setMessageImages(preSendMessageImages);
-      setMessageImageFileIds(preSendMessageImageFileIds);
+      setInputErrorMessage(buildFriendlySendErrorMessage(error));
+      setMessages(preSendSnapshot.messages);
+      setMessageImages(preSendSnapshot.messageImages);
+      setMessageImageFileIds(preSendSnapshot.messageImageFileIds);
     } finally {
       setIsRequestInFlight(false);
     }

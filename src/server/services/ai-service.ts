@@ -60,6 +60,12 @@ type IntentExecutionConfig = {
   temperature: number;
 };
 
+type GenerationPreparation = {
+  intent: ClassifiedIntent;
+  contentLanguage: AppLanguage;
+  detectedLanguage: AppLanguage;
+};
+
 type GenerationLog = {
   chatId: string;
   historyId?: string;
@@ -100,7 +106,12 @@ const MODEL_NAME = PRIMARY_MODEL;
 const MAX_RETRIES = 2;
 const RETRY_DELAYS = [1000, 2000];
 const MAX_PROMPT_CHARS = 400_000;
-const DEEPSEEK_MAX_OUTPUT_TOKENS = 65536; 
+const DEEPSEEK_MAX_OUTPUT_TOKENS = 65536;
+const IMAGE_SEARCH_CONTEXT_MESSAGE_COUNT = 3;
+const IMAGE_SEARCH_CONTEXT_MAX_CHARS = 280;
+const CHAT_INTENT_MAX_TOKENS = 300;
+const CHAT_INTENT_TEMPERATURE = 0.7;
+const TITLE_GENERATION_MAX_TOKENS = 256;
 
 function isAppLanguage(value: unknown): value is AppLanguage {
   return value === "en" || value === "ar" || value === "ku";
@@ -162,12 +173,12 @@ function validateWebsiteHtml(html: string): boolean {
 function buildImageSearchContext(history: HistoryMessage[]): string {
   return history
     .filter((message) => message.role === "user")
-    .slice(-3)
+    .slice(-IMAGE_SEARCH_CONTEXT_MESSAGE_COUNT)
     .map((message) => message.content.replace(/[\r\n\t]+/gu, " "))
     .map((value) => value.replace(/\s+/gu, " ").trim())
     .filter(Boolean)
     .join(" ")
-    .slice(0, 280);
+    .slice(0, IMAGE_SEARCH_CONTEXT_MAX_CHARS);
 }
 
 async function enrichWebsiteHtmlImages(
@@ -361,6 +372,8 @@ async function callDeepSeekWithRetry(
   modelUsed: string;
 }> {
   let lastError: Error | null = null;
+  // We intentionally try multiple models because provider availability and model-specific
+  // validation limits can vary between requests. Falling back keeps generation resilient.
   const modelsToTry = MODEL_CANDIDATES;
 
   // Check if aborted before starting
@@ -499,8 +512,95 @@ function buildIntentExecutionConfig(
 
   return {
     messages: buildChatMessages(history, detectedLanguage) as AIMessage[],
-    maxTokens: 300,
-    temperature: 0.7,
+    maxTokens: CHAT_INTENT_MAX_TOKENS,
+    temperature: CHAT_INTENT_TEMPERATURE,
+  };
+}
+
+async function prepareGeneration(
+  history: HistoryMessage[],
+  language: AppLanguage,
+  existingHtml: string | null
+): Promise<GenerationPreparation> {
+  const latestUserMessage =
+    history.filter((message) => message.role === "user").at(-1)?.content ?? "";
+
+  const heuristicLanguage = detectLanguage(latestUserMessage);
+  const promptContentLanguage: AppLanguage =
+    heuristicLanguage === "sorani"
+      ? "ku"
+      : heuristicLanguage === "arabic"
+        ? "ar"
+        : "en";
+
+  const { intent, detectedLanguage } = await classifyIntent(
+    latestUserMessage,
+    existingHtml !== null,
+    promptContentLanguage
+  );
+
+  const contentLanguage: AppLanguage =
+    promptContentLanguage !== "en" ? promptContentLanguage : language;
+
+  return {
+    intent,
+    contentLanguage,
+    detectedLanguage,
+  };
+}
+
+function buildGenerationConfig(params: {
+  preparation: GenerationPreparation;
+  history: HistoryMessage[];
+  existingHtml: string | null;
+  userImages: Array<{ fileName: string; dataUri: string }>;
+}): {
+  effectiveUserImages: Array<{ fileName: string; dataUri: string }>;
+  config: IntentExecutionConfig;
+} {
+  const { preparation, history, existingHtml, userImages } = params;
+
+  return trimImagesToPromptLimit(
+    preparation.intent,
+    history,
+    preparation.contentLanguage,
+    preparation.detectedLanguage,
+    existingHtml,
+    userImages
+  );
+}
+
+async function runGenerationWorker(
+  config: IntentExecutionConfig,
+  history: HistoryMessage[],
+  effectiveUserImages: Array<{ fileName: string; dataUri: string }>,
+  abortSignal?: AbortSignal
+): Promise<{
+  parsed: AIResponse;
+  modelUsed: string;
+  promptTokens: number | null;
+  completionTokens: number | null;
+  totalTokens: number | null;
+}> {
+  const workerResult = await callDeepSeekWithRetry(
+    config.messages,
+    config.maxTokens,
+    config.temperature,
+    abortSignal
+  );
+
+  const parsed = await enrichWebsiteResponse(
+    workerResult.parsed,
+    history,
+    effectiveUserImages
+  );
+
+  return {
+    parsed,
+    modelUsed: workerResult.modelUsed,
+    promptTokens: workerResult.promptTokens,
+    completionTokens: workerResult.completionTokens,
+    totalTokens: workerResult.totalTokens,
   };
 }
 
@@ -598,43 +698,21 @@ async function generateAIResponseOnce(
     throw new GenerationCancelledError();
   }
 
-  const latestUserMessage =
-    history.filter((m) => m.role === "user").at(-1)?.content ?? "";
-
-  const heuristicLang = detectLanguage(latestUserMessage);
-  const promptContentLanguage: AppLanguage =
-    heuristicLang === "sorani" ? "ku" : heuristicLang === "arabic" ? "ar" : "en";
-
-  const { intent, detectedLanguage } = await classifyIntent(
-    latestUserMessage,
-    existingHtml !== null,
-    promptContentLanguage
-  );
-
-  const contentLanguage: AppLanguage =
-    promptContentLanguage !== "en" ? promptContentLanguage : language;
+  const preparation = await prepareGeneration(history, language, existingHtml);
 
   try {
-    const { effectiveUserImages, config } = trimImagesToPromptLimit(
-      intent,
+    const { effectiveUserImages, config } = buildGenerationConfig({
+      preparation,
       history,
-      contentLanguage,
-      detectedLanguage,
       existingHtml,
-      userImages
-    );
+      userImages,
+    });
 
-    const workerResult = await callDeepSeekWithRetry(
-      config.messages,
-      config.maxTokens,
-      config.temperature,
-      abortSignal
-    );
-
-    const parsed = await enrichWebsiteResponse(
-      workerResult.parsed,
+    const workerResult = await runGenerationWorker(
+      config,
       history,
-      effectiveUserImages
+      effectiveUserImages,
+      abortSignal
     );
 
     const durationMs = Date.now() - startTime;
@@ -649,7 +727,7 @@ async function generateAIResponseOnce(
       durationMs,
     });
 
-    return parsed;
+    return workerResult.parsed;
   } catch (error) {
     // Check if this was a cancellation
     if (error instanceof GenerationCancelledError || abortSignal?.aborted) {
@@ -675,6 +753,9 @@ async function generateAIResponseOnce(
   }
 }
 
+/**
+ * Generates an authenticated AI response for a chat and supports cancellation.
+ */
 export async function generateAIResponse(
   supabase: SupabaseClient,
   chatId: string,
@@ -759,6 +840,9 @@ async function generateAIResponseWithAbort(
   }
 }
 
+/**
+ * Generates an AI response for guest mode without persisting generation state.
+ */
 export async function generateGuestAIResponse(
   history: Array<{ role: "user" | "assistant"; content: string }>,
   language: AppLanguage = "en",
@@ -773,54 +857,20 @@ export async function generateGuestAIResponse(
       created_at: new Date().toISOString(),
     }));
 
-    const latestUserMessage =
-      historyMessages.filter((m) => m.role === "user").at(-1)?.content ?? "";
-
-    const heuristicLang = detectLanguage(latestUserMessage);
-    const promptContentLanguage: AppLanguage =
-      heuristicLang === "sorani" ? "ku" : heuristicLang === "arabic" ? "ar" : "en";
-
-    const { intent, detectedLanguage } = await classifyIntent(
-      latestUserMessage,
-      false,
-      promptContentLanguage
+    const preparation = await prepareGeneration(historyMessages, language, null);
+    const config = buildIntentExecutionConfig(
+      preparation.intent,
+      historyMessages,
+      preparation.contentLanguage,
+      preparation.detectedLanguage,
+      null,
+      userImages
     );
 
-    const contentLanguage: AppLanguage =
-      promptContentLanguage !== "en" ? promptContentLanguage : language;
-
-    let messages: AIMessage[];
-    let maxTokens: number;
-    let temperature: number;
-
-    if (intent === "build") {
-      messages = buildGenerationMessages(
-        historyMessages,
-        contentLanguage,
-        detectedLanguage,
-        userImages
-      ) as AIMessage[];
-      maxTokens = AI_CONFIG.MAX_TOKENS;
-      temperature = 0.4;
-    } else if (intent === "chat") {
-      messages = buildChatMessages(historyMessages, detectedLanguage) as AIMessage[];
-      maxTokens = 300;
-      temperature = 0.7;
-    } else {
-      messages = buildGenerationMessages(
-        historyMessages,
-        contentLanguage,
-        detectedLanguage,
-        userImages
-      ) as AIMessage[];
-      maxTokens = AI_CONFIG.MAX_TOKENS;
-      temperature = 0.4;
-    }
-
     const workerResult = await callDeepSeekWithRetry(
-      messages,
-      maxTokens,
-      temperature
+      config.messages,
+      config.maxTokens,
+      config.temperature
     );
 
     let parsed = workerResult.parsed;
@@ -1033,7 +1083,7 @@ async function getChatTitleFromModel(
       },
       { role: "user", content: trimmedMessage },
     ],
-    max_tokens: 256, // 
+    max_tokens: TITLE_GENERATION_MAX_TOKENS,
     temperature: 0.5,
   });
 
@@ -1049,13 +1099,18 @@ async function getChatTitleFromModel(
   return normalizeModelChatTitle(rawTitle, preferredLanguage);
 }
 
+/**
+ * Produces a short localized title for a new chat conversation.
+ */
 export async function generateChatTitle(
   userMessage: string,
   preferredLanguage: AppLanguage = "en"
 ): Promise<string> {
+  // Step 1: normalize input and establish a deterministic fallback.
   const trimmedMessage = userMessage.trim();
   const defaultTitle = formatDefaultChatTitle();
 
+  // Step 2: convert app language code into an explicit model instruction label.
   const languageLabel =
     preferredLanguage === "ar"
       ? "Arabic"
@@ -1063,6 +1118,7 @@ export async function generateChatTitle(
         ? "Kurdish Sorani"
         : "English";
 
+  // Step 3: try each configured model; accept the first validated title.
   for (const model of MODEL_CANDIDATES) {
     try {
       const nextTitle = await getChatTitleFromModel(
@@ -1080,6 +1136,7 @@ export async function generateChatTitle(
     }
   }
 
+  // Step 4: if model output is unavailable/invalid, derive a safe heuristic title.
   const heuristicTitle = buildHeuristicTitleFromMessage(
     trimmedMessage,
     preferredLanguage
