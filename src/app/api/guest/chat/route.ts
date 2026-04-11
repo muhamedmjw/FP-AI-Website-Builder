@@ -61,7 +61,7 @@ async function getGuestUsage(
   } | null;
 }
 
-const RATE_LIMIT_WINDOW_MS = 24 * 60 * 60 * 1000; // 24 hours in milliseconds
+const RATE_LIMIT_WINDOW_MS = 24 * 60 * 60 * 1000; // 24 hours
 
 function hasWindowExpired(firstPromptAt: string): boolean {
   const firstPromptTime = new Date(firstPromptAt).getTime();

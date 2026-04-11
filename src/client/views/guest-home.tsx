@@ -197,13 +197,22 @@ function GuestLimitBanner({
   language,
   queueChatSessionForAuth,
   resetsAt,
+  onExpired,
 }: {
   language: AppLanguage;
   queueChatSessionForAuth: () => void;
   resetsAt: string | null;
+  onExpired?: () => void;
 }) {
   const resetTimestamp = resetsAt ? new Date(resetsAt).getTime() : null;
   const { hours, minutes, seconds, isExpired } = useCountdown(resetTimestamp);
+
+  // Call onExpired callback when timer expires
+  useEffect(() => {
+    if (isExpired && onExpired) {
+      onExpired();
+    }
+  }, [isExpired, onExpired]);
 
   const timerText = isExpired
     ? t("guestLimitReset", language)
@@ -224,6 +233,14 @@ function GuestLimitBanner({
         <Clock size={12} />
         <span>{timerText}</span>
       </div>
+      {isExpired && (
+        <button
+          onClick={onExpired}
+          className="mt-2 text-xs text-[var(--app-text-secondary)] underline hover:text-[var(--app-text-heading)]"
+        >
+          Check for reset
+        </button>
+      )}
       <div className="mt-3 grid gap-2 sm:grid-cols-2">
         <Link
           href="/signin"
@@ -323,12 +340,12 @@ export default function GuestHomePage() {
     // Fetch guest usage data to get reset time
     fetchGuestUsage().then((usage) => {
       if (usage) {
-        // Use client's calculation of reset time based on server response
-        // Server returns resetsAt as next midnight UTC
+        // Always update resetsAt from server
         setResetsAt(usage.resetsAt);
-        // Only sync prompts used from server if we don't have local data
-        // This prevents overwriting local state after a refresh
-        if (usage.promptsUsed > promptsUsed) {
+        
+        // Sync prompts used from server
+        // Update if server has higher count OR if window expired (server shows 0 but local shows > 0)
+        if (usage.promptsUsed !== promptsUsed) {
           setPromptsUsed(usage.promptsUsed);
         }
       }
@@ -533,6 +550,21 @@ export default function GuestHomePage() {
                   language={language}
                   queueChatSessionForAuth={queueChatSessionForAuth}
                   resetsAt={resetsAt}
+                  onExpired={() => {
+                    // Refresh usage from server when timer expires
+                    fetchGuestUsage().then((usage) => {
+                      if (usage) {
+                        setResetsAt(usage.resetsAt);
+                        setPromptsUsed(usage.promptsUsed);
+                        // Clear chat history and session when window resets
+                        if (usage.promptsUsed === 0) {
+                          setMessages([]);
+                          setHtml(null);
+                          setWebsiteGenerated(false);
+                        }
+                      }
+                    });
+                  }}
                 />
               ) : null
             }

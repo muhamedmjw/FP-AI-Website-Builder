@@ -3,7 +3,7 @@ import { createClient, SupabaseClient } from "@supabase/supabase-js";
 import { MAX_GUEST_PROMPTS } from "@/shared/constants/limits";
 
 const GUEST_TOKEN_COOKIE = "guest_token";
-const RATE_LIMIT_WINDOW_MS = 24 * 60 * 60 * 1000; // 24 hours in milliseconds
+const RATE_LIMIT_WINDOW_MS = 24 * 60 * 60 * 1000; // 24 hours
 
 function getServiceClient(): SupabaseClient {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL?.trim() ?? "";
