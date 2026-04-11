@@ -14,8 +14,8 @@ import {
   EDIT_MODE,
   CHAT_MODE,
   buildSystemPrompt,
-} from "./system-prompt";
-import type { WebsiteTheme } from "./system-prompt";
+} from "./index";
+import type { WebsiteTheme } from "./index";
 
 export type ChatMessage = {
   role: "system" | "user" | "assistant";

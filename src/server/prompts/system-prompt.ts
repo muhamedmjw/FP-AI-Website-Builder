@@ -1,21 +1,6 @@
-// Master exports for the new theme-based architecture
-export { 
-  detectLanguage, 
-  LANGUAGE_RULES,
-  detectCategory,
-  getThemeForCategory,
-  buildSystemPrompt,
-} from './index';
-export type { 
-  Category, 
-  SystemPromptResult,
-  WebsiteTheme, 
-  ThemeFont, 
-  ThemeColors, 
-  LayoutType 
-} from './index';
-
-// Legacy exports for backward compatibility
+// This file exists for backwards compatibility only.
+// Import directly from './index' in new code.
+export * from "./index";
 export { PERSONALITY } from "./personality";
 export { OUTPUT_FORMAT } from "./output-format";
 export { APP_KNOWLEDGE } from "./app-knowledge";
