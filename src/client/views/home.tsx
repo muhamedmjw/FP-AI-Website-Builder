@@ -2,7 +2,8 @@
 
 import { ChangeEvent, FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { X } from "lucide-react";
+import { BookText, X } from "lucide-react";
+import PromptGuideModal from "../components/ui/prompt-guide-modal";
 import { getSupabaseBrowserClient } from "@/client/lib/supabase-browser";
 import { useUserImages } from "@/client/lib/hooks/use-user-images";
 import { addMessage, createChat } from "@/shared/services/chat-service";
@@ -46,6 +47,7 @@ export default function HomePage() {
   const [submittedPrompt, setSubmittedPrompt] = useState("");
   const [errorMessage, setErrorMessage] = useState("");
   const [imageErrorMessage, setImageErrorMessage] = useState("");
+  const [isPromptGuideOpen, setIsPromptGuideOpen] = useState(false);
   const [draftChatId, setDraftChatId] = useState<string | null>(null);
   const [downloadMessage, setDownloadMessage] = useState("");
   const {
@@ -577,27 +579,42 @@ export default function HomePage() {
                 >
                   <span aria-hidden="true">+</span>
                 </button>
-                <button
-                  type="submit"
-                  disabled={isCreating || isPreparingDraftChat}
-                  className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-(--app-btn-primary-bg) text-(--app-btn-primary-text) shadow-(--app-shadow-sm) transition hover:bg-(--app-btn-primary-hover) hover:shadow-(--app-shadow-md) hover:-translate-y-px active:translate-y-0 disabled:opacity-50 sm:h-11 sm:w-11"
-                  title={isCreating ? "Creating..." : isPreparingDraftChat ? "Preparing..." : "Start"}
-                >
-                  <svg
-                    viewBox="0 0 24 24"
-                    width="18"
-                    height="18"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2.2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    aria-hidden="true"
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setIsPromptGuideOpen(true)}
+                    className="group prompt-guide-btn flex h-10 w-10 shrink-0 items-center justify-center rounded-xl transition-all duration-300 sm:h-11 sm:w-11"
+                    title="Prompt writing guide"
+                    aria-label="Prompt writing guide"
                   >
-                    <path d="M12 19V6" />
-                    <path d="M6.5 11.5L12 6l5.5 5.5" />
-                  </svg>
-                </button>
+                    <BookText
+                      size={18}
+                      className="text-(--app-text-secondary) transition-all duration-300 group-hover:prismatic-icon"
+                      aria-hidden="true"
+                    />
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={isCreating || isPreparingDraftChat}
+                    className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-(--app-btn-primary-bg) text-(--app-btn-primary-text) shadow-(--app-shadow-sm) transition hover:bg-(--app-btn-primary-hover) hover:shadow-(--app-shadow-md) hover:-translate-y-px active:translate-y-0 disabled:opacity-50 sm:h-11 sm:w-11"
+                    title={isCreating ? "Creating..." : isPreparingDraftChat ? "Preparing..." : "Start"}
+                  >
+                    <svg
+                      viewBox="0 0 24 24"
+                      width="18"
+                      height="18"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2.2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      aria-hidden="true"
+                    >
+                      <path d="M12 19V6" />
+                      <path d="M6.5 11.5L12 6l5.5 5.5" />
+                    </svg>
+                  </button>
+                </div>
               </div>
               {hasLargeImagePayload ? (
                 <p className="px-2.5 pb-0.5 text-[10px] text-amber-400 sm:px-3" role="status">
@@ -630,6 +647,10 @@ export default function HomePage() {
           disclaimerText
         )}
       </p>
+      <PromptGuideModal
+        isOpen={isPromptGuideOpen}
+        onClose={() => setIsPromptGuideOpen(false)}
+      />
     </div>
   );
 }
