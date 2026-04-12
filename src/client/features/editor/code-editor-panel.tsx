@@ -5,6 +5,12 @@ import Editor, { type OnMount } from "@monaco-editor/react";
 import { Check, Copy, Save, Wand2, X } from "lucide-react";
 import { useLanguage } from "@/client/lib/language-context";
 import { t } from "@/shared/constants/translations";
+import {
+  MAIN_SCRIPT_MARKER,
+  STYLESHEET_LINK_MARKER,
+  mergeHtmlDocumentAssets,
+  splitHtmlDocumentAssets,
+} from "@/shared/utils/html-assets";
 import type * as Monaco from "monaco-editor";
 
 type CodeEditorPanelProps = {
@@ -14,6 +20,8 @@ type CodeEditorPanelProps = {
   isSaving?: boolean;
   hasUnsavedChanges?: boolean;
 };
+
+type VirtualFile = "index" | "css" | "js";
 
 function toTooltipContent(value: string): string {
   return `"${value
@@ -30,12 +38,18 @@ export default function CodeEditorPanel({
   hasUnsavedChanges = false,
 }: CodeEditorPanelProps) {
   const { language } = useLanguage();
-  const [localHtml, setLocalHtml] = useState(html);
+  const [localIndex, setLocalIndex] = useState(
+    () => splitHtmlDocumentAssets(html).indexHtml
+  );
+  const [localCss, setLocalCss] = useState(() => splitHtmlDocumentAssets(html).css);
+  const [localJs, setLocalJs] = useState(() => splitHtmlDocumentAssets(html).js);
+  const [activeFile, setActiveFile] = useState<VirtualFile>("index");
   const [theme, setTheme] = useState<"vs-dark" | "light">("vs-dark");
   const [copySuccess, setCopySuccess] = useState(false);
   const [saveStatus, setSaveStatus] = useState<"idle" | "saved" | "error">("idle");
   const saveResetTimerRef = useRef<number | null>(null);
   const editorRef = useRef<Monaco.editor.IStandaloneCodeEditor | null>(null);
+  const lastPushedMergedRef = useRef<string | null>(null);
   const formatTooltipText = t("formatTooltip", language);
   const copyTooltipText = t("copyTooltip", language);
   const formatTooltipStyle = {
@@ -44,6 +58,15 @@ export default function CodeEditorPanel({
   const copyTooltipStyle = {
     "--tooltip-content": toTooltipContent(copyTooltipText),
   } as CSSProperties;
+
+  const mergedHtml = useMemo(
+    () => mergeHtmlDocumentAssets(localIndex, localCss, localJs),
+    [localIndex, localCss, localJs]
+  );
+
+  const showCssTab =
+    localIndex.includes(STYLESHEET_LINK_MARKER) || localCss.length > 0;
+  const showJsTab = localIndex.includes(MAIN_SCRIPT_MARKER) || localJs.length > 0;
 
   const editorOptions = useMemo<Monaco.editor.IStandaloneEditorConstructionOptions>(
     () => ({
@@ -61,21 +84,45 @@ export default function CodeEditorPanel({
     []
   );
 
+  const monacoLanguage =
+    activeFile === "index" ? "html" : activeFile === "css" ? "css" : "javascript";
+
+  const activeValue =
+    activeFile === "index" ? localIndex : activeFile === "css" ? localCss : localJs;
+
   useEffect(() => {
-    setLocalHtml(html);
+    if (html === lastPushedMergedRef.current) {
+      lastPushedMergedRef.current = null;
+      return;
+    }
+
+    const parts = splitHtmlDocumentAssets(html);
+    setLocalIndex(parts.indexHtml);
+    setLocalCss(parts.css);
+    setLocalJs(parts.js);
   }, [html]);
 
   useEffect(() => {
-    if (localHtml === html) {
+    if (activeFile === "css" && !showCssTab) {
+      setActiveFile("index");
+    }
+    if (activeFile === "js" && !showJsTab) {
+      setActiveFile("index");
+    }
+  }, [activeFile, showCssTab, showJsTab]);
+
+  useEffect(() => {
+    if (mergedHtml === html) {
       return;
     }
 
     const timeout = window.setTimeout(() => {
-      onChange(localHtml);
+      lastPushedMergedRef.current = mergedHtml;
+      onChange(mergedHtml);
     }, 600);
 
     return () => window.clearTimeout(timeout);
-  }, [localHtml, html, onChange]);
+  }, [mergedHtml, html, onChange]);
 
   useEffect(() => {
     const resolveTheme = () =>
@@ -110,9 +157,19 @@ export default function CodeEditorPanel({
     editorRef.current = editorInstance;
   };
 
+  function setActiveValue(next: string) {
+    if (activeFile === "index") {
+      setLocalIndex(next);
+    } else if (activeFile === "css") {
+      setLocalCss(next);
+    } else {
+      setLocalJs(next);
+    }
+  }
+
   async function handleCopy() {
     try {
-      await navigator.clipboard.writeText(localHtml);
+      await navigator.clipboard.writeText(mergedHtml);
       setCopySuccess(true);
       window.setTimeout(() => setCopySuccess(false), 1400);
     } catch {
@@ -135,8 +192,9 @@ export default function CodeEditorPanel({
       return;
     }
 
-    if (localHtml !== html) {
-      onChange(localHtml);
+    if (mergedHtml !== html) {
+      lastPushedMergedRef.current = mergedHtml;
+      onChange(mergedHtml);
     }
 
     if (saveResetTimerRef.current !== null) {
@@ -178,10 +236,13 @@ export default function CodeEditorPanel({
         ? t("saveError", language)
         : "Save";
 
+  const selectClassName =
+    "h-8 max-w-[min(220px,42vw)] shrink-0 rounded-lg border border-(--app-border) bg-(--app-panel) px-2 text-xs text-(--app-text-secondary) outline-none transition hover:border-(--app-text-tertiary) focus-visible:ring-2 focus-visible:ring-sky-500/40";
+
   return (
     <div dir="ltr" className="flex h-full min-w-0 flex-col border-l border-(--app-border) bg-(--app-panel)">
-      <div className="flex h-12 shrink-0 items-center gap-2 border-b border-(--app-border) px-3">
-        <div className="flex flex-1 items-center gap-2">
+      <div className="flex h-12 shrink-0 flex-wrap items-center gap-2 border-b border-(--app-border) px-3">
+        <div className="flex min-w-0 flex-1 items-center gap-2">
           <svg
             width="16"
             height="16"
@@ -191,15 +252,29 @@ export default function CodeEditorPanel({
             strokeWidth="2"
             strokeLinecap="round"
             strokeLinejoin="round"
-            className="text-[var(--app-text-tertiary)]"
+            className="shrink-0 text-(--app-text-tertiary)"
             aria-hidden="true"
           >
             <polyline points="16 18 22 12 16 6" />
             <polyline points="8 6 2 12 8 18" />
           </svg>
-          <span className="text-xs font-semibold text-[var(--app-text-tertiary)] uppercase tracking-widest">
+          <span className="shrink-0 text-xs font-semibold text-(--app-text-tertiary) uppercase tracking-widest">
             Editor
           </span>
+          <label htmlFor="code-editor-file" className="sr-only">
+            File
+          </label>
+          <select
+            id="code-editor-file"
+            value={activeFile}
+            onChange={(event) => setActiveFile(event.target.value as VirtualFile)}
+            className={selectClassName}
+            aria-label="Select file"
+          >
+            <option value="index">index.html</option>
+            {showCssTab ? <option value="css">assets/css/styles.css</option> : null}
+            {showJsTab ? <option value="js">assets/js/main.js</option> : null}
+          </select>
         </div>
         <button
           type="button"
@@ -258,10 +333,10 @@ export default function CodeEditorPanel({
       <div className="min-h-0 flex-1">
         <Editor
           key={`code-editor-${language}`}
-          language="html"
+          language={monacoLanguage}
           theme={theme}
-          value={localHtml}
-          onChange={(value) => setLocalHtml(value ?? "")}
+          value={activeValue}
+          onChange={(value) => setActiveValue(value ?? "")}
           onMount={handleMount}
           options={editorOptions}
         />

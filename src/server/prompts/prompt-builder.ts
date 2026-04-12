@@ -265,8 +265,18 @@ function buildUserImagesBlock(userImages?: PromptUserImage[]): string {
  */
 export function buildClassifierMessages(
   userMessage: string,
-  websiteLanguage: AppLanguage = "en"
+  websiteLanguage: AppLanguage = "en",
+  hasExistingWebsite = false
 ): ChatMessage[] {
+  const existingSiteContext = hasExistingWebsite
+    ? `
+
+CONTEXT — website already exists in this chat (saved preview HTML is present):
+- Prefer intent "edit" when the user asks to change, translate, fix, tweak, update, adjust, add, or remove something on the site, or to modify text, colors, layout, or CSS.
+- Use "build" only when they clearly want a brand-new website or to discard the current site and start over.
+- Use "chat" for greetings, questions, or conversation that does not imply changing the site.`
+    : "";
+
   const system = `
 You are an intent and language classifier.
 Return ONLY raw JSON. No markdown. No explanation.
@@ -290,6 +300,7 @@ This rule overrides ALL other signals including the websiteLanguage hint.
 - websiteLanguage "ku" → detectedLanguage "ku"
 - websiteLanguage "en" + Arabic script → "ar"
 Gibberish in Arabic script → still classify by script.
+${existingSiteContext}
 
 Return exactly:
 {"intent":"build","detectedLanguage":"en"}
@@ -351,6 +362,7 @@ export function buildGenerationMessages(
 
 /**
  * Builds system and history messages for editing an existing website HTML.
+ * Does not inject build-time theme/layout briefs — those cause full redesigns on small edit requests.
  */
 export function buildEditMessages(
   history: HistoryMessage[],
@@ -360,35 +372,25 @@ export function buildEditMessages(
   userImages?: PromptUserImage[]
 ): ChatMessage[] {
   const isRtl = contentLanguage === "ar" || contentLanguage === "ku";
-  const latestUserMessage =
-    history.filter((m) => m.role === "user").at(-1)?.content ?? "";
-  const { theme, category } = buildSystemPrompt(latestUserMessage, contentLanguage);
-  const themeInjection = buildThemeInjection(theme, category);
-  const layoutInstruction = buildLayoutInstruction(theme.layout);
-  const visualStyleInstruction = buildVisualStyleInstruction(theme);
   const editModeWithImages = EDIT_MODE.replace(
     "{USER_IMAGES_BLOCK}",
     buildUserImagesBlock(userImages)
   );
+  const hasUserUploads = (userImages?.length ?? 0) > 0;
 
-  const system = [
+  const systemParts = [
     PERSONALITY,
-    themeInjection,
-    layoutInstruction,
-    visualStyleInstruction,
     LANGUAGE_RULES,
     editModeWithImages,
-    DESIGN_SYSTEM,
-    MOBILE_RULES,
-    IMAGE_RULES,
+    hasUserUploads ? IMAGE_RULES : "",
     isRtl ? RTL_RULES : "",
     OUTPUT_FORMAT,
     `Website content language: ${contentLanguage}`,
     `Conversation reply language: ${detectedUserLanguage}`,
     `CURRENT HTML:\n${existingHtml}`,
-  ]
-    .filter(Boolean)
-    .join("\n\n");
+  ].filter(Boolean);
+
+  const system = systemParts.join("\n\n");
 
   return [
     { role: "system", content: system },

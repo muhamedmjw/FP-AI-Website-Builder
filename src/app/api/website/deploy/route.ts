@@ -6,6 +6,7 @@ import {
   getGeneratedHtml,
   getWebsiteByChatId,
 } from "@/server/services/website-service";
+import { extractAssetsFromHtml } from "@/shared/utils/html-assets";
 
 type NetlifySiteResponse = {
   id: string;
@@ -19,44 +20,6 @@ type NetlifyDeployResponse = {
   url?: string;
   ssl_url?: string;
 };
-
-function extractAssetsFromHtml(html: string) {
-  let processedHtml = html;
-  let extractedCss = "";
-  let extractedJs = "";
-
-  const styleMatch = processedHtml.match(/<style>([\s\S]*?)<\/style>/i);
-  if (styleMatch) {
-    extractedCss = styleMatch[1].trim();
-    processedHtml = processedHtml.replace(
-      styleMatch[0],
-      '<link rel="stylesheet" href="assets/css/styles.css">'
-    );
-  }
-
-  const scriptMatches = [...processedHtml.matchAll(/<script>[\s\S]*?<\/script>/gi)];
-  if (scriptMatches.length > 0) {
-    const lastScript = scriptMatches[scriptMatches.length - 1];
-    const jsContent = lastScript[0]
-      .replace(/^<script>/i, "")
-      .replace(/<\/script>$/i, "")
-      .trim();
-
-    if (jsContent) {
-      extractedJs = jsContent;
-      processedHtml = processedHtml.replace(
-        lastScript[0],
-        '<script src="assets/js/main.js"></script>'
-      );
-    }
-  }
-
-  return {
-    processedHtml,
-    extractedCss,
-    extractedJs,
-  };
-}
 
 async function parseErrorMessage(response: Response, fallback: string) {
   const contentType = response.headers.get("content-type") ?? "";
