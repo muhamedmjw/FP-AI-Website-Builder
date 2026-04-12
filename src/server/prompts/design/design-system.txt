@@ -1,0 +1,55 @@
+DESIGN SYSTEM:
+
+This quality bar applies to every language and script (English, Arabic, Kurdish, etc.) — never ship a weaker layout for non-English sites.
+
+INTERACTIVE & BUTTON MINIMUMS (even if the user never mentions design):
+- Every .btn / .btn-primary / button / input[type="submit"] MUST have comfortable padding: at least 0.875rem 1.75rem (prefer 1rem 2rem or more for primary CTAs). Never let label text touch the left/right edges of the button.
+- Use inline-flex; align-items: center; justify-content: center; gap: 0.5rem for buttons with icons.
+- Min tap target height ~44–48px for primary actions.
+- Text inputs in hero forms: padding at least 0.9rem 1.1rem; rounded corners consistent with the theme.
+- When the user does not describe colors or style, still deliver polished, distinctive UI — follow BASE THEME CSS and these minimums; do not fall back to a plain stacked wireframe look.
+
+TYPOGRAPHY:
+- Fonts are determined by the selected theme. Always use the HEADING FONT and
+    BODY FONT specified in the SELECTED THEME block above. Never override them.
+- BASE THEME CSS usually includes @import for Google Fonts; keep those at the top of <style>.
+    If the theme has no web font @import and GOOGLE FONTS URL is non-empty, add it as the first CSS line;
+    if the URL is empty, use local @font-face or system fallbacks as appropriate.
+- Hero heading: 3rem–4rem, weight 700
+- Section heading: 2rem–2.5rem, weight 700
+- Body: 1rem, weight 400, line-height: 1.6
+- Small/caption: 0.875rem
+- Buttons: 0.95rem, weight 600 (see INTERACTIVE & BUTTON MINIMUMS for padding)
+
+SPACING SCALE:
+- Section padding: 5rem 0
+- Container: max-width 1200px, margin 0 auto, padding 0 1.5rem
+- Card gap: 2rem
+- Element gap within components: 1rem to 1.5rem
+- Button padding: 0.75rem 1.75rem
+
+LAYOUT:
+- Flexbox for component-level (nav, cards row, button groups)
+- CSS Grid for page-level (feature grids, card grids, gallery)
+- Never use absolute positioning except overlays and badges
+- Always use rem/% for widths, never fixed px for layout
+
+FOOTER — ICON & LOGO ROWS:
+- Partner logos, trust marks, and social icons in the footer must be evenly spaced: one shared container with CSS display:flex (or inline-flex) plus gap (same value for all gaps), or a grid with equal columns. Do not set ad-hoc different margins on each anchor or icon.
+- Center the row with justify-content: center (or space-between only if the design clearly needs edges aligned — still use gap for icon groups).
+- RTL: keep the same gap approach; mirror order with flex-direction if needed, not uneven margins.
+
+VISUAL STYLE:
+- Card border-radius: 1rem
+- Button border-radius: 0.5rem (default) or 999px (pill style)
+- Large section border-radius: 1.5rem
+- Card shadow: 0 4px 20px rgba(0,0,0,0.08)
+- Card hover shadow: 0 8px 30px rgba(0,0,0,0.12)
+- All interactive elements: transition: all 0.3s ease
+- Add visual depth with layered backgrounds, contrast bands, and elevated surfaces.
+- Use gradients derived from the selected theme colors (primary/secondary/background), not random unrelated hues.
+- Apply gradients intentionally: hero or page backdrop plus one interactive accent (buttons/badges/callouts).
+- Keep gradients readable with sufficient text contrast and overlays when needed.
+- Scroll fade-in: use Intersection Observer in <script>,
+  add class "fade-in" to sections, animate opacity 0→1 
+  with translateY(20px)→0

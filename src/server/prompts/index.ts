@@ -1,19 +1,20 @@
 // src/server/prompts/index.ts
 import { detectLanguage, LANGUAGE_RULES } from './language-rules';
-import { getRandomPortfolioTheme } from './categories/portfolio/portfolio-themes';
-import { getRandomRestaurantTheme } from './categories/restaurant/restaurant-themes';
-import { getRandomBusinessTheme } from './categories/business/business-themes';
-import { getRandomBlogTheme } from './categories/blog/blog-themes';
-import { getRandomEcommerceTheme } from './categories/ecommerce/ecommerce-themes';
-import { getRandomAgencyTheme } from './categories/agency/agency-themes';
-import { getRandomLandingTheme } from './categories/landing/landing-themes';
-import { getRandomEventTheme } from './categories/event/event-themes';
-import { getRandomSaasTheme } from './categories/saas/saas-themes';
-import { getRandomNonprofitTheme } from './categories/nonprofit/nonprofit-themes';
-import { getRandomEducationTheme } from './categories/education/education-themes';
-import { getRandomMedicalTheme } from './categories/medical/medical-themes';
-import { getRandomRealestateTheme } from './categories/realestate/realestate-themes';
-import { getRandomPhotographyTheme } from './categories/photography/photography-themes';
+import { PORTFOLIO_THEMES } from './categories/portfolio/portfolio-themes';
+import { RESTAURANT_THEMES } from './categories/restaurant/restaurant-themes';
+import { BUSINESS_THEMES } from './categories/business/business-themes';
+import { BLOG_THEMES } from './categories/blog/blog-themes';
+import { ECOMMERCE_THEMES } from './categories/ecommerce/ecommerce-themes';
+import { AGENCY_THEMES } from './categories/agency/agency-themes';
+import { LANDING_THEMES } from './categories/landing/landing-themes';
+import { EVENT_THEMES } from './categories/event/event-themes';
+import { SAAS_THEMES } from './categories/saas/saas-themes';
+import { NONPROFIT_THEMES } from './categories/nonprofit/nonprofit-themes';
+import { EDUCATION_THEMES } from './categories/education/education-themes';
+import { MEDICAL_THEMES } from './categories/medical/medical-themes';
+import { REALESTATE_THEMES } from './categories/realestate/realestate-themes';
+import { PHOTOGRAPHY_THEMES } from './categories/photography/photography-themes';
+import { pickThemeFromList } from './theme-selection';
 import type { AppLanguage } from '@/shared/types/database';
 import type { WebsiteTheme } from './theme-types';
 
@@ -41,7 +42,7 @@ const CATEGORY_KEYWORDS: Record<Category, string[]> = {
   agency: ['agency', 'studio', 'design agency', 'creative', 'branding', 'marketing agency'],
   landing: ['landing', 'coming soon', 'waitlist', 'launch', 'pre-launch', 'single page'],
   event: ['event', 'conference', 'wedding', 'festival', 'meetup', 'concert', 'party', 'ceremony', 'hackathon'],
-  saas: ['saas', 'software', 'app', 'platform', 'tool', 'dashboard', 'subscription'],
+  saas: ['saas', 'software', 'app', 'platform', 'tool', 'dashboard', 'subscription', 'task', 'tasks', 'workflow', 'sync', 'team', 'teams', 'productivity', 'collaboration'],
   medical: ['clinic', 'medical', 'health', 'doctor', 'dentist', 'hospital', 'pharmacy', 'wellness', 'spa', 'therapy'],
   realestate: ['real estate', 'property', 'خانوو', 'خانووبەرە', 'housing', 'apartment', 'rent', 'mortgage', 'listings'],
   photography: ['photo', 'photography', 'gallery', 'camera', 'portraits', 'photographer', 'visual'],
@@ -98,54 +99,58 @@ export function detectCategory(userMessage: string): Category {
   return bestScore > 0 ? bestCategory : 'business';
 }
 
-export function getThemeForCategory(category: Category, language?: AppLanguage): WebsiteTheme {
+export function getThemeForCategory(
+  category: Category,
+  language?: AppLanguage,
+  userMessage = ""
+): WebsiteTheme {
   let theme: WebsiteTheme;
 
   switch (category) {
     case 'portfolio':
-      theme = getRandomPortfolioTheme();
+      theme = pickThemeFromList(PORTFOLIO_THEMES, userMessage);
       break;
     case 'restaurant':
-      theme = getRandomRestaurantTheme();
+      theme = pickThemeFromList(RESTAURANT_THEMES, userMessage);
       break;
     case 'business':
-      theme = getRandomBusinessTheme();
+      theme = pickThemeFromList(BUSINESS_THEMES, userMessage);
       break;
     case 'blog':
-      theme = getRandomBlogTheme();
+      theme = pickThemeFromList(BLOG_THEMES, userMessage);
       break;
     case 'ecommerce':
-      theme = getRandomEcommerceTheme();
+      theme = pickThemeFromList(ECOMMERCE_THEMES, userMessage);
       break;
     case 'agency':
-      theme = getRandomAgencyTheme();
+      theme = pickThemeFromList(AGENCY_THEMES, userMessage);
       break;
     case 'landing':
-      theme = getRandomLandingTheme();
+      theme = pickThemeFromList(LANDING_THEMES, userMessage);
       break;
     case 'event':
-      theme = getRandomEventTheme();
+      theme = pickThemeFromList(EVENT_THEMES, userMessage);
       break;
     case 'saas':
-      theme = getRandomSaasTheme();
+      theme = pickThemeFromList(SAAS_THEMES, userMessage);
       break;
     case 'nonprofit':
-      theme = getRandomNonprofitTheme();
+      theme = pickThemeFromList(NONPROFIT_THEMES, userMessage);
       break;
     case 'education':
-      theme = getRandomEducationTheme();
+      theme = pickThemeFromList(EDUCATION_THEMES, userMessage);
       break;
     case 'medical':
-      theme = getRandomMedicalTheme();
+      theme = pickThemeFromList(MEDICAL_THEMES, userMessage);
       break;
     case 'realestate':
-      theme = getRandomRealestateTheme();
+      theme = pickThemeFromList(REALESTATE_THEMES, userMessage);
       break;
     case 'photography':
-      theme = getRandomPhotographyTheme();
+      theme = pickThemeFromList(PHOTOGRAPHY_THEMES, userMessage);
       break;
     default:
-      theme = getRandomBusinessTheme();
+      theme = pickThemeFromList(BUSINESS_THEMES, userMessage);
   }
 
   if (language === 'ku') {
@@ -173,7 +178,7 @@ export function buildSystemPrompt(userMessage: string, websiteLanguage?: AppLang
   const lang = detectLanguage(userMessage);
   const rules = LANGUAGE_RULES[lang];
   const category = detectCategory(userMessage);
-  const theme = getThemeForCategory(category, websiteLanguage ?? toAppLanguage(lang));
+  const theme = getThemeForCategory(category, websiteLanguage ?? toAppLanguage(lang), userMessage);
 
   const prompt = `
 You are an expert web developer building a ${category} website.
@@ -227,6 +232,7 @@ CSS REFERENCE (use these exact class names):
 }
 
 // Re-exports for convenience
+export { pickThemeFromList, userMentionedStyleOrTheme } from './theme-selection';
 export { detectLanguage, LANGUAGE_RULES } from './language-rules';
 export type { WebsiteTheme, ThemeFont, ThemeColors, LayoutType } from './theme-types';
 export { PERSONALITY } from "./personality";

@@ -1,0 +1,152 @@
+/* THEME: Electric Keynote | tech conference — wide CTA padding */
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700&family=Inter:wght@400;500&display=swap');
+
+:root {
+  --bg:           #030712;
+  --surface:      #0f172a;
+  --primary:      #22d3ee;
+  --secondary:    #6366f1;
+  --text:         #f8fafc;
+  --muted:        #94a3b8;
+  --border:       rgba(34, 211, 238, 0.25);
+  --font-heading: 'Outfit', sans-serif;
+  --font-body:    'Inter', sans-serif;
+  --radius:       12px;
+  --cta-pad-y:    1rem;
+  --cta-pad-x:    2.5rem;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; }
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-body);
+  font-size: 16px;
+  line-height: 1.6;
+}
+
+nav {
+  padding: 1.25rem 2rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid rgba(148, 163, 184, 0.12);
+}
+.logo {
+  font-family: var(--font-heading);
+  font-weight: 700;
+  font-size: 1.25rem;
+  background: linear-gradient(90deg, var(--primary), var(--secondary));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+nav ul { display: flex; gap: 2rem; list-style: none; }
+nav ul a { color: var(--muted); text-decoration: none; font-size: 0.95rem; }
+nav ul a:hover { color: var(--text); }
+
+.hero {
+  position: relative;
+  padding: 5rem 2rem 6rem;
+  text-align: center;
+  overflow: hidden;
+}
+.hero::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse 80% 60% at 50% 0%, rgba(34, 211, 238, 0.12), transparent 55%);
+  pointer-events: none;
+}
+.hero-inner { position: relative; max-width: 900px; margin: 0 auto; }
+.badge {
+  display: inline-block;
+  padding: 0.5rem 1.25rem;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  color: var(--primary);
+  font-size: 0.85rem;
+  font-weight: 500;
+  margin-bottom: 1.5rem;
+}
+.hero h1 {
+  font-family: var(--font-heading);
+  font-size: clamp(2.25rem, 5vw, 3.5rem);
+  font-weight: 700;
+  line-height: 1.1;
+  margin-bottom: 1.25rem;
+  color: var(--primary);
+}
+.hero p { color: var(--muted); font-size: 1.1rem; max-width: 640px; margin: 0 auto 2.5rem; }
+
+.hero-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  justify-content: center;
+  align-items: center;
+}
+
+/* Primary CTA: generous horizontal padding (fixes cramped buttons) */
+.btn, .btn-primary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: var(--cta-pad-y) var(--cta-pad-x);
+  min-height: 52px;
+  font-family: var(--font-heading);
+  font-weight: 600;
+  font-size: 1rem;
+  border-radius: 999px;
+  text-decoration: none;
+  border: none;
+  cursor: pointer;
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+.btn-primary {
+  background: linear-gradient(90deg, var(--secondary), #8b5cf6);
+  color: var(--text);
+  padding-left: var(--cta-pad-x);
+  padding-right: var(--cta-pad-x);
+  box-shadow: 0 12px 40px rgba(99, 102, 241, 0.35);
+}
+.btn-primary:hover { transform: translateY(-2px); }
+.btn-ghost {
+  background: transparent;
+  color: var(--primary);
+  border: 2px solid var(--border);
+  padding: calc(var(--cta-pad-y) - 2px) calc(var(--cta-pad-x) - 2px);
+}
+.btn-ghost:hover { border-color: var(--primary); }
+
+section { padding: 4rem 2rem; }
+.section-title { font-family: var(--font-heading); font-size: 2rem; text-align: center; margin-bottom: 2.5rem; }
+
+.grid-3 {
+  max-width: 1200px;
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1.5rem;
+}
+.card {
+  background: var(--surface);
+  border: 1px solid rgba(148, 163, 184, 0.15);
+  border-radius: var(--radius);
+  padding: 1.75rem;
+}
+.card h3 { font-family: var(--font-heading); margin-bottom: 0.5rem; }
+.card p { color: var(--muted); font-size: 0.95rem; }
+
+footer { padding: 3rem 2rem; text-align: center; color: var(--muted); border-top: 1px solid rgba(148, 163, 184, 0.12); }
+
+[data-scroll] { opacity: 0; transform: translateY(20px); transition: opacity 0.65s ease, transform 0.65s ease; }
+[data-scroll].visible { opacity: 1; transform: translateY(0); }
+
+@media (max-width: 768px) {
+  .grid-3 { grid-template-columns: 1fr; }
+  .hero-actions { flex-direction: column; width: 100%; }
+  .btn-primary, .btn-ghost { width: 100%; max-width: 320px; }
+}

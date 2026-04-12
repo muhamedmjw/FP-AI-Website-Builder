@@ -67,6 +67,57 @@ export const SAAS_THEMES: WebsiteTheme[] = [
     jsFeatures: [],
     rtlSafe: true,
   },
+  {
+    id: 'split-lavender-saas',
+    name: 'Split Lavender SaaS',
+    cssFile: 'split-lavender-saas.css',
+    category: 'saas',
+    personality: 'Soft lavender gradient, split-screen hero with copy + visual, pill CTAs with generous padding. Anti-generic-stack SaaS.',
+    fonts: {
+      heading: 'Plus Jakarta Sans',
+      body: 'Inter',
+      googleFontsUrl:
+        'https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap',
+    },
+    colors: {
+      bg: '#f5f3ff',
+      surface: '#ffffff',
+      primary: '#6d28d9',
+      secondary: '#7c3aed',
+      text: '#1e1b4b',
+      muted: '#64748b',
+      border: '#e9d5ff',
+    },
+    layout: 'split-screen',
+    animations: ['fadeUp'],
+    jsFeatures: [],
+    rtlSafe: true,
+  },
+  {
+    id: 'bento-lattice-saas',
+    name: 'Bento Lattice',
+    cssFile: 'bento-lattice-saas.css',
+    category: 'saas',
+    personality: 'Dark bento-grid hero, cyan/violet accents, developer-product feel. Feature cells instead of one tall stack.',
+    fonts: {
+      heading: 'DM Sans',
+      body: 'DM Sans',
+      googleFontsUrl: 'https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&display=swap',
+    },
+    colors: {
+      bg: '#0c0c0f',
+      surface: '#14141a',
+      primary: '#22d3ee',
+      secondary: '#a78bfa',
+      text: '#f4f4f5',
+      muted: '#a1a1aa',
+      border: 'rgba(255,255,255,0.08)',
+    },
+    layout: 'grid-heavy',
+    animations: ['fadeUp'],
+    jsFeatures: [],
+    rtlSafe: true,
+  },
 ];
 
 export function getRandomSaasTheme(): WebsiteTheme {

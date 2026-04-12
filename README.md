@@ -19,7 +19,7 @@ The app supports English, Arabic, and Kurdish (including RTL), lets users iterat
 ## Key Features
 
 - AI website generation from plain-language prompts
-- Brave-powered image URL enrichment for generated websites (optional)
+- Unsplash-powered image URL enrichment for generated websites (optional)
 - Clarification flow before full generation when needed
 - Split chat and live preview workflow
 - Multi-language UI/output: English, Arabic, Kurdish
@@ -147,7 +147,7 @@ Use a root `.env` file.
 | `DEEPSEEK_MODEL_PRIMARY` | No | Server primary model override |
 | `DEEPSEEK_MODEL_FALLBACK` | No | Server fallback model override |
 | `NEXT_PUBLIC_DEEPSEEK_MODEL_PRIMARY` | No | Client-side display model override |
-| `BRAVE_SEARCH_API_KEY` | No | Enables Brave Image Search enrichment to replace placeholder image URLs with real, relevant image URLs in generated HTML |
+| `UNSPLASH_ACCESS_KEY` | No | Enables Unsplash API enrichment to replace placeholder image URLs in generated HTML ([Unsplash API](https://unsplash.com/documentation)) |
 | `NETLIFY_API_TOKEN` | No | Required only for `/api/website/deploy` |
 
 Example:
@@ -162,7 +162,7 @@ DEEPSEEK_MODEL_PRIMARY=deepseek-chat
 DEEPSEEK_MODEL_FALLBACK=deepseek-reasoner
 NEXT_PUBLIC_DEEPSEEK_MODEL_PRIMARY=deepseek-chat
 
-BRAVE_SEARCH_API_KEY=
+UNSPLASH_ACCESS_KEY=
 
 NETLIFY_API_TOKEN=
 ```

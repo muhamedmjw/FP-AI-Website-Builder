@@ -3,6 +3,15 @@ export type HtmlImageAsset = {
   dataUri: string;
 };
 
+/** Normalizes obvious stale copyright years inside <footer> only. */
+export function normalizeFooterCopyrightYear(html: string, year: number): string {
+  return html.replace(/<footer\b[^>]*>[\s\S]*?<\/footer>/gi, (footer) => {
+    let next = footer.replace(/©\s*(?:19|20)\d{2}\b/g, `© ${year}`);
+    next = next.replace(/\b([Cc]opyright)\s+(?:19|20)\d{2}\b/g, `$1 ${year}`);
+    return next;
+  });
+}
+
 export function normalizeGeneratedHtmlForStorage(
   html: string,
   userImages: HtmlImageAsset[]
@@ -24,7 +33,7 @@ export function normalizeGeneratedHtmlForStorage(
     );
   }
 
-  return nextHtml;
+  return normalizeFooterCopyrightYear(nextHtml, new Date().getFullYear());
 }
 
 export function countReferencedUserImagePaths(

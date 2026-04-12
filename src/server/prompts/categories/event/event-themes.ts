@@ -67,6 +67,32 @@ export const EVENT_THEMES: WebsiteTheme[] = [
     jsFeatures: [],
     rtlSafe: true,
   },
+  {
+    id: 'electric-keynote',
+    name: 'Electric Keynote',
+    cssFile: 'electric-keynote.css',
+    category: 'event',
+    personality: 'Tech conference dark stage, cyan headline, gradient CTAs with wide horizontal padding (register / tickets).',
+    fonts: {
+      heading: 'Outfit',
+      body: 'Inter',
+      googleFontsUrl:
+        'https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700&family=Inter:wght@400;500&display=swap',
+    },
+    colors: {
+      bg: '#030712',
+      surface: '#0f172a',
+      primary: '#22d3ee',
+      secondary: '#6366f1',
+      text: '#f8fafc',
+      muted: '#94a3b8',
+      border: 'rgba(34, 211, 238, 0.25)',
+    },
+    layout: 'split-screen',
+    animations: ['fadeUp'],
+    jsFeatures: [],
+    rtlSafe: true,
+  },
 ];
 
 export function getRandomEventTheme(): WebsiteTheme {

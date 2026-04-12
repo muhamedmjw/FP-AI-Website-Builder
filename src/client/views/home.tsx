@@ -462,7 +462,7 @@ export default function HomePage() {
             <p className="mt-3 text-sm text-emerald-400">{downloadMessage}</p>
           ) : null}
 
-          <form onSubmit={handleSubmit} className="mx-auto mt-8 w-full max-w-2xl min-h-75" aria-busy={isCreating}>
+          <form onSubmit={handleSubmit} className="mx-auto mt-8 w-full max-w-2xl" aria-busy={isCreating}>
           {isCreating ? (
             <div
               key="creating-view"

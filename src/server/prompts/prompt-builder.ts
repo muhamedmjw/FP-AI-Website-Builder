@@ -1,8 +1,10 @@
+import fs from "fs";
+import path from "path";
+
 import { AI_CONFIG } from "@/shared/constants/ai";
 import { AppLanguage, HistoryMessage } from "@/shared/types/database";
 import {
   PERSONALITY,
-  LANGUAGE_RULES,
   OUTPUT_FORMAT,
   APP_KNOWLEDGE,
   DESIGN_SYSTEM,
@@ -15,7 +17,8 @@ import {
   CHAT_MODE,
   buildSystemPrompt,
 } from "./index";
-import type { WebsiteTheme } from "./index";
+import type { Category, WebsiteTheme } from "./index";
+import { LANGUAGE_RULES as LANGUAGE_GUIDANCE } from "./language";
 
 export type ChatMessage = {
   role: "system" | "user" | "assistant";
@@ -166,12 +169,78 @@ function buildLayoutInstruction(layout: string): string {
     "",
     "Strictly follow this layout. Do not default to a generic hero + 3-column cards layout.",
     "On desktop, at least 3 sections must use visibly different structures (split, grid, feature band, sidebar, editorial, etc).",
+    "When LAYOUT STYLE is magazine, newspaper, sidebar, grid-heavy, masonry, split-screen, or asymmetric, hero + three equal-width feature cards must not be the only desktop composition.",
   ].join("\n");
 }
 
-function buildThemeInjection(theme: WebsiteTheme, category: string): string {
+function buildPremiumOutputBar(isRtl: boolean): string {
+  const rtlBlock = isRtl
+    ? `
+RTL / ARABIC / KURDISH — SAME VISUAL AMBITION AS ENGLISH:
+- RTL is direction and mirroring only — NOT permission for a flat, generic, “template” stacked page.
+- You MUST still deliver split heroes, editorial grids, asymmetric sections, dramatic typography, and the full personality of BASE THEME CSS.
+- Mirror flex/grid direction and navigation order for RTL; keep the same section geometry and visual drama as a premium English site in this theme.
+- For Arabic/Kurdish copy, use confident display typography (scale + weight contrast). Do not reduce the whole page to uniform small body text.
+- Team/profile photos: set data-image-query to the depicted role (e.g. "professional lawyer portrait office") — never unrelated stock subjects.
+`.trim()
+    : "";
+
+  return [
+    "PREMIUM OUTPUT BAR (NON-NEGOTIABLE):",
+    "- Aim for top-tier portfolio / editorial / high-end marketing quality — never a default landing-page cliché.",
+    "- One strong hero moment, clear hierarchy, intentional whitespace, polished buttons and form fields, subtle motion (scroll reveal, hover states).",
+    "- When the user does not specify colors or art direction, still ship premium work: follow BASE THEME CSS and DESIGN SYSTEM button/input minimums.",
+    "- Forbidden as the entire desktop experience: repeated full-width bands with identical 3-column card grids only.",
+    "- Honor BASE THEME CSS verbatim; extra CSS should refine details, not replace the theme system.",
+    "- Theme selection is server-side: do not substitute a different visual system — express the locked theme through HTML structure and content.",
+    rtlBlock,
+  ]
+    .filter(Boolean)
+    .join("\n\n");
+}
+
+function readThemeCssFile(category: Category, cssFileName: string): string | null {
+  const filePath = path.join(
+    process.cwd(),
+    "src",
+    "server",
+    "prompts",
+    "categories",
+    category,
+    "themes",
+    cssFileName
+  );
+
+  try {
+    return fs.readFileSync(filePath, "utf8");
+  } catch {
+    console.warn(`Theme CSS not found: ${filePath}`);
+    return null;
+  }
+}
+
+function buildThemeInjection(
+  theme: WebsiteTheme,
+  category: string,
+  baseThemeCss: string | null
+): string {
   const layoutInstruction = buildLayoutInstruction(theme.layout);
   const visualStyleInstruction = buildVisualStyleInstruction(theme);
+
+  const baseCssBlock =
+    baseThemeCss && baseThemeCss.trim().length > 0
+      ? `
+BASE THEME CSS (REQUIRED — paste verbatim):
+Put the following block inside <head> as the FIRST content of a single <style> element.
+Do not omit, rewrite, or reorder this CSS. You may append small page-specific rules after it only.
+
+---BEGIN_BASE_THEME_CSS---
+${baseThemeCss.trim()}
+---END_BASE_THEME_CSS---
+
+Your HTML must use the class names and layout patterns defined in this stylesheet (including theme-specific classes like .menu-grid, .hero-content, etc.).
+`.trim()
+      : "";
 
   return `
 ═══════════════════════════════════════════
@@ -195,7 +264,9 @@ COLORS:
   Muted:       ${theme.colors.muted}
   Border:      ${theme.colors.border}
 
-CSS CLASS REFERENCE (use these exact class names in your HTML):
+${baseCssBlock}
+
+CSS CLASS REMINDER (supplemental — the BASE THEME CSS defines the real class set):
   nav, .logo, nav ul, nav ul a
   .hero, .hero h1, .hero p
   .btn, .btn-primary
@@ -325,9 +396,9 @@ export function buildGenerationMessages(
   const latestUserMessage =
     history.filter((m) => m.role === "user").at(-1)?.content ?? "";
   const { theme, category } = buildSystemPrompt(latestUserMessage, contentLanguage);
-  const themeInjection = buildThemeInjection(theme, category);
-  const layoutInstruction = buildLayoutInstruction(theme.layout);
-  const visualStyleInstruction = buildVisualStyleInstruction(theme);
+  const currentYear = new Date().getFullYear();
+  const baseThemeCss = readThemeCssFile(category, theme.cssFile);
+  const themeInjection = buildThemeInjection(theme, category, baseThemeCss);
 
   const populatedBuildMode = BUILD_MODE
     .replace("{GOOGLE_FONTS_URL}", theme.fonts.googleFontsUrl)
@@ -335,18 +406,23 @@ export function buildGenerationMessages(
     .replace("{HEADING_FONT}", theme.fonts.heading)
     .replace("{USER_IMAGES_BLOCK}", buildUserImagesBlock(userImages));
 
+  const websiteStructureForYear = WEBSITE_STRUCTURE.replaceAll(
+    "{CURRENT_SITE_YEAR}",
+    String(currentYear)
+  );
+
   const systemParts = [
     PERSONALITY,
+    `CURRENT_SITE_YEAR (authoritative footer copyright year): ${currentYear}`,
     themeInjection,
-    layoutInstruction,
-    visualStyleInstruction,
-    LANGUAGE_RULES,
+    buildPremiumOutputBar(isRtl),
+    LANGUAGE_GUIDANCE,
     populatedBuildMode,
     DESIGN_SYSTEM,
     MOBILE_RULES,
     IMAGE_RULES,
     isRtl ? RTL_RULES : "",
-    WEBSITE_STRUCTURE,
+    websiteStructureForYear,
     OUTPUT_FORMAT,
     `Website content language: ${contentLanguage}`,
     `Conversation reply language: ${detectedUserLanguage}`,
@@ -378,9 +454,12 @@ export function buildEditMessages(
   );
   const hasUserUploads = (userImages?.length ?? 0) > 0;
 
+  const currentYear = new Date().getFullYear();
+
   const systemParts = [
     PERSONALITY,
-    LANGUAGE_RULES,
+    `CURRENT_SITE_YEAR (authoritative footer copyright year): ${currentYear}`,
+    LANGUAGE_GUIDANCE,
     editModeWithImages,
     hasUserUploads ? IMAGE_RULES : "",
     isRtl ? RTL_RULES : "",
@@ -407,7 +486,7 @@ export function buildChatMessages(
 ): ChatMessage[] {
   const system = [
     PERSONALITY,
-    LANGUAGE_RULES,
+    LANGUAGE_GUIDANCE,
     APP_KNOWLEDGE,
     CHAT_MODE,
     OUTPUT_FORMAT,

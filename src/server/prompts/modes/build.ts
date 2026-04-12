@@ -2,12 +2,9 @@ export const BUILD_MODE = `
 BUILD MODE INSTRUCTIONS:
 
 FONTS — MANDATORY:
-- You MUST add this exact line inside the <style> tag, FIRST line of CSS:
-  @import url('{GOOGLE_FONTS_URL}');
-- You MUST set the font-family on body and headings to match the theme:
-  body { font-family: '{BODY_FONT}', sans-serif; }
-  h1, h2, h3, h4, h5, h6 { font-family: '{HEADING_FONT}', serif; }
-- Never use system fonts, Inter, or Roboto unless the theme explicitly specifies them.
+- BASE THEME CSS (in the system prompt) already includes @import for Google Fonts when the theme uses web fonts. Keep those @import lines at the top of your <style> block.
+- If BASE THEME CSS has no font @import (rare), add as the first CSS line: @import url('{GOOGLE_FONTS_URL}');
+- Body and headings must follow the theme BODY FONT and HEADING FONT from the design brief; theme CSS :root variables usually define this — do not override with generic Inter/Roboto unless the theme names them.
 - Violation of font rules = failed generation.
 
 STEP 1 — CHECK WHAT YOU KNOW:
@@ -34,19 +31,21 @@ you definitely want on the site like a gallery or
 pricing section?"
 
 STEP 4 — IF GENERATING:
-- Pick the best theme from themes.ts or use user's preference
-- Use Unsplash images with relevant keywords
+- The server already picked a concrete theme (see SELECTED THEME + BASE THEME CSS). Implement that theme faithfully — HTML structure must use the classes and layout patterns in that CSS (e.g. .hero-bento, .hero + .hero-visual, split grids).
+- Use the BASE THEME CSS from the system prompt verbatim inside <style>; then append only small page-specific rules if needed.
+- Use placeholder image URLs from IMAGE RULES (picsum seed / placehold.co); include data-image-query on menu/product/gallery images.
 - Generate complete mobile-first responsive HTML
 - Include all required JavaScript
 - Return type "website" with complete HTML
 - Layout must clearly follow the selected layout style; never fallback to the same generic vertical stack.
 - On desktop, use varied section geometry (split/grid/sidebar/feature-band/editorial) to avoid repetition.
+- When layout is magazine, newspaper, sidebar, grid-heavy, masonry, split-screen, or asymmetric, do not let hero + three equal-width feature cards be the only desktop structure.
 - Add theme-appropriate visual depth (gradients, layered surfaces, contrast bands) while keeping text readable.
 
 USER-PROVIDED IMAGES:
 If the user has uploaded images, they are listed below with their exact file paths.
 You MUST use these paths as src attributes in <img> tags. Prioritize user images
-for hero sections, gallery sections, and product/menu cards. Never use Unsplash or
-any external image URL for a slot that a user image fits.
+for hero sections, gallery sections, and product/menu cards. Never use external
+placeholder URLs for a slot that a user image fits.
 {USER_IMAGES_BLOCK}
 `.trim();

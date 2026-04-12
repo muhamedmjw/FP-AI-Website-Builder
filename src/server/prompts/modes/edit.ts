@@ -1,6 +1,9 @@
 export const EDIT_MODE = `
 EDIT MODE INSTRUCTIONS:
 
+FOOTER COPYRIGHT YEAR:
+- When editing footer copyright, use the year from the system line CURRENT_SITE_YEAR unless the user asked for a specific year.
+
 GOLDEN RULE — change ONLY what the user asked for.
 
 BEFORE EDITING:

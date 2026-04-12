@@ -14,7 +14,7 @@ import {
   buildGenerationMessages,
 } from "@/server/prompts/prompt-builder";
 import { detectLanguage } from "@/server/prompts/language-rules";
-import { enrichHtmlWithBraveImages } from "@/server/services/brave-image-service";
+import { enrichHtmlWithStockImages } from "@/server/services/website-image-enrichment";
 import {
   completeGeneration,
   logCancelledGeneration,
@@ -187,15 +187,12 @@ async function enrichWebsiteHtmlImages(
 ): Promise<string> {
   const context = buildImageSearchContext(history);
 
-  if (!context) {
-    return html;
-  }
-
   try {
-    return await enrichHtmlWithBraveImages(html, { context });
+    return await enrichHtmlWithStockImages(html, { context });
   } catch (error) {
-    const errorMessage = error instanceof Error ? error.message : "Unknown Brave image error";
-    console.warn("Brave image enrichment failed:", errorMessage);
+    const errorMessage =
+      error instanceof Error ? error.message : "Unknown stock image enrichment error";
+    console.warn("Stock image enrichment failed:", errorMessage);
     return html;
   }
 }
@@ -479,7 +476,7 @@ function buildIntentExecutionConfig(
         selectedUserImages
       ) as AIMessage[],
       maxTokens: AI_CONFIG.MAX_TOKENS,
-      temperature: 0.4,
+      temperature: 0.52,
     };
   }
 
@@ -506,7 +503,7 @@ function buildIntentExecutionConfig(
         selectedUserImages
       ) as AIMessage[],
       maxTokens: AI_CONFIG.MAX_TOKENS,
-      temperature: 0.4,
+      temperature: 0.52,
     };
   }
 

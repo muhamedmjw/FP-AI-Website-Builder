@@ -205,6 +205,20 @@ export const translations: Record<AppLanguage, Record<string, string>> = {
     guestPromptsRemaining: "{used}/{max} prompts",
     failedToGetResponse: "Failed to get a response. Please try again.",
     accountHeroTitle: "Build full websites from a short prompt.",
+    promptGuideLink: "How to write a strong website prompt",
+    promptGuidePanelTitle: "Get better results from your prompt",
+    promptGuideTip1:
+      "State the purpose clearly: who it is for, what you sell or offer, and the main action (book, buy, sign up, contact).",
+    promptGuideTip2:
+      "Describe the visual style: light or dark theme, minimal vs bold, brand colors, and the vibe (playful, corporate, luxury, etc.).",
+    promptGuideTip3:
+      "Say how buttons should look: pill vs rounded rectangle, filled vs outline, primary vs secondary, and where key CTAs should appear (hero, sticky bar, footer).",
+    promptGuideTip4:
+      "Ask for motion with intent: subtle fade or slide-in on scroll, gentle hover lift on cards, sticky navigation — avoid vague “lots of animation.”",
+    promptGuideTip5:
+      "List sections you need (hero, features, pricing, testimonials, FAQ, blog) and the writing tone: short punchy headlines vs longer explanatory copy.",
+    promptGuideTip6:
+      "For images, name subjects or moods (team, product, office, abstract hero) or say “simple placeholders” if you want generic stock-style visuals.",
   },
   ar: {
     newWebsite: "موقع جديد",
@@ -409,6 +423,20 @@ export const translations: Record<AppLanguage, Record<string, string>> = {
     guestPromptsRemaining: "{used}/{max} رسائل",
     failedToGetResponse: "تعذر الحصول على رد. يرجى المحاولة مرة أخرى.",
     accountHeroTitle: "أنشئ مواقع كاملة من وصف قصير.",
+    promptGuideLink: "كيف تكتب وصفاً قوياً لموقعك",
+    promptGuidePanelTitle: "نصائح لنتائج أوضح",
+    promptGuideTip1:
+      "وضّح الغرض: لمن الموقع، ماذا تقدّم، والإجراء الأساسي (حجز، شراء، تسجيل، تواصل).",
+    promptGuideTip2:
+      "صف المظهر: فاتح أو داكن، بسيط أو جريء، ألوان العلامة، والإحساس العام (مرح، رسمي، فاخر…).",
+    promptGuideTip3:
+      "اذكر شكل الأزرار: حبة دواء أو زوايا مستديرة، معبأة أو خطّ فقط، وأين تظهر الدعوات الرئيسية (الواجهة، شريط ثابت، التذييل).",
+    promptGuideTip4:
+      "اطلب الحركة باعتدال: ظهور خفيف عند التمرير، رفع بسيط عند المرور على البطاقات، شريط تنقل ثابت — وتجنّب “حركة كثيرة” دون تفاصيل.",
+    promptGuideTip5:
+      "عدّد الأقسام (مقدمة، مزايا، أسعار، آراء، أسئلة شائعة، مدونة) ونبرة النص: عناوين قصيرة أم فقرات أطول.",
+    promptGuideTip6:
+      "للصور: حدّد الموضوع أو المزاج (فريق، منتج، مكتب، خلفية تجريدية) أو اكتب “صور بديلة بسيطة” إن لم يكن لديك تفضيل محدد.",
   },
   ku: {
     newWebsite: "وێبسایتی نوێ",
@@ -613,6 +641,20 @@ export const translations: Record<AppLanguage, Record<string, string>> = {
     guestPromptsRemaining: "{used}/{max} پەیام",
     failedToGetResponse: "نەتوانرا وەڵامێک وەربگیرێت. تکایە دووبارە هەوڵبدەوە.",
     accountHeroTitle: "وێبسایتی تەواو لە وتەیەکی کورت دروست بکە.",
+    promptGuideLink: "چۆن وتەیەکی بەهێز بۆ وێبسایت بنووسیت",
+    promptGuidePanelTitle: "ئەنجامی باشتر لە وتەکەت",
+    promptGuideTip1:
+      "مەبەست ڕوون بکەرەوە: بۆ کێیە، چی دابین دەکەیت، و سەرەکیترین کردار (حیجزکردن، کڕین، تۆمارکردن، پەیوەندی).",
+    promptGuideTip2:
+      "شێوازی بینراو وەسف بکە: ڕووناکی یان تاریک، ساکار یان بەهێز، ڕەنگەکانی براند، و هەست (یاریزان، فەرمی، لوکس…).",
+    promptGuideTip3:
+      "دوگمەکان بڵێ چۆن بن: حبوب یان لێوار گۆشەگیر، پڕ یان تەنها هێڵ، و لە کوێ CTA ـەکان بن (سەرەکی، شریتی جێگیر، پێنجا).",
+    promptGuideTip4:
+      "جوڵە بە مەبەست داوا بکە: دەربکەوتنی سووک لە سکڕۆڵ، هەڵکێشانی نەرم لەسەر کارت، ناڤیگەیشنی جێگیر — دووربە لە «زۆر ئەنیمەیشن»ی ناڕوون.",
+    promptGuideTip5:
+      "بەشەکان لیست بکە (هێرۆ، تایبەتمەندی، نرخ، ڕەخنە، پرسیار، بڵۆگ) و تۆنی نووسین: سەرناوە کورتەکان یان دەقی درێژتر.",
+    promptGuideTip6:
+      "بۆ وێنەکان: بابەت یان هەست (تیم، بەرهەم، ئۆفیس، پاشبنەمای ئەبستراکت) بڵێ، یان «وێنەی جێگرەوەی ساکار» ئەگەر نازانیت.",
   },
 };
 
