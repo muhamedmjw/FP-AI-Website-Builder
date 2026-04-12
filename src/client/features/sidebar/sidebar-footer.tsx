@@ -85,6 +85,8 @@ export default function SidebarFooter({
     width: 0,
     maxHeight: 176,
   });
+  // Pending language state - selected in dropdown but not applied until save
+  const [pendingLanguage, setPendingLanguage] = useState<AppLanguage>(language);
 
   const [nameInput, setNameInput] = useState(userName ?? "");
   const [emailInput, setEmailInput] = useState(userEmail ?? "");
@@ -137,8 +139,11 @@ export default function SidebarFooter({
   useEffect(() => {
     if (!settingsOpen) {
       setIsLanguageMenuOpen(false);
+    } else {
+      // Reset pending language to current language when opening settings
+      setPendingLanguage(language);
     }
-  }, [settingsOpen]);
+  }, [settingsOpen, language]);
 
   useEffect(() => {
     if (!deploymentsOpen) {
@@ -304,6 +309,11 @@ export default function SidebarFooter({
 
       if (profileError) throw profileError;
 
+      // Apply the pending language change when saving
+      if (pendingLanguage !== language) {
+        setLanguage(pendingLanguage);
+      }
+
       onProfileUpdated({
         name: nextName,
         email: nextEmail,
@@ -372,7 +382,7 @@ export default function SidebarFooter({
     accountLabel.length > 0 ? accountLabel.charAt(0).toUpperCase() : "A";
 
   const currentLanguageOption =
-    LANGUAGE_OPTIONS.find((option) => option.code === language) ?? LANGUAGE_OPTIONS[0];
+    LANGUAGE_OPTIONS.find((option) => option.code === pendingLanguage) ?? LANGUAGE_OPTIONS[0];
 
   const avatarFallbackClass =
     "flex h-9 w-9 items-center justify-center rounded-full bg-(--app-hover-bg-strong) text-sm font-semibold text-(--app-text-heading)";
@@ -637,7 +647,7 @@ export default function SidebarFooter({
             onTouchMove={(event) => event.stopPropagation()}
           >
             {LANGUAGE_OPTIONS.map((option) => {
-              const isActive = option.code === language;
+              const isActive = option.code === pendingLanguage;
 
               return (
                 <button
@@ -646,7 +656,7 @@ export default function SidebarFooter({
                   role="menuitemradio"
                   aria-checked={isActive}
                   onClick={() => {
-                    setLanguage(option.code);
+                    setPendingLanguage(option.code);
                     setIsLanguageMenuOpen(false);
                   }}
                   className={`flex w-full items-center rounded-md px-2.5 py-2 text-sm transition ${
