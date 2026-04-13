@@ -64,7 +64,7 @@ export default function BuilderView({
   const [inputErrorMessage, setInputErrorMessage] = useState("");
 
   // Preview panel state
-  const [previewOpen, setPreviewOpen] = useState(hasInitialPreview);
+  const [previewOpen, setPreviewOpen] = useState(false);
   const [previewWidth, setPreviewWidth] = useState<number | null>(null);
   const [isResizing, setIsResizing] = useState(false);
 
