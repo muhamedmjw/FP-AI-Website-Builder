@@ -142,8 +142,13 @@ export default function ChatPanel({
 
   if (lastUserMessage) {
     const normalized = lastUserMessage.trim().toLowerCase();
-    const websiteKeywords = /\b(website|web\s*site|webpage|web\s*page|landing\s*page|site|build|create|make|design|generate)\b/i;
-    if (websiteKeywords.test(normalized)) {
+    // English keywords
+    const enKeywords = /\b(website|web\s*site|webpage|web\s*page|landing\s*page|site|build|create|make|design|generate)\b/i;
+    // Arabic keywords: موقع (site), صفحة (page), ويب (web), إنشاء (create), بناء (build), تصميم (design), اصنع (make), صمم (design)
+    const arKeywords = /(موقع|صفحة|ويب|إنشاء|بناء|تصميم|اصنع|صمم|أنشئ)/;
+    // Kurdish Sorani keywords: وێبسایت (website), ماڵپەڕ (website), سایت (site), لاپەڕە (page), دروست (build/create), دیزاین (design)
+    const kuKeywords = /(وێبسایت|ماڵپەڕ|سایت|لاپەڕە|دروست|دیزاین)/;
+    if (enKeywords.test(normalized) || arKeywords.test(normalized) || kuKeywords.test(normalized)) {
       isWebsiteGeneration = true;
     }
   }
