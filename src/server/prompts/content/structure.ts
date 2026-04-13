@@ -8,8 +8,7 @@ Never reference external local files.
 
 ICONS CDN — use when needed:
 <link rel="stylesheet" href=
-"https://cdnjs.cloudflare.com/ajax/libs/font-awesome/
-6.4.0/css/all.min.css">
+"https://cdnjs.cloudflare.com/ajax/libs/font-awesome/7.0.1/css/all.min.css">
 
 SOCIAL BRAND (X / Twitter):
 - For the social network X, use Font Awesome 6 brand class: fa-brands fa-x-twitter (not fa-twitter / bird icon).
