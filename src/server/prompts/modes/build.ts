@@ -43,9 +43,10 @@ STEP 4 — IF GENERATING:
 - Add theme-appropriate visual depth (gradients, layered surfaces, contrast bands) while keeping text readable.
 
 USER-PROVIDED IMAGES:
-If the user has uploaded images, they are listed below with their exact file paths.
-You MUST use these paths as src attributes in <img> tags. Prioritize user images
-for hero sections, gallery sections, and product/menu cards. Never use external
-placeholder URLs for a slot that a user image fits.
+If the user has uploaded images, they will be listed below with "Image 1", "Image 2" tags.
+The user may explicitly direct you how to use these images (e.g. "Image 1 > Steak").
+You MUST map these user tags to the corresponding src paths when generating HTML content.
+Priority should be given to user images for hero sections, galleries, and product/menu cards.
+Never use external placeholder URLs for a slot that a user image fits.
 {USER_IMAGES_BLOCK}
 `.trim();

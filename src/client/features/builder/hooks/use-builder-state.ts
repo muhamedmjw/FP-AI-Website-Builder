@@ -249,17 +249,22 @@ export function useBuilderState({
     });
   }, [chatId, hasOptimisticMessage, initialMessages, isRequestInFlight]);
 
+  const [isHydrated, setIsHydrated] = useState(false);
+
   useEffect(() => {
+    // Reset hydration state on chat change
+    setIsHydrated(false);
     currentInputImagesRef.current = [];
     setMessageImages({});
 
     try {
-      const raw = window.sessionStorage.getItem(
+      const raw = window.localStorage.getItem(
         `${MESSAGE_IMAGE_IDS_STORAGE_PREFIX}${chatId}`
       );
 
       if (!raw) {
         setMessageImageFileIds({});
+        setIsHydrated(true);
         return;
       }
 
@@ -274,19 +279,29 @@ export function useBuilderState({
       setMessageImageFileIds(Object.fromEntries(normalizedEntries));
     } catch {
       setMessageImageFileIds({});
+    } finally {
+      setIsHydrated(true);
     }
   }, [chatId]);
 
   useEffect(() => {
+    if (!isHydrated) {
+      return;
+    }
+
     try {
-      window.sessionStorage.setItem(
-        `${MESSAGE_IMAGE_IDS_STORAGE_PREFIX}${chatId}`,
-        JSON.stringify(messageImageFileIds)
-      );
+      if (Object.keys(messageImageFileIds).length === 0) {
+        window.localStorage.removeItem(`${MESSAGE_IMAGE_IDS_STORAGE_PREFIX}${chatId}`);
+      } else {
+        window.localStorage.setItem(
+          `${MESSAGE_IMAGE_IDS_STORAGE_PREFIX}${chatId}`,
+          JSON.stringify(messageImageFileIds)
+        );
+      }
     } catch {
       // Ignore storage access failures.
     }
-  }, [chatId, messageImageFileIds]);
+  }, [chatId, isHydrated, messageImageFileIds]);
 
   useEffect(() => {
     if (!isAuthenticated) {
@@ -336,40 +351,55 @@ export function useBuilderState({
   }, [chatId, isAuthenticated]);
 
   useEffect(() => {
-    const entries = Object.entries(messageImageFileIds);
-    if (entries.length === 0) {
-      setMessageImages({});
-      return;
-    }
+    setMessageImages((currentImages) => {
+      const entries = Object.entries(messageImageFileIds);
+      if (entries.length === 0) {
+        return {};
+      }
 
-    const nextMessageImages = entries.reduce<Record<string, MessageAttachment[]>>(
-      (acc, [messageId, fileIds]) => {
-        const attachments = fileIds
-          .map((fileId, index) => {
-            const image = uploadedImageCatalog[fileId];
-            if (!image) {
-              return null;
-            }
+      const nextMessageImages = entries.reduce<Record<string, MessageAttachment[]>>(
+        (acc, [messageId, fileIds]) => {
+          const attachments = fileIds
+            .map((fileId, index) => {
+              // 1. If we already have the fully constructed image in state (e.g. from an optimistic send), keep it!
+              const existingAttachment = currentImages[messageId]?.find((a) => a.fileId === fileId);
+              if (existingAttachment) {
+                return existingAttachment;
+              }
 
-            return {
-              fileId: image.fileId,
-              fileName: image.fileName,
-              dataUri: image.dataUri,
-              label: `${t("imageLabel", language)} ${index + 1}`,
-            } satisfies MessageAttachment;
-          })
-          .filter((value): value is MessageAttachment => Boolean(value));
+              // 2. Otherwise pull from the server catalog (useful for page reloads)
+              const image = uploadedImageCatalog[fileId];
+              if (!image) {
+                return null;
+              }
 
-        if (attachments.length > 0) {
-          acc[messageId] = attachments;
-        }
+              return {
+                fileId: image.fileId,
+                fileName: image.fileName,
+                dataUri: image.dataUri,
+                label: `${t("imageLabel", language)} ${index + 1}`,
+              } satisfies MessageAttachment;
+            })
+            .filter((value): value is MessageAttachment => Boolean(value));
 
-        return acc;
-      },
-      {}
-    );
+          if (attachments.length > 0) {
+            acc[messageId] = attachments;
+          }
 
-    setMessageImages(nextMessageImages);
+          return acc;
+        },
+        {}
+      );
+
+      // Simple shallow equality check to avoid infinite re-renders
+      const isUnchanged =
+        Object.keys(currentImages).length === Object.keys(nextMessageImages).length &&
+        Object.keys(nextMessageImages).every(
+          (key) => currentImages[key]?.length === nextMessageImages[key]?.length
+        );
+
+      return isUnchanged ? currentImages : nextMessageImages;
+    });
   }, [language, messageImageFileIds, uploadedImageCatalog]);
 
   const syncPendingGenerationState = useCallback(() => {

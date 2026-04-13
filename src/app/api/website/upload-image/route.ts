@@ -5,6 +5,9 @@ import { createWebsite, getWebsiteByChatId } from "@/server/services/website-ser
 import { getCurrentUser } from "@/shared/services/user-service";
 import { isMissingUploadColumns } from "@/shared/utils/db-guards";
 
+// Allow large image uploads — Next.js App Router route segment config.
+export const runtime = "nodejs";
+
 type PostgresLikeError = {
   code?: string;
   message?: string;
@@ -12,7 +15,6 @@ type PostgresLikeError = {
   hint?: string;
 };
 
-const MAX_IMAGE_SIZE_BYTES = 4 * 1024 * 1024;
 const IMAGE_MIME_TYPE_REGEX = /^image\//i;
 const MISSING_COLUMNS_ERROR =
   "Database migration required: add is_user_upload (boolean) and mime_type (text) columns to public.files.";
@@ -139,13 +141,6 @@ export async function POST(request: NextRequest) {
 
     if (!IMAGE_MIME_TYPE_REGEX.test(mimeType)) {
       return NextResponse.json({ error: "Only image/* files are allowed." }, { status: 400 });
-    }
-
-    if (fileValue.size > MAX_IMAGE_SIZE_BYTES) {
-      return NextResponse.json(
-        { error: "Image size must be 4 MB or less." },
-        { status: 400 }
-      );
     }
 
     const ownsChat = await userOwnsChat(supabase, user.id, chatId);

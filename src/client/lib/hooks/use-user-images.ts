@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import type { UserImage } from "@/shared/types/database";
+import { compressImage } from "@/client/lib/utils/image-compression";
 
 type UserImagesApiResponse = {
   images?: UserImage[];
@@ -47,9 +48,6 @@ export function useUserImages(
     }
 
     if (!autoLoad) {
-      setImages([]);
-      setIsLoading(false);
-      setError(null);
       return;
     }
 
@@ -104,24 +102,26 @@ export function useUserImages(
 
   const uploadImage = useCallback(
     async (
-      file: File,
+      rawFile: File,
       options?: { chatIdOverride?: string }
     ): Promise<UserImage> => {
-      const resolvedChatId =
-        options?.chatIdOverride?.trim() || chatId?.trim() || "";
-
-      if (!resolvedChatId) {
-        throw new Error("Sign in to upload images.");
-      }
-
-      const formData = new FormData();
-      formData.append("chatId", resolvedChatId);
-      formData.append("file", file);
-
       setIsLoading(true);
       setError(null);
 
       try {
+        const file = await compressImage(rawFile);
+        
+        const resolvedChatId =
+          options?.chatIdOverride?.trim() || chatId?.trim() || "";
+
+        if (!resolvedChatId) {
+          throw new Error("Sign in to upload images.");
+        }
+
+        const formData = new FormData();
+        formData.append("chatId", resolvedChatId);
+        formData.append("file", file);
+
         const response = await fetch("/api/website/upload-image", {
           method: "POST",
           body: formData,

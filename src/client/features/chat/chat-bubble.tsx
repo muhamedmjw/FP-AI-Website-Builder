@@ -193,13 +193,13 @@ export default function ChatBubble({
             </div>
 
             {hasAttachedImages ? (
-              <div className="flex flex-wrap gap-2">
+              <div className="flex flex-wrap flex-row-reverse gap-2">
                 {attachedImages.map((image) => (
-                  <div key={image.fileId} className="w-16">
+                  <div key={image.fileId} className="relative group/thumb">
                     <button
                       type="button"
                       onClick={() => setZoomedImage({ src: image.dataUri, fileName: image.fileName })}
-                      className="h-16 w-16 overflow-hidden rounded-lg border border-(--app-card-border) bg-(--app-card-bg)"
+                      className="relative h-16 w-16 overflow-hidden rounded-xl border border-[var(--app-card-border)] bg-[var(--app-card-bg)] shadow-sm transition-transform hover:scale-105 sm:h-20 sm:w-20"
                       title="Open image"
                       aria-label={`Open ${image.label}`}
                     >
@@ -209,10 +209,11 @@ export default function ChatBubble({
                         alt={image.fileName}
                         className="h-full w-full object-cover"
                       />
+                      {/* Tag badge overlay */}
+                      <span className="absolute bottom-0 inset-x-0 bg-black/60 py-0.5 text-center text-[10px] font-semibold text-white/90 backdrop-blur-sm sm:text-xs">
+                        {image.label}
+                      </span>
                     </button>
-                    <p className="mt-1 truncate text-center text-[10px] text-(--app-text-tertiary)">
-                      {image.label}
-                    </p>
                   </div>
                 ))}
               </div>

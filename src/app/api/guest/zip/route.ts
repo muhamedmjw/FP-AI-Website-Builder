@@ -283,6 +283,12 @@ export async function POST(request: NextRequest) {
         continue;
       }
 
+      // Check if the generated HTML actually uses this image.
+      // If the filename is not referenced anywhere in the HTML, skip adding it to the ZIP.
+      if (!processedHtml.includes(fileName)) {
+        continue;
+      }
+
       const base64 = dataUri.split(",")[1]?.trim() ?? "";
       if (!base64) {
         continue;
@@ -290,6 +296,9 @@ export async function POST(request: NextRequest) {
 
       processedHtml = replaceDataUriSrcWithFilePath(processedHtml, dataUri, fileName);
 
+      // We place the files dynamically dependent on how the AI referenced them.
+      // Usually, it's just the root or assets/images/. We'll use the root by default 
+      // since the HTML `src="filename"` typically doesn't include the folder unless requested.
       folder.file(fileName, Buffer.from(base64, "base64"));
     }
 

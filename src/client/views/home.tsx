@@ -1,8 +1,8 @@
 "use client";
 
-import { ChangeEvent, FormEvent, useEffect, useMemo, useRef, useState } from "react";
+import { ChangeEvent, FormEvent, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { BookText, X } from "lucide-react";
+import { BookText, ImagePlus, X } from "lucide-react";
 import PromptGuideModal from "../components/ui/prompt-guide-modal";
 import { getSupabaseBrowserClient } from "@/client/lib/supabase-browser";
 import { useUserImages } from "@/client/lib/hooks/use-user-images";
@@ -24,7 +24,7 @@ import { useLanguage } from "@/client/lib/language-context";
 import { useElapsedSeconds } from "@/client/lib/hooks/use-elapsed-seconds";
 import { t } from "@/shared/constants/translations";
 import { getDisplayModelName, PRIMARY_MODEL } from "@/shared/constants/ai";
-import { MAX_PROMPT_LENGTH } from "@/shared/constants/limits";
+import { MAX_PROMPT_LENGTH, MAX_ATTACHMENTS_PER_MESSAGE } from "@/shared/constants/limits";
 
 /**
  * Authenticated home screen - centered prompt input.
@@ -50,6 +50,7 @@ export default function HomePage() {
   const [imageErrorMessage, setImageErrorMessage] = useState("");
   const [isPromptGuideOpen, setIsPromptGuideOpen] = useState(false);
   const [draftChatId, setDraftChatId] = useState<string | null>(null);
+  const draftChatIdRef = useRef<string | null>(null); // Track id without closure staleness
   const [downloadMessage, setDownloadMessage] = useState("");
   const {
     images,
@@ -61,28 +62,7 @@ export default function HomePage() {
   const statusRotationSeconds = 8;
   const hasProcessedPendingGuestActions = useRef(false);
   const isProcessingPendingGuestActions = useRef(false);
-  const visibleImages = images.slice(0, 6);
-  const hiddenImagesCount = Math.max(0, images.length - visibleImages.length);
-  const totalImageBytes = useMemo(
-    () =>
-      images.reduce((sum, image) => {
-        const commaIndex = image.dataUri.indexOf(",");
-        if (commaIndex < 0) {
-          return sum;
-        }
-
-        const base64 = image.dataUri.slice(commaIndex + 1).replace(/\s+/g, "");
-        if (!base64) {
-          return sum;
-        }
-
-        const paddingLength = base64.endsWith("==") ? 2 : base64.endsWith("=") ? 1 : 0;
-        const bytes = Math.max(0, Math.floor((base64.length * 3) / 4) - paddingLength);
-        return sum + bytes;
-      }, 0),
-    [images]
-  );
-  const hasLargeImagePayload = totalImageBytes > 2 * 1024 * 1024;
+  const attachmentsFull = images.length >= MAX_ATTACHMENTS_PER_MESSAGE;
   const charCount = inputValue.length;
   const shouldShowCounter = charCount > MAX_PROMPT_LENGTH * 0.8;
   const isAtPromptLimit = charCount >= MAX_PROMPT_LENGTH;
@@ -92,7 +72,12 @@ export default function HomePage() {
    * Concurrent callers share draftChatPromiseRef.current to avoid duplicate chats.
    */
   async function ensureDraftChatId(): Promise<string> {
+    if (draftChatIdRef.current) {
+      return draftChatIdRef.current;
+    }
+
     if (draftChatId) {
+      draftChatIdRef.current = draftChatId;
       return draftChatId;
     }
 
@@ -112,6 +97,7 @@ export default function HomePage() {
 
       const draftChat = await createChat(supabase, user.id, "New Chat");
       setDraftChatId(draftChat.id);
+      draftChatIdRef.current = draftChat.id;
       return draftChat.id;
     })();
 
@@ -133,6 +119,11 @@ export default function HomePage() {
   function handleKeyDown(event: React.KeyboardEvent<HTMLTextAreaElement>) {
     if (event.key === "Enter" && !event.shiftKey) {
       event.preventDefault();
+      
+      if (isImageLoading || isPreparingDraftChat) {
+        return;
+      }
+      
       event.currentTarget.form?.requestSubmit();
     }
   }
@@ -329,32 +320,48 @@ export default function HomePage() {
       return;
     }
 
-    fileInputRef.current?.click();
-  }
-
-  async function handleImageSelected(event: ChangeEvent<HTMLInputElement>) {
-    const file = event.target.files?.[0];
-    event.target.value = "";
-
-    if (!file) {
+    if (attachmentsFull) {
+      setImageErrorMessage(`Maximum ${MAX_ATTACHMENTS_PER_MESSAGE} images allowed per message.`);
       return;
     }
 
-    if (!file.type.startsWith("image/")) {
-      setImageErrorMessage("Only image files are supported.");
+    fileInputRef.current?.click();
+  }
+
+  async function handleFilesSelected(event: ChangeEvent<HTMLInputElement>) {
+    const files = event.target.files ? Array.from(event.target.files) : [];
+    event.target.value = "";
+
+    if (files.length === 0) {
       return;
     }
 
     setImageErrorMessage("");
     setErrorMessage("");
 
-    try {
-      const chatIdForUpload = await ensureDraftChatId();
-      await uploadImage(file, { chatIdOverride: chatIdForUpload });
-    } catch (error) {
-      const message =
-        error instanceof Error ? error.message : "Failed to upload image.";
-      setImageErrorMessage(message);
+    const remainingSlots = MAX_ATTACHMENTS_PER_MESSAGE - images.length;
+    const filesToProcess = Array.from(files).slice(0, remainingSlots);
+
+    if (files.length > remainingSlots) {
+      setImageErrorMessage(
+        `Only ${remainingSlots} more image(s) can be added. ${files.length - remainingSlots} file(s) were skipped.`
+      );
+    }
+
+    for (const file of filesToProcess) {
+      if (!file.type.startsWith("image/")) {
+        setImageErrorMessage("Only image files are supported. Some files were skipped.");
+        continue;
+      }
+
+      try {
+        const chatIdForUpload = await ensureDraftChatId();
+        await uploadImage(file, { chatIdOverride: chatIdForUpload });
+      } catch (error) {
+        const message =
+          error instanceof Error ? error.message : "Failed to upload image.";
+        setImageErrorMessage(message);
+      }
     }
   }
 
@@ -372,6 +379,10 @@ export default function HomePage() {
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+
+    if (isImageLoading || isPreparingDraftChat) {
+      return;
+    }
 
     const message = inputValue.trim();
     if (!message) return;
@@ -407,8 +418,22 @@ export default function HomePage() {
           )
         ).id;
 
-      await addMessage(supabase, chatIdToUse, "user", trimmedMessage);
+      const userMessage = await addMessage(supabase, chatIdToUse, "user", trimmedMessage);
       markChatGenerationPending(chatIdToUse, Date.now(), null);
+
+      if (images.length > 0) {
+        try {
+          const mapping = {
+            [userMessage.id]: images.map((img) => img.fileId),
+          };
+          window.localStorage.setItem(
+            `chat-message-image-file-ids:${chatIdToUse}`,
+            JSON.stringify(mapping)
+          );
+        } catch {
+          // Ignore localStorage errors
+        }
+      }
 
       shouldResetLoadingState = false;
       router.push(`/chat/${chatIdToUse}`);
@@ -513,45 +538,57 @@ export default function HomePage() {
                 ref={fileInputRef}
                 type="file"
                 accept="image/*"
-                onChange={handleImageSelected}
+                multiple
+                onChange={handleFilesSelected}
                 className="hidden"
                 aria-hidden="true"
               />
               {images.length > 0 ? (
-                <div className="px-2.5 pb-1.5 pt-1 sm:px-3">
-                  <div className="flex flex-wrap items-center gap-2">
-                    {visibleImages.map((image, index) => (
-                      <div key={image.fileId} className="w-12">
-                        <div className="relative h-12 w-12 overflow-hidden rounded-lg border border-(--app-card-border)">
+                <div className="px-2.5 pb-1.5 pt-2 sm:px-3">
+                  <div className="flex flex-wrap items-center gap-2.5">
+                    {images.map((image, index) => (
+                      <div key={image.fileId} className="relative group/thumb">
+                        <div className="relative h-14 w-14 overflow-hidden rounded-xl border border-(--app-card-border) shadow-sm transition-transform hover:scale-105 sm:h-16 sm:w-16">
                           {/* eslint-disable-next-line @next/next/no-img-element */}
                           <img
                             src={image.dataUri}
                             alt={image.fileName}
                             className="h-full w-full object-cover"
                           />
+                          {/* Tag badge overlay */}
+                          <span className="absolute bottom-0 inset-x-0 bg-black/60 py-0.5 text-center text-[9px] font-semibold text-white/90 backdrop-blur-sm">
+                            {t("imageLabel", language)} {index + 1}
+                          </span>
                           <button
                             type="button"
                             onClick={() => {
                               void handleRemoveImage(image.fileId);
                             }}
-                            className="absolute -right-1 -top-1 flex h-5 w-5 items-center justify-center rounded-full border border-(--app-card-border) bg-(--app-panel) text-(--app-text-secondary) transition hover:text-(--app-text-heading)"
+                            className="absolute -right-1.5 -top-1.5 flex h-5 w-5 items-center justify-center rounded-full border border-(--app-card-border) bg-(--app-panel) text-(--app-text-secondary) opacity-0 transition-all group-hover/thumb:opacity-100 hover:text-rose-400 hover:border-rose-400/50"
                             aria-label="Remove image"
                             title="Remove image"
                           >
-                            <X size={12} />
+                            <X size={11} />
                           </button>
                         </div>
-                        <p className="mt-1 truncate text-center text-[10px] text-(--app-text-tertiary)">
-                          {t("imageLabel", language)} {index + 1}
-                        </p>
                       </div>
                     ))}
-                    {hiddenImagesCount > 0 ? (
-                      <span className="rounded-full border border-(--app-card-border) px-2 py-1 text-[10px] font-medium text-(--app-text-secondary)">
-                        +{hiddenImagesCount} more
-                      </span>
+                    {!attachmentsFull ? (
+                      <button
+                        type="button"
+                        onClick={handleOpenImagePicker}
+                        disabled={isCreating || isImageLoading || isPreparingDraftChat}
+                        className="flex h-14 w-14 items-center justify-center rounded-xl border-2 border-dashed border-(--app-card-border) text-(--app-text-tertiary) transition-colors hover:border-(--app-text-secondary) hover:text-(--app-text-secondary) disabled:opacity-40 sm:h-16 sm:w-16"
+                        title="Add more images"
+                        aria-label="Add more images"
+                      >
+                        <ImagePlus size={18} />
+                      </button>
                     ) : null}
                   </div>
+                  <p className="mt-1.5 text-[10px] text-(--app-text-muted)">
+                    {images.length}/{MAX_ATTACHMENTS_PER_MESSAGE} images attached
+                  </p>
                 </div>
               ) : null}
               <textarea
@@ -588,12 +625,12 @@ export default function HomePage() {
                 <button
                   type="button"
                   onClick={handleOpenImagePicker}
-                  disabled={isCreating || isImageLoading || isPreparingDraftChat}
-                  className="flex h-10 w-10 shrink-0 items-center justify-center text-2xl leading-none text-(--app-text-secondary) transition hover:text-(--app-text-heading) disabled:opacity-50 sm:h-11 sm:w-11"
-                  title="Upload image"
-                  aria-label="Upload image"
+                  disabled={isCreating || isImageLoading || isPreparingDraftChat || attachmentsFull}
+                  className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-(--app-text-secondary) transition-colors hover:bg-(--app-hover-bg-strong) hover:text-(--app-text-heading) disabled:opacity-40 sm:h-11 sm:w-11"
+                  title={attachmentsFull ? `Max ${MAX_ATTACHMENTS_PER_MESSAGE} images` : "Attach images"}
+                  aria-label={attachmentsFull ? `Max ${MAX_ATTACHMENTS_PER_MESSAGE} images` : "Attach images"}
                 >
-                  <span aria-hidden="true">+</span>
+                  <ImagePlus size={18} />
                 </button>
                 <div className="flex items-center gap-2">
                   <button
@@ -611,9 +648,9 @@ export default function HomePage() {
                   </button>
                   <button
                     type="submit"
-                    disabled={isCreating || isPreparingDraftChat}
+                    disabled={!inputValue.trim() || isCreating || isImageLoading || isPreparingDraftChat}
                     className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-(--app-btn-primary-bg) text-(--app-btn-primary-text) shadow-(--app-shadow-sm) transition hover:bg-(--app-btn-primary-hover) hover:shadow-(--app-shadow-md) hover:-translate-y-px active:translate-y-0 disabled:opacity-50 sm:h-11 sm:w-11"
-                    title={isCreating ? "Creating..." : isPreparingDraftChat ? "Preparing..." : "Start"}
+                    title={isCreating ? "Creating..." : isImageLoading ? "Uploading image..." : isPreparingDraftChat ? "Preparing..." : "Start"}
                   >
                     <svg
                       viewBox="0 0 24 24"
@@ -632,11 +669,6 @@ export default function HomePage() {
                   </button>
                 </div>
               </div>
-              {hasLargeImagePayload ? (
-                <p className="px-2.5 pb-0.5 text-[10px] text-amber-400 sm:px-3" role="status">
-                  Uploaded image data is over 2 MB and may reduce generation quality.
-                </p>
-              ) : null}
               {imageErrorMessage ? (
                 <p className="px-2.5 pb-0.5 text-[10px] text-rose-400 sm:px-3" role="alert">
                   {imageErrorMessage}

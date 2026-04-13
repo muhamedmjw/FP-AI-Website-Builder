@@ -1,11 +1,11 @@
 "use client";
 
 import { ChangeEvent, FormEvent, useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { X } from "lucide-react";
+import { ImagePlus, X } from "lucide-react";
 import { useLanguage } from "@/client/lib/language-context";
 import { useUserImages } from "@/client/lib/hooks/use-user-images";
 import { t } from "@/shared/constants/translations";
-import { MAX_PROMPT_LENGTH } from "@/shared/constants/limits";
+import { MAX_PROMPT_LENGTH, MAX_ATTACHMENTS_PER_MESSAGE } from "@/shared/constants/limits";
 import { getDisplayModelName, PRIMARY_MODEL } from "@/shared/constants/ai";
 import type { UserImage } from "@/shared/types/database";
 
@@ -122,30 +122,9 @@ export default function ChatInput({
     ? "Preview website"
     : "Generate a website first";
   const isGuestMode = !chatId;
-  const visibleImages = images.slice(0, 6);
-  const hiddenImagesCount = Math.max(0, images.length - visibleImages.length);
-  const totalImageBytes = useMemo(
-    () =>
-      images.reduce((sum, image) => {
-        const commaIndex = image.dataUri.indexOf(",");
-        if (commaIndex < 0) {
-          return sum;
-        }
-
-        const base64 = image.dataUri.slice(commaIndex + 1).replace(/\s+/g, "");
-        if (!base64) {
-          return sum;
-        }
-
-        const paddingLength = base64.endsWith("==") ? 2 : base64.endsWith("=") ? 1 : 0;
-        const bytes = Math.max(0, Math.floor((base64.length * 3) / 4) - paddingLength);
-        return sum + bytes;
-      }, 0),
-    [images]
-  );
-  const hasLargeImagePayload = totalImageBytes > 2 * 1024 * 1024;
   const isInputDisabled = disableTyping;
-  const isSendDisabled = disableSend || isInputDisabled;
+  const isSendDisabled = disableSend || isInputDisabled || isImageLoading;
+  const attachmentsFull = images.length >= MAX_ATTACHMENTS_PER_MESSAGE;
 
   useEffect(() => {
     if (onImagesChange) {
@@ -164,6 +143,11 @@ export default function ChatInput({
   function handleKeyDown(event: React.KeyboardEvent<HTMLTextAreaElement>) {
     if (event.key === "Enter" && !event.shiftKey) {
       event.preventDefault();
+
+      if (isSendDisabled) {
+        return;
+      }
+
       event.currentTarget.form?.requestSubmit();
     }
   }
@@ -206,29 +190,45 @@ export default function ChatInput({
       return;
     }
 
-    fileInputRef.current?.click();
-  }
-
-  async function handleImageSelected(event: ChangeEvent<HTMLInputElement>) {
-    const file = event.target.files?.[0];
-    event.target.value = "";
-
-    if (!file) {
+    if (attachmentsFull) {
+      setImageErrorMessage(`Maximum ${MAX_ATTACHMENTS_PER_MESSAGE} images allowed per message.`);
       return;
     }
 
-    if (!file.type.startsWith("image/")) {
-      setImageErrorMessage("Only image files are supported.");
+    fileInputRef.current?.click();
+  }
+
+  async function handleFilesSelected(event: ChangeEvent<HTMLInputElement>) {
+    const files = event.target.files ? Array.from(event.target.files) : [];
+    event.target.value = "";
+
+    if (files.length === 0) {
       return;
     }
 
     setImageErrorMessage("");
 
-    try {
-      await uploadImage(file);
-    } catch (error) {
-      const message = error instanceof Error ? error.message : "Failed to upload image.";
-      setImageErrorMessage(message);
+    const remainingSlots = MAX_ATTACHMENTS_PER_MESSAGE - images.length;
+    const filesToProcess = Array.from(files).slice(0, remainingSlots);
+
+    if (files.length > remainingSlots) {
+      setImageErrorMessage(
+        `Only ${remainingSlots} more image(s) can be added. ${files.length - remainingSlots} file(s) were skipped.`
+      );
+    }
+
+    for (const file of filesToProcess) {
+      if (!file.type.startsWith("image/")) {
+        setImageErrorMessage("Only image files are supported. Some files were skipped.");
+        continue;
+      }
+
+      try {
+        await uploadImage(file);
+      } catch (error) {
+        const message = error instanceof Error ? error.message : "Failed to upload image.";
+        setImageErrorMessage(message);
+      }
     }
   }
 
@@ -249,7 +249,8 @@ export default function ChatInput({
         ref={fileInputRef}
         type="file"
         accept="image/*"
-        onChange={handleImageSelected}
+        multiple
+        onChange={handleFilesSelected}
         className="hidden"
         aria-hidden="true"
       />
@@ -261,40 +262,51 @@ export default function ChatInput({
           <div className={`flex min-w-0 flex-1 flex-col gap-1 rounded-2xl bg-[var(--app-card-bg)]/80 p-1.5 shadow-[var(--app-shadow-lg)] backdrop-blur-sm transition-opacity sm:p-2 ${isInputDisabled ? "opacity-70" : "opacity-100"}`}>
             <div className="flex min-w-0 flex-1 flex-col">
               {images.length > 0 ? (
-                <div className="px-2.5 pb-1.5 pt-1 sm:px-3">
-                  <div className="flex flex-wrap items-center gap-2">
-                    {visibleImages.map((image, index) => (
-                      <div key={image.fileId} className="w-12">
-                        <div className="relative h-12 w-12 overflow-hidden rounded-lg border border-[var(--app-card-border)]">
+                <div className="px-2.5 pb-1.5 pt-2 sm:px-3">
+                  <div className="flex flex-wrap items-center gap-2.5">
+                    {images.map((image, index) => (
+                      <div key={image.fileId} className="relative group/thumb">
+                        <div className="relative h-14 w-14 overflow-hidden rounded-xl border border-[var(--app-card-border)] shadow-sm transition-transform hover:scale-105 sm:h-16 sm:w-16">
                           {/* eslint-disable-next-line @next/next/no-img-element */}
                           <img
                             src={image.dataUri}
                             alt={image.fileName}
                             className="h-full w-full object-cover"
                           />
+                          {/* Tag badge overlay */}
+                          <span className="absolute bottom-0 inset-x-0 bg-black/60 py-0.5 text-center text-[9px] font-semibold text-white/90 backdrop-blur-sm">
+                            {t("imageLabel", language)} {index + 1}
+                          </span>
                           <button
                             type="button"
                             onClick={() => {
                               void handleRemoveImage(image.fileId);
                             }}
-                            className="absolute -right-1 -top-1 flex h-5 w-5 items-center justify-center rounded-full border border-[var(--app-card-border)] bg-[var(--app-panel)] text-[var(--app-text-secondary)] transition hover:text-[var(--app-text-heading)]"
+                            className="absolute -right-1.5 -top-1.5 flex h-5 w-5 items-center justify-center rounded-full border border-[var(--app-card-border)] bg-[var(--app-panel)] text-[var(--app-text-secondary)] opacity-0 transition-all group-hover/thumb:opacity-100 hover:text-rose-400 hover:border-rose-400/50"
                             aria-label="Remove image"
                             title="Remove image"
                           >
-                            <X size={12} />
+                            <X size={11} />
                           </button>
                         </div>
-                        <p className="mt-1 truncate text-center text-[10px] text-[var(--app-text-tertiary)]">
-                          {t("imageLabel", language)} {index + 1}
-                        </p>
                       </div>
                     ))}
-                    {hiddenImagesCount > 0 ? (
-                      <span className="rounded-full border border-[var(--app-card-border)] px-2 py-1 text-[10px] font-medium text-[var(--app-text-secondary)]">
-                        +{hiddenImagesCount} more
-                      </span>
+                    {!attachmentsFull ? (
+                      <button
+                        type="button"
+                        onClick={handleOpenImagePicker}
+                        disabled={isInputDisabled || isImageLoading}
+                        className="flex h-14 w-14 items-center justify-center rounded-xl border-2 border-dashed border-[var(--app-card-border)] text-[var(--app-text-tertiary)] transition-colors hover:border-[var(--app-text-secondary)] hover:text-[var(--app-text-secondary)] disabled:opacity-40 sm:h-16 sm:w-16"
+                        title="Add more images"
+                        aria-label="Add more images"
+                      >
+                        <ImagePlus size={18} />
+                      </button>
                     ) : null}
                   </div>
+                  <p className="mt-1.5 text-[10px] text-[var(--app-text-muted)]">
+                    {images.length}/{MAX_ATTACHMENTS_PER_MESSAGE} images attached
+                  </p>
                 </div>
               ) : null}
               <textarea
@@ -328,11 +340,6 @@ export default function ChatInput({
                   {charCount}/{MAX_PROMPT_LENGTH}
                 </p>
               ) : null}
-              {hasLargeImagePayload ? (
-                <p className="px-2.5 pb-0.5 text-[10px] text-amber-400 sm:px-3" role="status">
-                  Uploaded image data is over 2 MB and may reduce generation quality.
-                </p>
-              ) : null}
               {imageErrorMessage ? (
                 <p className="px-2.5 pb-0.5 text-[10px] text-rose-400 sm:px-3" role="alert">
                   {imageErrorMessage}
@@ -344,12 +351,12 @@ export default function ChatInput({
                 <button
                   type="button"
                   onClick={handleOpenImagePicker}
-                  disabled={isInputDisabled || isImageLoading}
-                  className="flex h-10 w-10 shrink-0 items-center justify-center text-2xl leading-none text-[var(--app-text-secondary)] transition hover:text-[var(--app-text-heading)] disabled:opacity-50 sm:h-11 sm:w-11"
-                  title="Upload image"
-                  aria-label="Upload image"
+                  disabled={isInputDisabled || isImageLoading || attachmentsFull}
+                  className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-[var(--app-text-secondary)] transition-colors hover:bg-[var(--app-hover-bg-strong)] hover:text-[var(--app-text-heading)] disabled:opacity-40 sm:h-11 sm:w-11"
+                  title={attachmentsFull ? `Max ${MAX_ATTACHMENTS_PER_MESSAGE} images` : "Attach images"}
+                  aria-label={attachmentsFull ? `Max ${MAX_ATTACHMENTS_PER_MESSAGE} images` : "Attach images"}
                 >
-                  <span aria-hidden="true">+</span>
+                  <ImagePlus size={18} />
                 </button>
               ) : (
                 <span

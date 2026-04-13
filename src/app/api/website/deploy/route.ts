@@ -7,6 +7,23 @@ import {
   getWebsiteByChatId,
 } from "@/server/services/website-service";
 import { extractAssetsFromHtml } from "@/shared/utils/html-assets";
+import { isMissingUploadColumns } from "@/shared/utils/db-guards";
+import { Buffer } from "node:buffer";
+
+function replaceDataUriSrcWithFilePath(
+  html: string,
+  dataUri: string,
+  fileName: string
+): string {
+  if (!dataUri) {
+    return html;
+  }
+
+  let nextHtml = html;
+  nextHtml = nextHtml.replaceAll(`src="${dataUri}"`, `src="${fileName}"`);
+  nextHtml = nextHtml.replaceAll(`src='${dataUri}'`, `src="${fileName}"`);
+  return nextHtml;
+}
 
 type NetlifySiteResponse = {
   id: string;
@@ -134,9 +151,40 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const { processedHtml, extractedCss, extractedJs } = extractAssetsFromHtml(html);
+    let { processedHtml, extractedCss, extractedJs } = extractAssetsFromHtml(html);
 
     const zip = new JSZip();
+
+    // Fetch and dynamically bundle user images used in this specific netlify deployment
+    const { data: uploadedImages, error: uploadedImagesError } = await supabase
+      .from("files")
+      .select("file_name, content")
+      .eq("website_id", website.id)
+      .eq("is_user_upload", true);
+
+    if (uploadedImagesError) {
+      if (!isMissingUploadColumns(uploadedImagesError)) {
+        throw uploadedImagesError;
+      }
+    }
+
+    for (const imageRow of uploadedImages ?? []) {
+      const dataUri = typeof imageRow.content === "string" ? imageRow.content : "";
+      const fileName = typeof imageRow.file_name === "string" ? imageRow.file_name : "";
+
+      if (!fileName || !processedHtml.includes(fileName)) {
+        continue;
+      }
+
+      const base64 = dataUri.split(",")[1]?.trim() ?? "";
+      if (!base64) {
+        continue;
+      }
+
+      processedHtml = replaceDataUriSrcWithFilePath(processedHtml, dataUri, fileName);
+      zip.file(fileName, Buffer.from(base64, "base64"));
+    }
+
     zip.file("index.html", processedHtml);
     zip.file("assets/css/styles.css", extractedCss);
     zip.file("assets/js/main.js", extractedJs || "// main.js\n");

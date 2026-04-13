@@ -320,14 +320,16 @@ function buildUserImagesBlock(userImages?: PromptUserImage[]): string {
       ? userImages.slice(-RECENT_USER_IMAGES_WHEN_OVERSIZED)
       : userImages;
 
-  const pathLines = imagesForPrompt.map((image) => {
-    return `${image.fileName} - user uploaded image (use for hero / gallery / product sections)`;
+  const pathLines = imagesForPrompt.map((image, index) => {
+    return `Image ${index + 1}: ${image.fileName} - user uploaded image`;
   });
 
   return [
-    `User has uploaded ${imagesForPrompt.length} image(s). Use these EXACT src paths in your HTML img tags:`,
+    `USER IMAGE ATTACHMENTS (${imagesForPrompt.length} images):`,
+    `Below are the exact file paths for the uploaded images. The user may refer to these as "Image 1", "Image 2", etc. in their prompt.`,
+    `You MUST map their references to the correct src paths provided below:`,
     ...pathLines.map((line) => `- ${line}`),
-    "These paths work in the exported ZIP. For live preview the data URI is injected automatically.",
+    `Ensure you use these EXACT src paths in your HTML <img> tags when implementing the user's requested content.`,
   ].join("\n");
 }
 

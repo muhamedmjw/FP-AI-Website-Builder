@@ -10,9 +10,6 @@ ICONS CDN — use when needed:
 <link rel="stylesheet" href=
 "https://cdnjs.cloudflare.com/ajax/libs/font-awesome/7.0.1/css/all.min.css">
 
-SOCIAL BRAND (X / Twitter):
-- For the social network X, use Font Awesome 6 brand class: fa-brands fa-x-twitter (not fa-twitter / bird icon).
-- If you draw inline SVG for X, use the current X mark logo, not the legacy Twitter bird.
 
 SECTION ORDER — include what fits the business:
 - This is a component checklist, NOT a fixed vertical sequence.
