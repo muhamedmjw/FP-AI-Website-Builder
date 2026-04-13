@@ -141,7 +141,28 @@ export default function ChatPanel({
       : 0
     : 0;
 
-  const generatingLabel = t("generatingCode", language);
+  // Deduce if the user is asking to build/edit a website or just chatting
+  // based on a simple heuristic of their last message.
+  let isWebsiteGeneration = true;
+  const lastUserMessage = visibleMessages
+    .filter((m) => m.role === "user")
+    .at(-1)?.content || "";
+
+  if (lastUserMessage) {
+    const normalized = lastUserMessage.trim().toLowerCase();
+    const isGreetingOrShort = /^(hi|hello|hey|thanks|thank you|ok|okay|wow|awesome|cool|great|good|yes|no)(\s|!|\.|,)*$/i.test(normalized);
+    const isQuestion = /^(how|what|why|who|where|when|can you|are you|do you|is this) /i.test(normalized) && !normalized.includes("website") && !normalized.includes("build") && !normalized.includes("make");
+    
+    if (isGreetingOrShort || isQuestion) {
+      isWebsiteGeneration = false;
+    }
+  }
+
+  const generatingLabel = isWebsiteGeneration
+    ? hasPreview
+      ? t("editingWebsite", language)
+      : t("generatingWebsite", language)
+    : t("generatingCode", language);
 
   // Auto-scroll to bottom when new messages arrive
   useEffect(() => {

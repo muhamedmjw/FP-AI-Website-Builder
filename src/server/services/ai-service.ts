@@ -697,6 +697,21 @@ async function generateAIResponseOnce(
 
   const preparation = await prepareGeneration(history, language, existingHtml);
 
+  // Guard: prevent building a completely new website when one already exists in this chat.
+  // Edit and chat intents pass through — only "build" (new website) is blocked.
+  if (preparation.intent === "build" && existingHtml !== null) {
+    const refusalMessages: Record<AppLanguage, string> = {
+      en: "A website has already been created in this chat. To build a different website, please start a new chat. You can still ask me to edit or update the current website here!",
+      ar: "تم إنشاء موقع في هذه المحادثة بالفعل. لإنشاء موقع مختلف، يرجى بدء محادثة جديدة. يمكنك طلب تعديل أو تحديث الموقع الحالي هنا!",
+      ku: "لە ئەم گفتوگۆیەدا پێشتر وێبسایتێک دروست کراوە. بۆ دروستکردنی وێبسایتێکی جیاواز، تکایە گفتوگۆیەکی نوێ دەست پێ بکە. دەتوانیت لێرە داوای دەستکاریکردن یان نوێکردنەوەی وێبسایتی ئێستا بکەیت!",
+    };
+
+    return {
+      type: "questions",
+      message: refusalMessages[preparation.detectedLanguage] ?? refusalMessages.en,
+    };
+  }
+
   try {
     const { effectiveUserImages, config } = buildGenerationConfig({
       preparation,
