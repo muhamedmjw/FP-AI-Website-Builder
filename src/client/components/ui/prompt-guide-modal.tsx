@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
-import { X, Copy, Check } from "lucide-react";
+import { X, Copy, Check, ChevronLeft } from "lucide-react";
 import { useLanguage } from "@/client/lib/language-context";
 import { t } from "@/shared/constants/translations";
 
@@ -19,6 +19,11 @@ type Example = {
 };
 
 type ActivePanel = "guideline" | "example";
+
+/* ------------------------------------------------------------------ */
+/*  Mobile sub-views: browsing the example grid vs reading one example */
+/* ------------------------------------------------------------------ */
+type MobileExampleView = "grid" | "detail";
 
 function getTips(lang: "en" | "ar" | "ku"): Tip[] {
   return [
@@ -219,11 +224,24 @@ and a sticky mobile bottom CTA button for booking.`,
   ];
 }
 
+
+
+/** Short description extracted from the label (strip "Example N - " prefix) */
+function shortLabel(label: string) {
+  const match = label.match(/^(?:Example \d+|مثال [٠-٩]+|نموونە [٠-٩]+)\s*[-–—]\s*/);
+  return match ? label.slice(match[0].length) : label;
+}
+
+/* ------------------------------------------------------------------ */
+/*  Component                                                         */
+/* ------------------------------------------------------------------ */
+
 export default function PromptGuideModal({ isOpen, onClose }: Props) {
   const { language } = useLanguage();
   const [activePanel, setActivePanel] = useState<ActivePanel>("guideline");
   const [selectedExampleIndex, setSelectedExampleIndex] = useState(0);
   const [copied, setCopied] = useState(false);
+  const [mobileExampleView, setMobileExampleView] = useState<MobileExampleView>("grid");
 
   async function handleCopyPrompt() {
     const prompt = getExamples(language)[selectedExampleIndex]?.prompt;
@@ -251,16 +269,131 @@ export default function PromptGuideModal({ isOpen, onClose }: Props) {
     };
   }, [isOpen, onClose]);
 
+  /* Reset mobile sub-view when switching tabs or closing */
+  useEffect(() => {
+    setMobileExampleView("grid");
+  }, [activePanel, isOpen]);
+
   if (!isOpen || typeof document === "undefined") {
     return null;
   }
 
   const selectedExample = getExamples(language)[selectedExampleIndex] ?? getExamples(language)[0];
+  const isRtl = language === "ar" || language === "ku";
 
   function handleOverlayClick(event: React.MouseEvent<HTMLDivElement>) {
     if (event.target === event.currentTarget) {
       onClose();
     }
+  }
+
+  /* ---------------------------------------------------------------- */
+  /*  Shared content renderers                                        */
+  /* ---------------------------------------------------------------- */
+
+  function renderGuidelines() {
+    return (
+      <div className="space-y-0">
+        {getTips(language).map((tip, index) => (
+          <article key={tip.title} className="rounded-xl p-4">
+            <p className="mb-1 text-xs font-medium uppercase tracking-wider text-(--app-text-muted)">
+              {t("promptGuideLabel", language)} {index + 1}
+            </p>
+            <h3 className="mb-1 text-sm font-semibold text-(--app-text-heading)">
+              {tip.title}
+            </h3>
+            <p className="text-sm leading-relaxed text-(--app-text-secondary)">
+              {tip.body}
+            </p>
+          </article>
+        ))}
+      </div>
+    );
+  }
+
+  function renderExampleDetail() {
+    return (
+      <div className="relative">
+        <button
+          type="button"
+          onClick={handleCopyPrompt}
+          className={`absolute bottom-3 ${selectedExampleIndex >= 4 ? "left-3" : "right-3"} z-10 flex h-8 w-8 items-center justify-center rounded-lg border border-(--app-card-border) bg-(--app-card-bg) text-(--app-text-secondary) transition hover:text-(--app-text-heading) hover:bg-(--app-panel-soft)`}
+          aria-label={copied ? t("promptGuideCopied", language) : t("promptGuideCopy", language)}
+          title={copied ? t("promptGuideCopied", language) : t("promptGuideCopy", language)}
+        >
+          {copied ? <Check size={14} /> : <Copy size={14} />}
+        </button>
+        <div
+          dir={selectedExampleIndex >= 4 ? "rtl" : "ltr"}
+          className={`whitespace-pre-wrap rounded-xl border border-(--app-input-border) bg-(--app-input-bg) p-4 pb-12 text-sm leading-relaxed text-(--app-input-text) ${selectedExampleIndex >= 4 ? "text-right" : ""}`}
+        >
+          {selectedExample.prompt}
+        </div>
+      </div>
+    );
+  }
+
+  /* ---------------------------------------------------------------- */
+  /*  Mobile example grid (2-col cards)                               */
+  /* ---------------------------------------------------------------- */
+  function renderMobileExampleGrid() {
+    return (
+      <div className="grid grid-cols-2 gap-2.5">
+        {getExamples(language).map((example, index) => {
+          return (
+            <button
+              key={example.label}
+              type="button"
+              onClick={() => {
+                setSelectedExampleIndex(index);
+                setMobileExampleView("detail");
+                setActivePanel("example");
+              }}
+              className="flex flex-col items-start gap-1.5 rounded-xl border border-(--app-card-border) bg-(--app-card-bg) p-3 text-left transition-all active:scale-[0.97] hover:bg-(--app-hover-bg)"
+            >
+              <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-(--app-hover-bg-strong) text-xs font-bold text-(--app-text-heading)">
+                {index + 1}
+              </span>
+              <span className="text-xs font-medium leading-snug text-(--app-text-heading)">
+                {shortLabel(example.label)}
+              </span>
+            </button>
+          );
+        })}
+      </div>
+    );
+  }
+
+  /* ---------------------------------------------------------------- */
+  /*  Mobile tab bar                                                  */
+  /* ---------------------------------------------------------------- */
+  function renderMobileTabBar() {
+    const tabs: { key: ActivePanel; label: string }[] = [
+      { key: "guideline", label: t("promptGuideGuidelines", language) },
+      { key: "example", label: t("promptGuideExamples", language) },
+    ];
+
+    return (
+      <div className="flex rounded-xl bg-(--app-panel-soft) p-1">
+        {tabs.map((tab) => (
+          <button
+            key={tab.key}
+            type="button"
+            onClick={() => {
+              setActivePanel(tab.key);
+              setMobileExampleView("grid");
+            }}
+            className={`flex-1 rounded-lg px-3 py-2 text-sm font-semibold transition-all ${
+              activePanel === tab.key
+                ? "bg-(--app-card-bg) text-(--app-text-heading) shadow-sm"
+                : "text-(--app-text-muted) hover:text-(--app-text-secondary)"
+            }`}
+          >
+            {tab.label}
+          </button>
+        ))}
+      </div>
+    );
   }
 
   return createPortal(
@@ -271,18 +404,26 @@ export default function PromptGuideModal({ isOpen, onClose }: Props) {
       aria-modal="true"
       aria-label="Prompt writing guide"
     >
+      {/* ============================================================ */}
+      {/*  DESKTOP layout (>= 768 px) — original sidebar + content     */}
+      {/* ============================================================ */}
       <div
-        className="flex h-[80vh] w-full max-w-4xl overflow-hidden rounded-2xl border border-(--app-card-border) bg-(--app-panel) shadow-(--app-shadow-lg)"
+        className="hidden md:flex h-[80vh] w-full max-w-4xl overflow-hidden rounded-2xl border border-(--app-card-border) bg-(--app-panel) shadow-(--app-shadow-lg)"
         onClick={(event) => event.stopPropagation()}
       >
-        <aside dir={language === 'ar' || language === 'ku' ? 'rtl' : 'ltr'} className="w-56 shrink-0 border-r border-(--app-border) bg-(--app-panel-soft) p-4">
-          <p className={`mb-3 text-xs uppercase tracking-widest text-(--app-text-muted) ${language === 'ar' ? 'text-right' : ''}`}>
+        <aside
+          dir={isRtl ? "rtl" : "ltr"}
+          className="w-56 shrink-0 border-r border-(--app-border) bg-(--app-panel-soft) p-4 overflow-y-auto"
+        >
+          <p
+            className={`mb-3 text-xs uppercase tracking-widest text-(--app-text-muted) ${isRtl ? "text-right" : ""}`}
+          >
             {t("promptGuideGuidelines", language)}
           </p>
           <button
             type="button"
             onClick={() => setActivePanel("guideline")}
-            className={`mt-3 w-full rounded-xl px-3 py-2.5 text-sm font-medium transition ${language === 'ar' ? 'text-right' : ''} ${
+            className={`mt-3 w-full rounded-xl px-3 py-2.5 text-sm font-medium transition ${isRtl ? "text-right" : ""} ${
               activePanel === "guideline"
                 ? "bg-(--app-hover-bg-strong) text-(--app-text-heading)"
                 : "text-(--app-text-secondary) hover:bg-(--app-hover-bg)"
@@ -293,7 +434,9 @@ export default function PromptGuideModal({ isOpen, onClose }: Props) {
 
           <div className="my-4 border-t border-(--app-border)" />
 
-          <p className={`mb-3 text-xs uppercase tracking-widest text-(--app-text-muted) ${language === 'ar' ? 'text-right' : ''}`}>
+          <p
+            className={`mb-3 text-xs uppercase tracking-widest text-(--app-text-muted) ${isRtl ? "text-right" : ""}`}
+          >
             {t("promptGuideExamples", language)}
           </p>
           <div className="space-y-2">
@@ -308,7 +451,7 @@ export default function PromptGuideModal({ isOpen, onClose }: Props) {
                     setActivePanel("example");
                     setSelectedExampleIndex(index);
                   }}
-                  className={`w-full truncate rounded-xl px-3 py-2.5 text-sm font-medium transition ${language === 'ar' ? 'text-right' : ''} ${
+                  className={`w-full truncate rounded-xl px-3 py-2.5 text-sm font-medium transition ${isRtl ? "text-right" : ""} ${
                     isActive
                       ? "bg-(--app-hover-bg-strong) text-(--app-text-heading)"
                       : "text-(--app-text-secondary) hover:bg-(--app-hover-bg)"
@@ -322,7 +465,7 @@ export default function PromptGuideModal({ isOpen, onClose }: Props) {
           </div>
         </aside>
 
-        <section dir={language === 'ar' || language === 'ku' ? 'rtl' : 'ltr'} className="flex-1 overflow-y-auto p-6">
+        <section dir={isRtl ? "rtl" : "ltr"} className="flex-1 overflow-y-auto p-6">
           <div className="mb-5 flex items-start justify-between gap-4">
             <div>
               {activePanel === "guideline" ? (
@@ -356,45 +499,75 @@ export default function PromptGuideModal({ isOpen, onClose }: Props) {
             </button>
           </div>
 
-          {activePanel === "guideline" ? (
-            <div className="space-y-0">
-              {getTips(language).map((tip, index) => (
-                <article
-                  key={tip.title}
-                  className="rounded-xl p-4"
-                >
-                  <p className="mb-1 text-xs font-medium uppercase tracking-wider text-(--app-text-muted)">
-                    {t("promptGuideLabel", language)} {index + 1}
-                  </p>
-                  <h3 className="mb-1 text-sm font-semibold text-(--app-text-heading)">
-                    {tip.title}
-                  </h3>
-                  <p className="text-sm leading-relaxed text-(--app-text-secondary)">
-                    {tip.body}
-                  </p>
-                </article>
-              ))}
-            </div>
-          ) : (
-            <div className="relative">
-              <button
-                type="button"
-                onClick={handleCopyPrompt}
-                className={`absolute bottom-3 ${selectedExampleIndex >= 4 ? 'left-3' : 'right-3'} z-10 flex h-8 w-8 items-center justify-center rounded-lg border border-(--app-card-border) bg-(--app-card-bg) text-(--app-text-secondary) transition hover:text-(--app-text-heading) hover:bg-(--app-panel-soft)`}
-                aria-label={copied ? t("promptGuideCopied", language) : t("promptGuideCopy", language)}
-                title={copied ? t("promptGuideCopied", language) : t("promptGuideCopy", language)}
-              >
-                {copied ? <Check size={14} /> : <Copy size={14} />}
-              </button>
-              <div dir={selectedExampleIndex >= 4 ? 'rtl' : 'ltr'} className={`whitespace-pre-wrap rounded-xl border border-(--app-input-border) bg-(--app-input-bg) p-4 pb-12 text-sm leading-relaxed text-(--app-input-text) ${selectedExampleIndex >= 4 ? 'text-right' : ''}`}>
-                {selectedExample.prompt}
-              </div>
-            </div>
-          )}
+          {activePanel === "guideline" ? renderGuidelines() : renderExampleDetail()}
         </section>
+      </div>
+
+      {/* ============================================================ */}
+      {/*  MOBILE layout (< 768 px) — tabs + full-screen card          */}
+      {/* ============================================================ */}
+      <div
+        className="flex md:hidden flex-col h-[90vh] w-full max-w-lg overflow-hidden rounded-2xl border border-(--app-card-border) bg-(--app-panel) shadow-(--app-shadow-lg)"
+        dir={isRtl ? "rtl" : "ltr"}
+        onClick={(event) => event.stopPropagation()}
+      >
+        {/* Header: title + close */}
+        <div className="flex items-center justify-between gap-3 px-4 pt-4 pb-2">
+          {/* Back arrow in example detail view */}
+          {activePanel === "example" && mobileExampleView === "detail" ? (
+            <button
+              type="button"
+              onClick={() => setMobileExampleView("grid")}
+              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-(--app-card-border) bg-(--app-card-bg) text-(--app-text-secondary) transition hover:text-(--app-text-heading)"
+              aria-label="Back"
+            >
+              <ChevronLeft size={16} className={isRtl ? "rotate-180" : ""} />
+            </button>
+          ) : (
+            <div className="w-9" /> /* spacer */
+          )}
+
+          <h2 className="flex-1 text-center text-sm font-semibold text-(--app-text-heading) truncate">
+            {activePanel === "example" && mobileExampleView === "detail"
+              ? selectedExample.label
+              : t("promptGuideHowToWrite", language)}
+          </h2>
+
+          <button
+            type="button"
+            onClick={onClose}
+            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-(--app-card-border) bg-(--app-card-bg) text-(--app-text-secondary) transition hover:text-(--app-text-heading)"
+            aria-label={t("promptGuideClose", language)}
+            title={t("promptGuideCloseBtn", language)}
+          >
+            <X size={16} aria-hidden="true" />
+          </button>
+        </div>
+
+        {/* Tab strip (hidden when viewing example detail) */}
+        {mobileExampleView !== "detail" && (
+          <div className="px-4 pt-1 pb-3">
+            {renderMobileTabBar()}
+          </div>
+        )}
+
+        {/* Scrollable content */}
+        <div className="flex-1 overflow-y-auto px-4 pb-4">
+          {activePanel === "guideline" && renderGuidelines()}
+
+          {activePanel === "example" && mobileExampleView === "grid" && (
+            <>
+              <p className="mb-3 text-xs text-(--app-text-muted)">
+                {t("promptGuideTemplate", language)}
+              </p>
+              {renderMobileExampleGrid()}
+            </>
+          )}
+
+          {activePanel === "example" && mobileExampleView === "detail" && renderExampleDetail()}
+        </div>
       </div>
     </div>,
     document.body
   );
 }
-
