@@ -383,10 +383,18 @@ export function useBuilderState({
 
   // Track if the user intentionally stopped the generation
   const intentionallyStoppedRef = useRef(false);
+  // AbortController for the active send fetch — lets us cancel it client-side instantly
+  const sendAbortControllerRef = useRef<AbortController | null>(null);
 
   const handleSend = useCallback(async (content: string) => {
     // Reset the intentionally stopped flag at the start of a new send
     intentionallyStoppedRef.current = false;
+
+    // Abort any previous in-flight send request before starting a new one
+    if (sendAbortControllerRef.current) {
+      sendAbortControllerRef.current.abort();
+      sendAbortControllerRef.current = null;
+    }
 
     const preSendSnapshot: PreSendSnapshot = {
       messages,
@@ -422,9 +430,14 @@ export function useBuilderState({
     setIsRequestInFlight(true);
     setInputErrorMessage("");
 
+    // Create a new AbortController for this request
+    const abortController = new AbortController();
+    sendAbortControllerRef.current = abortController;
+
     try {
       const data = await sendChatMessage(chatId, content, language, {
         imageFileIds: outgoingImages.map((image) => image.fileId),
+        signal: abortController.signal,
       });
 
       setMessages(data.messages);
@@ -454,11 +467,28 @@ export function useBuilderState({
       resolveChatGeneration(chatId);
       setPendingGenerationStartedAt(null);
     } catch (error) {
-      // If user intentionally stopped, don't show error message
-      if (intentionallyStoppedRef.current) {
+      // Detect if this was an intentional abort (user clicked stop or new send started)
+      const isAbortError =
+        error instanceof DOMException && error.name === "AbortError";
+
+      // If user intentionally stopped or fetch was aborted, don't show error
+      if (intentionallyStoppedRef.current || isAbortError) {
         resolveChatGeneration(chatId);
         setPendingGenerationStartedAt(null);
         // Don't restore messages or show error - user chose to stop
+        return;
+      }
+
+      // If the server responded with 499 (cancelled) or the error indicates cancellation, treat it silently
+      const isCancellationError =
+        (error instanceof ChatApiError && error.status === 499) ||
+        (error instanceof Error &&
+          (error.message.toLowerCase().includes("cancelled") ||
+           error.message.toLowerCase().includes("aborted")));
+
+      if (isCancellationError) {
+        resolveChatGeneration(chatId);
+        setPendingGenerationStartedAt(null);
         return;
       }
 
@@ -470,6 +500,10 @@ export function useBuilderState({
       setMessageImages(preSendSnapshot.messageImages);
       setMessageImageFileIds(preSendSnapshot.messageImageFileIds);
     } finally {
+      // Only clear the ref if this controller is still the active one
+      if (sendAbortControllerRef.current === abortController) {
+        sendAbortControllerRef.current = null;
+      }
       setIsRequestInFlight(false);
     }
   }, [
@@ -494,14 +528,20 @@ export function useBuilderState({
     // Mark that user intentionally stopped - this prevents error messages
     intentionallyStoppedRef.current = true;
 
-    // Call the abort API
+    // 1. Abort the client-side fetch immediately — no more waiting ~20s
+    if (sendAbortControllerRef.current) {
+      sendAbortControllerRef.current.abort();
+      sendAbortControllerRef.current = null;
+    }
+
+    // 2. Tell the server to abort the AI generation
     try {
       await abortGeneration(chatId);
     } catch (error) {
       console.error("Failed to abort generation:", error);
     }
 
-    // Clean up local state regardless of API success
+    // 3. Clean up local state regardless of API success
     resolveChatGeneration(chatId);
     setPendingGenerationStartedAt(null);
     setIsRequestInFlight(false);

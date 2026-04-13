@@ -408,18 +408,19 @@ export default function ChatInput({
                   <button
                     type="button"
                     onClick={onStop}
-                    className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[var(--app-text-tertiary)] text-[var(--app-btn-primary-text)] shadow-[var(--app-shadow-sm)] transition hover:bg-rose-500 hover:shadow-[var(--app-shadow-md)] hover:-translate-y-px active:translate-y-0 sm:h-11 sm:w-11"
+                    className="stop-btn-glow group relative flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-rose-500 to-red-600 text-white shadow-[0_0_12px_rgba(244,63,94,0.35)] transition-all duration-200 hover:from-rose-400 hover:to-red-500 hover:shadow-[0_0_20px_rgba(244,63,94,0.5)] hover:-translate-y-px active:translate-y-0 active:shadow-[0_0_8px_rgba(244,63,94,0.3)] sm:h-11 sm:w-11"
                     title="Stop generation"
                     aria-label="Stop generation"
                   >
                     <svg
                       viewBox="0 0 24 24"
-                      width="18"
-                      height="18"
+                      width="16"
+                      height="16"
                       fill="currentColor"
                       aria-hidden="true"
+                      className="transition-transform duration-150 group-hover:scale-110"
                     >
-                      <rect x="4" y="4" width="16" height="16" rx="2" />
+                      <rect x="6" y="6" width="12" height="12" rx="3" />
                     </svg>
                   </button>
                 ) : (

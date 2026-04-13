@@ -541,6 +541,20 @@ html[data-nav-loading="true"] * {
   transform: translateY(2px);
 }
 
+/* Stop generation button — pulsing glow ring */
+.stop-btn-glow {
+  animation: stop-btn-pulse 2s ease-in-out infinite;
+}
+
+@keyframes stop-btn-pulse {
+  0%, 100% {
+    box-shadow: 0 0 12px rgba(244, 63, 94, 0.35);
+  }
+  50% {
+    box-shadow: 0 0 20px rgba(244, 63, 94, 0.55), 0 0 36px rgba(244, 63, 94, 0.2);
+  }
+}
+
 .chat-generating-indicator {
   direction: ltr;
   margin-left: 0;

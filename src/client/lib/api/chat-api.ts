@@ -28,7 +28,7 @@ export async function sendChatMessage(
   chatId: string,
   content: string,
   language: AppLanguage,
-  options?: { skipUserMessageSave?: boolean; imageFileIds?: string[] }
+  options?: { skipUserMessageSave?: boolean; imageFileIds?: string[]; signal?: AbortSignal }
 ): Promise<SendChatMessageResponse> {
   const response = await fetch("/api/chat/send", {
     method: "POST",
@@ -42,6 +42,7 @@ export async function sendChatMessage(
         ? options?.imageFileIds
         : undefined,
     }),
+    signal: options?.signal,
   });
 
   let data: Record<string, unknown> | null = null;

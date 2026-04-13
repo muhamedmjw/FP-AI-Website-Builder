@@ -97,6 +97,17 @@ export default function Sidebar({
     options?: { unpublishLiveSite?: boolean }
   ) {
     try {
+      // Abort any active AI generation for this chat before deleting
+      try {
+        await fetch("/api/chat/abort", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ chatId }),
+        });
+      } catch {
+        // Ignore abort errors — deletion should proceed regardless
+      }
+
       if (options?.unpublishLiveSite) {
         const response = await fetch("/api/chat/delete", {
           method: "POST",
