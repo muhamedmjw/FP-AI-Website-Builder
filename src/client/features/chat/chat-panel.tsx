@@ -21,15 +21,7 @@ function formatElapsedTimer(seconds: number, language: AppLanguage) {
   return `${seconds}s`;
 }
 
-function GeneratingDots() {
-  return (
-    <span className="generating-dots" role="status" aria-live="polite" aria-label="Generating">
-      <span />
-      <span />
-      <span />
-    </span>
-  );
-}
+
 
 const EMPTY_MESSAGE_IMAGES: Record<string, Array<{
   fileId: string;
@@ -289,24 +281,19 @@ export default function ChatPanel({
                 {isSending && (
                   <div
                     dir="ltr"
-                    className="chat-generating-indicator ui-fade-up ml-0 mr-auto flex max-w-[92%] items-start gap-2 sm:max-w-[78%] sm:gap-2.5"
+                    className="chat-generating-indicator ui-fade-up ml-0 mr-auto flex max-w-[92%] items-center gap-2 sm:max-w-[78%] sm:gap-2.5"
                   >
                     <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[var(--app-avatar-bot-bg)] text-[var(--app-avatar-bot-text)] sm:h-9 sm:w-9">
                       <MessageSquare size={15} />
                     </div>
-                    <div className="min-w-0">
-                      <p
-                        dir={isRtlLanguage ? "rtl" : "ltr"}
-                        className={`generating-status mb-1 text-[10px] font-medium tracking-[0.04em] sm:text-xs ${
-                          isRtlLanguage ? "text-right" : "text-left"
-                        }`}
-                      >
-                        {generatingLabel} ({formatElapsedTimer(generatingSeconds, language)})
-                      </p>
-                      <div className="generating-bubble rounded-2xl px-3 py-2.5 shadow-[var(--app-shadow-md)] sm:px-4 sm:py-3.5">
-                        <GeneratingDots />
-                      </div>
-                    </div>
+                    <p
+                      dir={isRtlLanguage ? "rtl" : "ltr"}
+                      className={`generating-status text-xs font-medium tracking-[0.04em] sm:text-sm ${
+                        isRtlLanguage ? "text-right" : "text-left"
+                      }`}
+                    >
+                      {generatingLabel} ({formatElapsedTimer(generatingSeconds, language)})
+                    </p>
                   </div>
                 )}
               </div>

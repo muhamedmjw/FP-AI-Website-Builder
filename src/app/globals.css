@@ -523,22 +523,22 @@ html[data-nav-loading="true"] * {
   }
 }
 
-/* Generating label shimmer above loading bubble */
+/* Generating label shimmer */
 .generating-status {
   background-image: linear-gradient(
-    110deg,
+    90deg,
     rgba(120, 120, 120, 0.55) 0%,
-    rgba(158, 158, 158, 0.9) 35%,
-    rgba(198, 198, 198, 0.95) 50%,
-    rgba(158, 158, 158, 0.9) 65%,
+    rgba(120, 120, 120, 0.55) 46%,
+    rgba(210, 210, 210, 0.95) 50%,
+    rgba(120, 120, 120, 0.55) 54%,
     rgba(120, 120, 120, 0.55) 100%
   );
-  background-size: 220% 100%;
+  background-size: 500% 100%;
   -webkit-background-clip: text;
   background-clip: text;
   -webkit-text-fill-color: transparent;
-  animation: generating-text-shine 2.4s linear infinite;
-  text-shadow: 0 0 8px rgba(212, 212, 212, 0.2);
+  animation: generating-text-shine 3.5s linear infinite;
+  transform: translateY(2px);
 }
 
 .chat-generating-indicator {
@@ -598,10 +598,10 @@ html[data-nav-loading="true"] * {
 
 @keyframes generating-text-shine {
   0% {
-    background-position: 140% 50%;
+    background-position: 100% 50%;
   }
   100% {
-    background-position: -140% 50%;
+    background-position: 0% 50%;
   }
 }
 
