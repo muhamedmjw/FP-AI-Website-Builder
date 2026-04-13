@@ -7,7 +7,8 @@ import PromptGuideModal from "../components/ui/prompt-guide-modal";
 import { getSupabaseBrowserClient } from "@/client/lib/supabase-browser";
 import { useUserImages } from "@/client/lib/hooks/use-user-images";
 import { addMessage, createChat } from "@/shared/services/chat-service";
-import { sendChatMessage } from "@/client/lib/api/chat-api";
+import { sendChatMessage, ChatApiError } from "@/client/lib/api/chat-api";
+import { registerClientAbort, completeClientGeneration } from "@/client/lib/client-generation-abort";
 import { markChatGenerationPending } from "@/client/lib/chat-pending-generations";
 import { getCurrentUser } from "@/shared/services/user-service";
 import {
@@ -414,11 +415,26 @@ export default function HomePage() {
       // Refresh to sync the sidebar chat list immediately with the new chat
       router.refresh();
 
+      const abortController = new AbortController();
+      registerClientAbort(chatIdToUse, abortController);
+
       void sendChatMessage(chatIdToUse, trimmedMessage, language, {
         skipUserMessageSave: true,
         imageFileIds: images.map((image) => image.fileId),
+        signal: abortController.signal,
       }).catch((error) => {
-        console.error("Background AI send failed after navigation:", error);
+        const isAbortError = error instanceof DOMException && error.name === "AbortError";
+        const isCancellationError =
+          (error instanceof ChatApiError && error.status === 499) ||
+          (error instanceof Error &&
+            (error.message.toLowerCase().includes("cancelled") ||
+             error.message.toLowerCase().includes("aborted")));
+        
+        if (!isAbortError && !isCancellationError) {
+          console.error("Background AI send failed after navigation:", error);
+        }
+      }).finally(() => {
+        completeClientGeneration(chatIdToUse);
       });
     } catch (error) {
       const raw = error instanceof Error ? error.message : "";

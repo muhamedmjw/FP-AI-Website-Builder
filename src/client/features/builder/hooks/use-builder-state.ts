@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { ChatApiError, sendChatMessage, abortGeneration } from "@/client/lib/api/chat-api";
+import { registerClientAbort, abortClientGeneration, completeClientGeneration } from "@/client/lib/client-generation-abort";
 import {
   getPendingChatGeneration,
   markChatGenerationPending,
@@ -433,6 +434,8 @@ export function useBuilderState({
     // Create a new AbortController for this request
     const abortController = new AbortController();
     sendAbortControllerRef.current = abortController;
+    // Register in global registry so sidebar can abort it on chat deletion
+    registerClientAbort(chatId, abortController);
 
     try {
       const data = await sendChatMessage(chatId, content, language, {
@@ -504,6 +507,7 @@ export function useBuilderState({
       if (sendAbortControllerRef.current === abortController) {
         sendAbortControllerRef.current = null;
       }
+      completeClientGeneration(chatId);
       setIsRequestInFlight(false);
     }
   }, [
@@ -529,10 +533,8 @@ export function useBuilderState({
     intentionallyStoppedRef.current = true;
 
     // 1. Abort the client-side fetch immediately — no more waiting ~20s
-    if (sendAbortControllerRef.current) {
-      sendAbortControllerRef.current.abort();
-      sendAbortControllerRef.current = null;
-    }
+    abortClientGeneration(chatId);
+    sendAbortControllerRef.current = null;
 
     // 2. Tell the server to abort the AI generation
     try {

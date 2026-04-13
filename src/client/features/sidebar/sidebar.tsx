@@ -5,6 +5,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { Chat } from "@/shared/types/database";
 import { getSupabaseBrowserClient } from "@/client/lib/supabase-browser";
 import { archiveChat, renameChat, deleteChat } from "@/shared/services/chat-service";
+import { abortClientGeneration } from "@/client/lib/client-generation-abort";
 import SidebarHeader from "@/client/features/sidebar/sidebar-header";
 import SidebarFooter from "@/client/features/sidebar/sidebar-footer";
 import NewChatButton from "@/client/features/sidebar/new-chat-button";
@@ -97,7 +98,10 @@ export default function Sidebar({
     options?: { unpublishLiveSite?: boolean }
   ) {
     try {
-      // Abort any active AI generation for this chat before deleting
+      // Abort the client-side fetch instantly (kills the in-flight request)
+      abortClientGeneration(chatId);
+
+      // Abort any active AI generation on the server
       try {
         await fetch("/api/chat/abort", {
           method: "POST",
