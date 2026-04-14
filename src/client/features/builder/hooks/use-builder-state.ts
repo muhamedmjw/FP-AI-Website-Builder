@@ -10,7 +10,6 @@ import {
 import { t } from "@/shared/constants/translations";
 import type { AppLanguage, HistoryMessage, UserImage } from "@/shared/types/database";
 
-const MESSAGE_IMAGE_IDS_STORAGE_PREFIX = "chat-message-image-file-ids:";
 
 export type MessageAttachment = {
   fileId: string;
@@ -31,7 +30,6 @@ type UseBuilderStateParams = {
 type PreSendSnapshot = {
   messages: HistoryMessage[];
   messageImages: Record<string, MessageAttachment[]>;
-  messageImageFileIds: Record<string, string[]>;
 };
 
 type OptimisticSendState = {
@@ -69,6 +67,7 @@ function createOptimisticSendState(params: {
     chat_id: params.chatId,
     role: "user",
     content: params.content,
+    image_file_ids: params.inputImages.map((img) => img.fileId),
     created_at: new Date().toISOString(),
   };
 
@@ -218,7 +217,6 @@ export function useBuilderState({
   const currentInputImagesRef = useRef<UserImage[]>([]);
   const [messages, setMessages] = useState<HistoryMessage[]>(initialMessages);
   const [messageImages, setMessageImages] = useState<Record<string, MessageAttachment[]>>({});
-  const [messageImageFileIds, setMessageImageFileIds] = useState<Record<string, string[]>>({});
   const [uploadedImageCatalog, setUploadedImageCatalog] = useState<Record<string, UserImage>>({});
   const [isRequestInFlight, setIsRequestInFlight] = useState(false);
   const [pendingGenerationStartedAt, setPendingGenerationStartedAt] = useState<number | null>(
@@ -249,59 +247,10 @@ export function useBuilderState({
     });
   }, [chatId, hasOptimisticMessage, initialMessages, isRequestInFlight]);
 
-  const [isHydrated, setIsHydrated] = useState(false);
-
   useEffect(() => {
-    // Reset hydration state on chat change
-    setIsHydrated(false);
     currentInputImagesRef.current = [];
     setMessageImages({});
-
-    try {
-      const raw = window.localStorage.getItem(
-        `${MESSAGE_IMAGE_IDS_STORAGE_PREFIX}${chatId}`
-      );
-
-      if (!raw) {
-        setMessageImageFileIds({});
-        setIsHydrated(true);
-        return;
-      }
-
-      const parsed = JSON.parse(raw) as Record<string, unknown>;
-      const normalizedEntries = Object.entries(parsed).map(([messageId, value]) => {
-        const ids = Array.isArray(value)
-          ? value.filter((entry): entry is string => typeof entry === "string")
-          : [];
-        return [messageId, ids] as const;
-      });
-
-      setMessageImageFileIds(Object.fromEntries(normalizedEntries));
-    } catch {
-      setMessageImageFileIds({});
-    } finally {
-      setIsHydrated(true);
-    }
   }, [chatId]);
-
-  useEffect(() => {
-    if (!isHydrated) {
-      return;
-    }
-
-    try {
-      if (Object.keys(messageImageFileIds).length === 0) {
-        window.localStorage.removeItem(`${MESSAGE_IMAGE_IDS_STORAGE_PREFIX}${chatId}`);
-      } else {
-        window.localStorage.setItem(
-          `${MESSAGE_IMAGE_IDS_STORAGE_PREFIX}${chatId}`,
-          JSON.stringify(messageImageFileIds)
-        );
-      }
-    } catch {
-      // Ignore storage access failures.
-    }
-  }, [chatId, isHydrated, messageImageFileIds]);
 
   useEffect(() => {
     if (!isAuthenticated) {
@@ -352,17 +301,16 @@ export function useBuilderState({
 
   useEffect(() => {
     setMessageImages((currentImages) => {
-      const entries = Object.entries(messageImageFileIds);
-      if (entries.length === 0) {
-        return {};
-      }
+      const nextMessageImages = messages.reduce<Record<string, MessageAttachment[]>>(
+        (acc, message) => {
+          if (!message.image_file_ids || message.image_file_ids.length === 0) {
+            return acc;
+          }
 
-      const nextMessageImages = entries.reduce<Record<string, MessageAttachment[]>>(
-        (acc, [messageId, fileIds]) => {
-          const attachments = fileIds
+          const attachments = message.image_file_ids
             .map((fileId, index) => {
               // 1. If we already have the fully constructed image in state (e.g. from an optimistic send), keep it!
-              const existingAttachment = currentImages[messageId]?.find((a) => a.fileId === fileId);
+              const existingAttachment = currentImages[message.id]?.find((a) => a.fileId === fileId);
               if (existingAttachment) {
                 return existingAttachment;
               }
@@ -383,7 +331,7 @@ export function useBuilderState({
             .filter((value): value is MessageAttachment => Boolean(value));
 
           if (attachments.length > 0) {
-            acc[messageId] = attachments;
+            acc[message.id] = attachments;
           }
 
           return acc;
@@ -400,7 +348,7 @@ export function useBuilderState({
 
       return isUnchanged ? currentImages : nextMessageImages;
     });
-  }, [language, messageImageFileIds, uploadedImageCatalog]);
+  }, [language, messages, uploadedImageCatalog]);
 
   const syncPendingGenerationState = useCallback(() => {
     const pending = getPendingChatGeneration(chatId);
@@ -430,7 +378,6 @@ export function useBuilderState({
     const preSendSnapshot: PreSendSnapshot = {
       messages,
       messageImages,
-      messageImageFileIds,
     };
 
     const { outgoingImages, tempUserMessage, latestAssistantCreatedAt } =
@@ -446,11 +393,6 @@ export function useBuilderState({
       setMessageImages((prev) => ({
         ...prev,
         [tempUserMessage.id]: outgoingImages,
-      }));
-
-      setMessageImageFileIds((prev) => ({
-        ...prev,
-        [tempUserMessage.id]: outgoingImages.map((image) => image.fileId),
       }));
     }
 
@@ -481,14 +423,6 @@ export function useBuilderState({
           const next = { ...prev };
           delete next[tempUserMessage.id];
           next[data.userMessage.id] = outgoingImages;
-          return next;
-        });
-
-        setMessageImageFileIds((prev) => {
-          const next = { ...prev };
-          const ids = next[tempUserMessage.id] ?? outgoingImages.map((image) => image.fileId);
-          delete next[tempUserMessage.id];
-          next[data.userMessage.id] = ids;
           return next;
         });
       }
@@ -531,7 +465,6 @@ export function useBuilderState({
       setInputErrorMessage(buildFriendlySendErrorMessage(error, language));
       setMessages(preSendSnapshot.messages);
       setMessageImages(preSendSnapshot.messageImages);
-      setMessageImageFileIds(preSendSnapshot.messageImageFileIds);
     } finally {
       // Only clear the ref if this controller is still the active one
       if (sendAbortControllerRef.current === abortController) {
@@ -543,7 +476,6 @@ export function useBuilderState({
   }, [
     chatId,
     language,
-    messageImageFileIds,
     messageImages,
     messages,
     onApplyGeneratedHtml,

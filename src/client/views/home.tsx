@@ -420,22 +420,9 @@ export default function HomePage() {
           )
         ).id;
 
-      const userMessage = await addMessage(supabase, chatIdToUse, "user", trimmedMessage);
+      const imageFileIds = images.length > 0 ? images.map((img) => img.fileId) : undefined;
+      await addMessage(supabase, chatIdToUse, "user", trimmedMessage, imageFileIds);
       markChatGenerationPending(chatIdToUse, Date.now(), null);
-
-      if (images.length > 0) {
-        try {
-          const mapping = {
-            [userMessage.id]: images.map((img) => img.fileId),
-          };
-          window.localStorage.setItem(
-            `chat-message-image-file-ids:${chatIdToUse}`,
-            JSON.stringify(mapping)
-          );
-        } catch {
-          // Ignore localStorage errors
-        }
-      }
 
       shouldResetLoadingState = false;
       router.push(`/chat/${chatIdToUse}`);

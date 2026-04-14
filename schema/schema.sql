@@ -111,6 +111,7 @@ create table if not exists public.history (
   chat_id uuid not null references public.chats(id) on delete cascade,
   role public.history_role not null,
   content text,
+  image_file_ids uuid[] default array[]::uuid[],
   tokens_used int,
   created_at timestamptz not null default now()
 );

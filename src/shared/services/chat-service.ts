@@ -175,11 +175,22 @@ export async function addMessage(
   supabase: SupabaseClient,
   chatId: string,
   role: "user" | "assistant" | "system",
-  content: string
+  content: string,
+  imageFileIds?: string[]
 ): Promise<HistoryMessage> {
+  const insertPayload: Record<string, unknown> = {
+    chat_id: chatId,
+    role,
+    content,
+  };
+
+  if (imageFileIds && imageFileIds.length > 0) {
+    insertPayload.image_file_ids = imageFileIds;
+  }
+
   const { data, error } = await supabase
     .from("history")
-    .insert({ chat_id: chatId, role, content })
+    .insert(insertPayload)
     .select()
     .single();
 

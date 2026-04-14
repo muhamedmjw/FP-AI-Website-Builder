@@ -104,13 +104,14 @@ async function resolveUserMessageAndHistory(params: {
   chatId: string;
   content: string;
   shouldSkipUserMessageSave: boolean;
+  selectedImageFileIds?: string[];
 }): Promise<{ userMessage: HistoryMessage; historyForAI: HistoryMessage[] }> {
-  const { supabase, chatId, content, shouldSkipUserMessageSave } = params;
+  const { supabase, chatId, content, shouldSkipUserMessageSave, selectedImageFileIds } = params;
 
   let userMessage: HistoryMessage | null = null;
 
   if (!shouldSkipUserMessageSave) {
-    userMessage = await addMessage(supabase, chatId, "user", content);
+    userMessage = await addMessage(supabase, chatId, "user", content, selectedImageFileIds);
   }
 
   let historyForAI = await getChatMessages(supabase, chatId);
@@ -121,7 +122,7 @@ async function resolveUserMessageAndHistory(params: {
       .find((message) => message.role === "user") ?? null;
 
     if (!userMessage) {
-      userMessage = await addMessage(supabase, chatId, "user", content);
+      userMessage = await addMessage(supabase, chatId, "user", content, selectedImageFileIds);
       historyForAI = await getChatMessages(supabase, chatId);
     }
   }
@@ -219,6 +220,7 @@ export async function POST(request: NextRequest) {
       chatId: sendRequest.chatId,
       content: trimmedContent,
       shouldSkipUserMessageSave: sendRequest.shouldSkipUserMessageSave,
+      selectedImageFileIds: sendRequest.selectedImageFileIds,
     });
 
     // Load website context and selected images.

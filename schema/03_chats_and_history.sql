@@ -41,3 +41,7 @@ alter table public.history drop column if exists tokens_used;
 
 create index if not exists history_chat_id_idx on public.history(chat_id);
 create index if not exists history_created_at_idx on public.history(created_at);
+
+-- Added by image attachment refactoring
+alter table public.history
+add column if not exists image_file_ids uuid[] default array[]::uuid[];
