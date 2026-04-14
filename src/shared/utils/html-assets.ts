@@ -4,9 +4,9 @@
  */
 
 export const STYLESHEET_LINK_MARKER =
-  '<link rel="stylesheet" href="assets/css/styles.css">';
+  '<link rel="stylesheet" href="css/styles.css">';
 
-export const MAIN_SCRIPT_MARKER = '<script src="assets/js/main.js"></script>';
+export const MAIN_SCRIPT_MARKER = '<script src="js/main.js"></script>';
 
 export type SplitHtmlDocumentAssetsResult = {
   indexHtml: string;

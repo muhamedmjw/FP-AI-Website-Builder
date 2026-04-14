@@ -153,6 +153,9 @@ export async function POST(request: NextRequest) {
 
     let { processedHtml, extractedCss, extractedJs } = extractAssetsFromHtml(html);
 
+    // Clean up any stray assets/images/ references in HTML directly
+    processedHtml = processedHtml.replaceAll("assets/images/", "images/");
+
     const zip = new JSZip();
 
     // Fetch and dynamically bundle user images used in this specific netlify deployment
@@ -172,7 +175,12 @@ export async function POST(request: NextRequest) {
       const dataUri = typeof imageRow.content === "string" ? imageRow.content : "";
       const fileName = typeof imageRow.file_name === "string" ? imageRow.file_name : "";
 
-      if (!fileName || !processedHtml.includes(fileName)) {
+      let normalizedFileName = fileName;
+      if (normalizedFileName.startsWith("assets/images/")) {
+        normalizedFileName = normalizedFileName.replace("assets/images/", "images/");
+      }
+
+      if (!fileName || (!processedHtml.includes(fileName) && !processedHtml.includes(normalizedFileName))) {
         continue;
       }
 
@@ -181,13 +189,13 @@ export async function POST(request: NextRequest) {
         continue;
       }
 
-      processedHtml = replaceDataUriSrcWithFilePath(processedHtml, dataUri, fileName);
-      zip.file(fileName, Buffer.from(base64, "base64"));
+      processedHtml = replaceDataUriSrcWithFilePath(processedHtml, dataUri, normalizedFileName);
+      zip.file(normalizedFileName, Buffer.from(base64, "base64"));
     }
 
     zip.file("index.html", processedHtml);
-    zip.file("assets/css/styles.css", extractedCss);
-    zip.file("assets/js/main.js", extractedJs || "// main.js\n");
+    zip.file("css/styles.css", extractedCss);
+    zip.file("js/main.js", extractedJs || "// main.js\n");
 
     const zipBuffer = await zip.generateAsync({ type: "arraybuffer" });
     const zipBlob = new Blob([zipBuffer], { type: "application/zip" });
