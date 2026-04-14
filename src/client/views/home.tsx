@@ -321,7 +321,7 @@ export default function HomePage() {
     }
 
     if (attachmentsFull) {
-      setImageErrorMessage(`Maximum ${MAX_ATTACHMENTS_PER_MESSAGE} images allowed per message.`);
+      setImageErrorMessage(t("errorMaxImagesPerMessage", language).replace("{max}", String(MAX_ATTACHMENTS_PER_MESSAGE)));
       return;
     }
 
@@ -344,13 +344,15 @@ export default function HomePage() {
 
     if (files.length > remainingSlots) {
       setImageErrorMessage(
-        `Only ${remainingSlots} more image(s) can be added. ${files.length - remainingSlots} file(s) were skipped.`
+        t("errorImageSlotsRemaining", language)
+          .replace("{remaining}", String(remainingSlots))
+          .replace("{skipped}", String(files.length - remainingSlots))
       );
     }
 
     for (const file of filesToProcess) {
       if (!file.type.startsWith("image/")) {
-        setImageErrorMessage("Only image files are supported. Some files were skipped.");
+        setImageErrorMessage(t("errorOnlyImageFiles", language));
         continue;
       }
 
@@ -359,7 +361,7 @@ export default function HomePage() {
         await uploadImage(file, { chatIdOverride: chatIdForUpload });
       } catch (error) {
         const message =
-          error instanceof Error ? error.message : "Failed to upload image.";
+          error instanceof Error ? error.message : t("errorFailedToUploadImage", language);
         setImageErrorMessage(message);
       }
     }
@@ -372,7 +374,7 @@ export default function HomePage() {
       await deleteImage(fileId);
     } catch (error) {
       const message =
-        error instanceof Error ? error.message : "Failed to remove image.";
+        error instanceof Error ? error.message : t("errorFailedToRemoveImage", language);
       setImageErrorMessage(message);
     }
   }
@@ -464,15 +466,15 @@ export default function HomePage() {
     } catch (error) {
       const raw = error instanceof Error ? error.message : "";
 
-      let friendly = "Failed to send message. Please try again.";
+      let friendly = t("errorSendFailed", language);
       if (raw.includes("429") || raw.includes("rate limit") || raw.includes("Rate limit")) {
-        friendly = "\u23f3 Too many requests. Please wait a moment and try again.";
+        friendly = t("errorTooManyRequests", language);
       } else if (raw.includes("token budget") || raw.includes("Daily token") || raw.includes("500,000")) {
-        friendly = "\ud83d\udcc5 You've used your 500,000 daily token budget. Come back tomorrow!";
+        friendly = t("errorDailyTokenBudget", language);
       } else if (raw.includes("401") || raw.includes("Unauthorized")) {
-        friendly = "\ud83d\udd12 Session expired. Please sign in again.";
+        friendly = t("errorSessionExpired", language);
       } else if (raw.includes("500") || raw.includes("Internal")) {
-        friendly = "\u26a0\ufe0f Something went wrong on our end. Please try again.";
+        friendly = t("errorServerError", language);
       }
 
       setErrorMessage(friendly);

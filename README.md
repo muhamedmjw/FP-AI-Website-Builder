@@ -37,32 +37,51 @@ The app supports English, Arabic, and Kurdish (including RTL), lets users iterat
 ```text
 src/
   app/
-    (auth)/
-    (workspace)/
-    account/
+    (auth)/                       # signin / signup pages
+    (workspace)/                  # authenticated workspace layout
+    account/                      # account settings page
     api/
-      chat/send/
-      guest/chat/
-      guest/zip/
-      website/deploy/
-      website/restore/
-      website/save/
-      website/version-label/
-      website/versions/
+      chat/send/                  # authenticated chat + AI generation
+      chat/abort/                 # cancel in-progress generation
+      chat/delete/                # delete/archive chats
+      guest/chat/                 # guest AI generation (daily limit)
+      guest/usage/                # guest usage quota endpoint
+      guest/zip/                  # ZIP export for guest sessions
+      website/deploy/             # deploy to Netlify
+      website/restore/            # restore a saved version
+      website/save/               # persist generated HTML
+      website/upload-image/       # user image uploads
+      website/user-images/        # list uploaded images
+      website/version-label/      # label a version
+      website/versions/           # list version history
   client/
-    components/
-    features/
-    lib/
-    views/
+    components/                   # shared UI components
+    features/                     # feature-specific components & hooks
+    lib/                          # client utilities & API helpers
+    views/                        # page-level view components
   server/
-    prompts/
+    prompts/                      # system prompt builders & language rules
     services/
-    supabase/
+      ai-client.ts                # OpenAI client, retry loop, error helpers
+      ai-response-parser.ts       # response/classifier parsing, HTML validation
+      ai-service.ts               # AI orchestration (generation, guest mode)
+      chat-title-service.ts       # localized chat title generation
+      chat-send-service.ts        # chat send orchestration
+      generation-manager.ts       # in-flight generation tracking
+      website-image-enrichment.ts # Unsplash stock image injection
+    supabase/                     # Supabase server client helpers
   shared/
     constants/
-    services/
-    types/
-    utils/
+      translations/               # per-language translation files
+        en.ts                     # English translations
+        ar.ts                     # Arabic translations
+        ku.ts                     # Kurdish Sorani translations
+        index.ts                  # barrel re-export + t() helper
+      ai.ts                       # AI model constants
+      limits.ts                   # prompt & attachment limits
+    services/                     # shared data-access services
+    types/                        # TypeScript type definitions
+    utils/                        # shared utility functions
 schema.sql
 ```
 
@@ -73,13 +92,18 @@ schema.sql
 | Method | Route | Purpose |
 | --- | --- | --- |
 | POST | `/api/chat/send` | Send authenticated chat prompts and persist history |
+| POST | `/api/chat/abort` | Cancel an in-progress AI generation |
+| DELETE | `/api/chat/delete` | Delete or archive a chat |
 | POST | `/api/guest/chat` | Guest chat generation with daily limit |
-| POST | `/api/guest/zip` | ZIP export for authenticated users |
+| GET | `/api/guest/usage` | Check guest usage quota |
+| POST | `/api/guest/zip` | ZIP export for guest users |
 | POST | `/api/website/save` | Save generated HTML for a chat website |
 | GET | `/api/website/versions` | Fetch website version history |
 | POST | `/api/website/restore` | Restore a selected version |
 | PATCH | `/api/website/version-label` | Apply/update version labels |
 | POST | `/api/website/deploy` | Deploy generated site to Netlify |
+| POST | `/api/website/upload-image` | Upload user images for AI context |
+| GET | `/api/website/user-images` | List uploaded images for a chat |
 
 ---
 

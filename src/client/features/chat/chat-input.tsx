@@ -191,7 +191,7 @@ export default function ChatInput({
     }
 
     if (attachmentsFull) {
-      setImageErrorMessage(`Maximum ${MAX_ATTACHMENTS_PER_MESSAGE} images allowed per message.`);
+      setImageErrorMessage(t("errorMaxImagesPerMessage", language).replace("{max}", String(MAX_ATTACHMENTS_PER_MESSAGE)));
       return;
     }
 
@@ -213,20 +213,22 @@ export default function ChatInput({
 
     if (files.length > remainingSlots) {
       setImageErrorMessage(
-        `Only ${remainingSlots} more image(s) can be added. ${files.length - remainingSlots} file(s) were skipped.`
+        t("errorImageSlotsRemaining", language)
+          .replace("{remaining}", String(remainingSlots))
+          .replace("{skipped}", String(files.length - remainingSlots))
       );
     }
 
     for (const file of filesToProcess) {
       if (!file.type.startsWith("image/")) {
-        setImageErrorMessage("Only image files are supported. Some files were skipped.");
+        setImageErrorMessage(t("errorOnlyImageFiles", language));
         continue;
       }
 
       try {
         await uploadImage(file);
       } catch (error) {
-        const message = error instanceof Error ? error.message : "Failed to upload image.";
+        const message = error instanceof Error ? error.message : t("errorFailedToUploadImage", language);
         setImageErrorMessage(message);
       }
     }
@@ -238,7 +240,7 @@ export default function ChatInput({
     try {
       await deleteImage(fileId);
     } catch (error) {
-      const message = error instanceof Error ? error.message : "Failed to remove image.";
+      const message = error instanceof Error ? error.message : t("errorFailedToRemoveImage", language);
       setImageErrorMessage(message);
     }
   }

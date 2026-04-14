@@ -149,8 +149,13 @@ async function maybeRenameNewChat(
     const title = await generateChatTitle(userPrompt, language);
     await renameChat(supabase, chatId, title);
   } catch {
+    const fallbackTitles: Record<string, string> = {
+      en: "New Chat",
+      ar: "محادثة جديدة",
+      ku: "چاتی نوێ",
+    };
     try {
-      await renameChat(supabase, chatId, "New Website");
+      await renameChat(supabase, chatId, fallbackTitles[language] ?? fallbackTitles.en);
     } catch {
       // Keep request successful even if title updates fail.
     }

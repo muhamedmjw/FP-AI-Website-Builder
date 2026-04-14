@@ -240,10 +240,10 @@ function GuestLimitBanner({
   return (
     <div className="mx-auto mb-2 w-full max-w-4xl rounded-2xl border border-[var(--app-card-border)] bg-[var(--app-card-bg)] p-4">
       <h3 className="font-semibold text-[var(--app-text-heading)]">
-        You&apos;ve used your 3 free prompts
+        {t("guestLimitTitle", language)}
       </h3>
       <p className="mt-1 text-sm text-[var(--app-text-secondary)]">
-        Create a free account to keep building - no credit card required.
+        {t("guestLimitDesc", language)}
       </p>
       <div className="mt-2 flex items-center gap-1.5 text-xs text-[var(--app-text-tertiary)]">
         <Clock size={12} />
@@ -254,7 +254,7 @@ function GuestLimitBanner({
           onClick={onExpired}
           className="mt-2 text-xs text-[var(--app-text-secondary)] underline hover:text-[var(--app-text-heading)]"
         >
-          Check for reset
+          {t("guestCheckForReset", language)}
         </button>
       )}
       <div className="mt-3 grid gap-2 sm:grid-cols-2">

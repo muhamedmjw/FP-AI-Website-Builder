@@ -85,7 +85,7 @@ function createOptimisticSendState(params: {
   };
 }
 
-function buildFriendlySendErrorMessage(error: unknown): string {
+function buildFriendlySendErrorMessage(error: unknown, language: AppLanguage): string {
   const status = error instanceof ChatApiError ? error.status : null;
   const rawMessage = error instanceof Error ? error.message : "";
   const normalizedRawMessage = rawMessage.toLowerCase();
@@ -99,7 +99,7 @@ function buildFriendlySendErrorMessage(error: unknown): string {
     rawMessage.includes("rate limit") ||
     rawMessage.includes("Rate limit")
   ) {
-    return "\u23f3 Too many requests. Please wait a moment and try again.";
+    return t("errorTooManyRequests", language);
   }
 
   if (
@@ -107,7 +107,7 @@ function buildFriendlySendErrorMessage(error: unknown): string {
     rawMessage.includes("Daily token") ||
     rawMessage.includes("500,000")
   ) {
-    return "\ud83d\udcc5 You've used your 500,000 daily token budget. Come back tomorrow!";
+    return t("errorDailyTokenBudget", language);
   }
 
   if (
@@ -115,7 +115,7 @@ function buildFriendlySendErrorMessage(error: unknown): string {
     rawMessage.includes("401") ||
     rawMessage.includes("Unauthorized")
   ) {
-    return "\ud83d\udd12 Session expired. Please sign in again.";
+    return t("errorSessionExpired", language);
   }
 
   if (
@@ -123,21 +123,21 @@ function buildFriendlySendErrorMessage(error: unknown): string {
     rawMessage.includes("500") ||
     rawMessage.includes("Internal")
   ) {
-    return "\u26a0\ufe0f Something went wrong on our end. Please try again.";
+    return t("errorServerError", language);
   }
 
   if (
     normalizedRawMessage.includes("too large to process") ||
     normalizedRawMessage.includes("uploaded images")
   ) {
-    return "\u26a0\ufe0f Images are too large to send together. Try removing some uploaded images and sending again.";
+    return t("errorImagesTooLarge", language);
   }
 
   if (isAbortLikeError) {
-    return "Connection interrupted. Checking if your AI reply finishes in the background...";
+    return t("errorConnectionInterrupted", language);
   }
 
-  return "Failed to send message. Please try again.";
+  return t("errorSendFailed", language);
 }
 
 function getLatestMessageTimestamp(messages: HistoryMessage[]): number | null {
@@ -528,7 +528,7 @@ export function useBuilderState({
       resolveChatGeneration(chatId);
       setPendingGenerationStartedAt(null);
 
-      setInputErrorMessage(buildFriendlySendErrorMessage(error));
+      setInputErrorMessage(buildFriendlySendErrorMessage(error, language));
       setMessages(preSendSnapshot.messages);
       setMessageImages(preSendSnapshot.messageImages);
       setMessageImageFileIds(preSendSnapshot.messageImageFileIds);
