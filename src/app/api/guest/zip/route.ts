@@ -311,12 +311,8 @@ export async function POST(request: NextRequest) {
       (name) => !folder.files[name].dir
     ).length;
 
-    // Log the download to the zip_downloads table
-    await supabase.from("zip_downloads").insert({
-      user_id: user.id,
-      website_id: website.id,
-      file_count: fileCount,
-    });
+
+
 
     return new NextResponse(zipBuffer, {
       status: 200,

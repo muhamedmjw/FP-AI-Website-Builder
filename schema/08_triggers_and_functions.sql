@@ -1,39 +1,8 @@
 -- =============================================================
--- 08 - Triggers & Functions
--- Depends on: 02–07 (all tables must exist first)
--- Creates all trigger functions and attaches them to tables.
+-- Triggers and Functions
 -- =============================================================
 
-
--- Auto-create public.users row when a new auth user signs up
-create or replace function public.handle_new_auth_user()
-returns trigger
-language plpgsql
-security definer
-set search_path = public
-as $$
-begin
-  insert into public.users (id, email, name)
-  values (
-    new.id,
-    coalesce(new.email, ''),
-    coalesce(new.raw_user_meta_data ->> 'display_name', '')
-  )
-  on conflict (id) do nothing;
-
-  return new;
-end;
-$$;
-
-drop trigger if exists on_auth_user_created on auth.users;
-create trigger on_auth_user_created
-after insert on auth.users
-for each row execute procedure public.handle_new_auth_user();
-
-
-
-
--- Generic updated_at trigger function
+-- Generic updated_at trigger
 create or replace function public.set_updated_at()
 returns trigger
 language plpgsql
@@ -68,9 +37,6 @@ drop trigger if exists guest_usage_set_updated_at on public.guest_usage;
 create trigger guest_usage_set_updated_at
 before update on public.guest_usage
 for each row execute function public.set_updated_at();
-
-
-
 
 -- Update chat.updated_at whenever a new history message is inserted
 create or replace function public.touch_chat_updated_at_from_history()

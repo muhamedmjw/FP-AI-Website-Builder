@@ -72,7 +72,6 @@ type GenerationPreparation = {
 
 type GenerationLog = {
   chatId: string;
-  historyId?: string;
   modelName: string;
   promptTokens: number | null;
   completionTokens: number | null;
@@ -647,7 +646,6 @@ async function logGeneration(
   try {
     await supabase.from("ai_generations").insert({
       chat_id: log.chatId,
-      history_id: log.historyId ?? null,
       model_name: log.modelName,
       prompt_tokens: log.promptTokens,
       completion_tokens: log.completionTokens,

@@ -1,29 +1,22 @@
 -- =============================================================
--- 02 - Users & Preferences
--- Depends on: 01_extensions_and_enums.sql
--- Creates: public.users, public.user_preferences
+-- Users and Preferences
 -- =============================================================
 
--- Users (maps to Supabase auth.users)
 create table if not exists public.users (
-  id uuid primary key references auth.users(id) on delete cascade,
-  email text not null unique,
-  name text,
+  id         uuid primary key references auth.users(id) on delete cascade,
+  email      text not null unique,
+  name       text,
   avatar_url text,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
 
-alter table public.users
-add column if not exists avatar_url text;
-
 -- User Preferences
 create table if not exists public.user_preferences (
-  id uuid primary key default gen_random_uuid(),
-  user_id uuid not null references public.users(id) on delete cascade,
-  language public.app_language not null default 'en',
-  theme text not null default 'dark',
-  default_model text,
+  id         uuid primary key default gen_random_uuid(),
+  user_id    uuid not null references public.users(id) on delete cascade,
+  language   public.app_language not null default 'en',
+  theme      text not null default 'dark',
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );

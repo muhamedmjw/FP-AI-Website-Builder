@@ -5,6 +5,8 @@ import {
   getWebsiteByChatId,
   restoreFileVersion,
 } from "@/server/services/website-service";
+import { isMissingUploadColumns } from "@/shared/utils/db-guards";
+import { injectUploadedImagesForPreview } from "@/shared/utils/html-images";
 
 export async function POST(request: NextRequest) {
   try {
@@ -49,8 +51,38 @@ export async function POST(request: NextRequest) {
 
     const restoredFile = await restoreFileVersion(supabase, website.id, versionId);
 
+    // Inject uploaded image data so the preview renders correctly.
+    // Without this, restored HTML contains bare filenames (e.g. src="photo.png")
+    // that the iframe cannot resolve — causing broken images.
+    let htmlForPreview = restoredFile.content;
+
+    try {
+      const { data: uploadedImages, error: uploadedImagesError } = await supabase
+        .from("files")
+        .select("file_name, content")
+        .eq("website_id", website.id)
+        .eq("is_user_upload", true)
+        .order("created_at", { ascending: true });
+
+      if (uploadedImagesError) {
+        if (!isMissingUploadColumns(uploadedImagesError)) {
+          console.error("Failed to load uploaded images for restore:", uploadedImagesError);
+        }
+      } else if (uploadedImages && uploadedImages.length > 0) {
+        htmlForPreview = injectUploadedImagesForPreview(
+          restoredFile.content,
+          uploadedImages.map((img) => ({
+            fileName: img.file_name,
+            dataUri: img.content,
+          }))
+        );
+      }
+    } catch (imgError) {
+      console.error("Failed to inject images into restored version:", imgError);
+    }
+
     return NextResponse.json({
-      html: restoredFile.content,
+      html: htmlForPreview,
       version: restoredFile.version,
     });
   } catch (error) {
