@@ -237,7 +237,7 @@ export default function CodeEditorPanel({
         : "Save";
 
   const selectClassName =
-    "h-8 max-w-[min(220px,42vw)] shrink-0 rounded-lg border border-(--app-border) bg-(--app-panel) px-2 text-xs text-(--app-text-secondary) outline-none transition hover:border-(--app-text-tertiary) focus-visible:ring-2 focus-visible:ring-sky-500/40";
+    "h-8 min-w-0 flex-1 max-w-[220px] rounded-lg border border-(--app-border) bg-(--app-panel) px-2 text-xs text-(--app-text-secondary) outline-none transition hover:border-(--app-text-tertiary) focus-visible:ring-2 focus-visible:ring-sky-500/40";
 
   return (
     <div dir="ltr" className="flex h-full min-w-0 flex-col border-l border-(--app-border) bg-(--app-panel)">
@@ -252,13 +252,13 @@ export default function CodeEditorPanel({
             strokeWidth="2"
             strokeLinecap="round"
             strokeLinejoin="round"
-            className="shrink-0 text-(--app-text-tertiary)"
+            className="hidden shrink-0 text-(--app-text-tertiary) sm:block"
             aria-hidden="true"
           >
             <polyline points="16 18 22 12 16 6" />
             <polyline points="8 6 2 12 8 18" />
           </svg>
-          <span className="shrink-0 text-xs font-semibold text-(--app-text-tertiary) uppercase tracking-widest">
+          <span className="hidden shrink-0 text-xs font-semibold uppercase tracking-widest text-(--app-text-tertiary) sm:block">
             Editor
           </span>
           <label htmlFor="code-editor-file" className="sr-only">
