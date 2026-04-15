@@ -16,6 +16,9 @@ import {
   saveWebsiteRecord,
 } from "@/server/services/chat-send-service";
 
+// Allow up to 60s for AI generation on Vercel (default is 10s which is too short).
+export const maxDuration = 60;
+
 const MAX_EXISTING_HTML_PROMPT_CHARS = 140_000;
 
 function isAppLanguage(value: unknown): value is AppLanguage {

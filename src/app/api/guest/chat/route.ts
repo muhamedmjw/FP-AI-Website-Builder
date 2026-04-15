@@ -4,6 +4,9 @@ import { generateGuestAIResponse } from "@/server/services/ai-service";
 import { MAX_GUEST_PROMPTS, MAX_PROMPT_LENGTH } from "@/shared/constants/limits";
 import type { AppLanguage } from "@/shared/types/database";
 
+// Allow up to 60s for AI generation on Vercel (default is 10s which is too short).
+export const maxDuration = 60;
+
 const GUEST_TOKEN_COOKIE = "guest_token";
 const GUEST_TOKEN_MAX_AGE = 60 * 60 * 24 * 30; // 30 days
 
