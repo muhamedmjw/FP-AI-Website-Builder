@@ -23,8 +23,6 @@ type LanguageContextValue = {
 
 type LanguageProviderProps = {
 	children: React.ReactNode;
-	initialLanguage?: AppLanguage;
-	hasInitialLanguagePreference?: boolean;
 };
 
 export const LanguageContext = createContext<LanguageContextValue | null>(null);
@@ -44,18 +42,15 @@ function getInitialLanguage(): AppLanguage {
 
 export function LanguageProvider({
 	children,
-	initialLanguage,
-	hasInitialLanguagePreference = false,
 }: LanguageProviderProps) {
-	const [language, setLanguageState] = useState<AppLanguage>(() => {
-		const savedLanguage = getInitialLanguage();
+	const [language, setLanguageState] = useState<AppLanguage>("en");
 
-		if (hasInitialLanguagePreference && initialLanguage && savedLanguage !== initialLanguage) {
-			return initialLanguage;
+	useEffect(() => {
+		const initial = getInitialLanguage();
+		if (initial !== "en") {
+			setLanguageState(initial);
 		}
-
-		return savedLanguage;
-	});
+	}, []);
 	const isFirstLanguageEffect = useRef(true);
 
 	const applyDocumentLanguageState = useCallback((nextLanguage: AppLanguage) => {

@@ -1,6 +1,6 @@
 "use client";
 
-import { LanguageProvider } from "@/client/lib/language-context";
+import AuthLanguageSync from "@/client/components/auth-language-sync";
 import PendingChatSync from "@/client/components/pending-chat-sync";
 import NavigationLoadingCursor from "@/client/components/navigation-loading-cursor";
 import type { AppLanguage } from "@/shared/types/database";
@@ -17,13 +17,13 @@ export default function WorkspaceProviders({
   hasLanguagePreference,
 }: WorkspaceProvidersProps) {
   return (
-    <LanguageProvider
-      initialLanguage={language}
-      hasInitialLanguagePreference={hasLanguagePreference}
-    >
+    <>
+      <AuthLanguageSync
+        dbLanguage={hasLanguagePreference ? language : null}
+      />
       <NavigationLoadingCursor />
       <PendingChatSync />
       {children}
-    </LanguageProvider>
+    </>
   );
 }

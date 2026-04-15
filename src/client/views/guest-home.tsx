@@ -233,9 +233,9 @@ function GuestLimitBanner({
   const timerText = isExpired
     ? t("guestLimitReset", language)
     : t("guestLimitTimer", language).replace(
-        "{time}",
-        formatCountdown(hours, minutes, seconds, language)
-      );
+      "{time}",
+      formatCountdown(hours, minutes, seconds, language)
+    );
 
   return (
     <div className="mx-auto mb-2 w-full max-w-4xl rounded-2xl border border-[var(--app-card-border)] bg-[var(--app-card-bg)] p-4">
@@ -358,7 +358,7 @@ export default function GuestHomePage() {
       if (usage) {
         // Always update resetsAt from server
         setResetsAt(usage.resetsAt);
-        
+
         // Sync prompts used from server
         // Update if server has higher count OR if window expired (server shows 0 but local shows > 0)
         if (usage.promptsUsed !== promptsUsed) {

@@ -77,6 +77,11 @@ export default function LanguageSwitcher({ iconOnly = false }: LanguageSwitcherP
                 role="menuitemradio"
                 aria-checked={isActive}
                 onClick={() => {
+                  try {
+                    window.localStorage.setItem("app-language-explicit", "true");
+                  } catch {
+                    // Ignore
+                  }
                   setLanguage(option.code);
                   setIsOpen(false);
                 }}
