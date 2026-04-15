@@ -141,7 +141,7 @@ export const ar: Record<string, string> = {
   generating: "جارٍ الإنشاء...",
   creatingWorkspace: "جارٍ إنشاء مساحة عملك...",
   sendingPrompt: "جارٍ إرسال طلبك إلى الذكاء الاصطناعي...",
-  generatingWebsite: "جارٍ إنشاء موقعك...",
+  generatingWebsite: "جارٍ العمل على طلبك...",
   generatingConversation: "جارٍ إنشاء ردك",
   editingWebsite: "جارٍ تعديل موقعك...",
   takingLonger: "يستغرق وقتاً أطول من المعتاد...",

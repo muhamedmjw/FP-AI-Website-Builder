@@ -142,7 +142,7 @@ export const en: Record<string, string> = {
   generating: "Generating...",
   creatingWorkspace: "Creating your workspace",
   sendingPrompt: "Sending your prompt to AI...",
-  generatingWebsite: "Creating your website...",
+  generatingWebsite: "Working on your request...",
   generatingConversation: "Generating your response",
   editingWebsite: "Editing your website...",
   takingLonger: "Taking longer than usual...",

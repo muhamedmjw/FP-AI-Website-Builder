@@ -136,42 +136,19 @@ export default function PreviewPanel({
         className="flex h-12 shrink-0 items-center gap-1.5 overflow-x-auto border-b border-[var(--app-border)] bg-[var(--app-panel)] px-3"
       >
         {onChange && showModeToggle ? (
-          <div className="relative mr-1 flex h-8 w-44 items-center rounded-lg bg-[var(--app-hover-bg)] p-0.5">
-            {/* Sliding background pill */}
-            <div className="pointer-events-none absolute inset-y-0.5 inset-x-0.5">
-              <div
-                className={`h-full w-1/2 rounded-[5px] bg-[var(--app-panel)] shadow-sm ring-1 ring-black/5 transition-transform duration-300 ease-out dark:ring-white/10 ${
-                  effectiveActivePanel === "preview" ? "translate-x-0" : "translate-x-full"
-                }`}
-              />
-            </div>
-            <button
-              type="button"
-              onClick={() => handlePanelSwitch("preview")}
-              className={`relative z-10 flex h-full flex-1 items-center justify-center gap-1.5 rounded-[5px] text-xs font-medium transition-colors duration-300 ${
-                effectiveActivePanel === "preview"
-                  ? "text-[var(--app-text-heading)]"
-                  : "text-[var(--app-text-secondary)] hover:text-[var(--app-text-heading)]"
-              }`}
-              title={t("preview", language)}
-            >
-              <Eye size={14} />
-              {t("preview", language)}
-            </button>
-            <button
-              type="button"
-              onClick={() => handlePanelSwitch("editor")}
-              className={`relative z-10 flex h-full flex-1 items-center justify-center gap-1.5 rounded-[5px] text-xs font-medium transition-colors duration-300 ${
-                effectiveActivePanel === "editor"
-                  ? "text-[var(--app-text-heading)]"
-                  : "text-[var(--app-text-secondary)] hover:text-[var(--app-text-heading)]"
-              }`}
-              title={t("editor", language)}
-            >
-              <Code size={14} />
-              {t("editor", language)}
-            </button>
-          </div>
+          <button
+            type="button"
+            onClick={handlePanelToggle}
+            className={`mr-1 flex h-8 items-center gap-1.5 rounded-lg border px-2.5 text-xs font-medium transition ${
+              effectiveActivePanel === "preview"
+                ? "border-[var(--button-hover-border)] bg-[var(--app-hover-bg)] text-[var(--app-text-heading)]"
+                : "border-[var(--app-border)] text-[var(--app-text-secondary)] hover:bg-[var(--app-hover-bg)] hover:text-[var(--app-text-heading)]"
+            }`}
+            title={t(toggleTargetPanel, language)}
+          >
+            {toggleTargetPanel === "preview" ? <Eye size={14} /> : <Code size={14} />}
+            {t(toggleTargetPanel, language)}
+          </button>
         ) : null}
 
         {/* Spacer */}

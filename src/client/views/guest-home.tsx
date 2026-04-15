@@ -479,7 +479,7 @@ export default function GuestHomePage() {
 
   return (
     <div className="flex min-h-0 flex-1 flex-col bg-[var(--app-bg)]">
-      <header className="border-b border-[var(--app-border)] bg-[var(--app-panel)]/60 px-3 py-3 backdrop-blur sm:px-5 sm:py-4">
+      <header className="relative z-50 border-b border-[var(--app-border)] bg-[var(--app-panel)]/60 px-3 py-3 backdrop-blur sm:px-5 sm:py-4">
         <div className="mx-auto w-full max-w-5xl">
           <div className="flex items-start justify-between gap-2 sm:items-center sm:gap-3">
             <Link

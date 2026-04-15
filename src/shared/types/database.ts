@@ -26,6 +26,7 @@ export type Chat = {
   id: string;
   user_id: string;
   title: string;
+  model_name: string | null;
   archived_at: string | null;
   created_at: string;
   updated_at: string;
@@ -36,7 +37,6 @@ export type HistoryMessage = {
   chat_id: string;
   role: HistoryRole;
   content: string;
-  image_file_ids?: string[] | null;
   created_at: string;
 };
 

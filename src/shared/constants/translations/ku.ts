@@ -141,7 +141,7 @@ export const ku: Record<string, string> = {
   generating: "دروستدەکرێت...",
   creatingWorkspace: "شوێنی کارەکەت دروست دەکرێت...",
   sendingPrompt: "داواکاریت بۆ زیرەکی دەستکرد دەنێردرێت...",
-  generatingWebsite: "وێبسایتەکەت دروست دەکرێت...",
+  generatingWebsite: "کار لەسەر داواکارییەکەت دەکرێت...",
   generatingConversation: "وەڵامەکەت ئامادە دەکرێت",
   editingWebsite: "دەستکاریکردنی وێبسایتەکەت دەکرێت...",
   takingLonger: "زیاتر لە بەرواری ئاسایی کات دەبرێت...",

@@ -121,6 +121,34 @@ export function parseAIResponse(raw: string): AIResponse {
       message: parsed.message ?? parsed.text ?? raw,
     };
   } catch {
+    // Attempt to extract JSON from text if direct parsing fails
+    const firstBrace = raw.indexOf("{");
+    const lastBrace = raw.lastIndexOf("}");
+
+    if (firstBrace !== -1 && lastBrace !== -1 && lastBrace > firstBrace) {
+      try {
+        const potentialJson = raw.slice(firstBrace, lastBrace + 1);
+        const parsed = JSON.parse(potentialJson);
+
+        if (parsed.type === "website" && typeof parsed.html === "string") {
+          return {
+            type: "website",
+            html: parsed.html,
+            message: parsed.message ?? "Website generated successfully.",
+          };
+        }
+
+        if (parsed.type === "questions" && typeof parsed.message === "string") {
+          return {
+            type: "questions",
+            message: parsed.message,
+          };
+        }
+      } catch {
+        // Fall through to default
+      }
+    }
+
     return {
       type: "questions",
       message: raw,
