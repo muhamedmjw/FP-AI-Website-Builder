@@ -235,7 +235,7 @@ function buildIntentExecutionConfig(
   }
 
   return {
-    messages: buildChatMessages(history, detectedLanguage) as AIMessage[],
+    messages: buildChatMessages(history, detectedLanguage, existingHtml) as AIMessage[],
     maxTokens: CHAT_INTENT_MAX_TOKENS,
     temperature: CHAT_INTENT_TEMPERATURE,
   };

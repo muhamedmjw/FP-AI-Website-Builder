@@ -484,16 +484,25 @@ export function buildEditMessages(
  */
 export function buildChatMessages(
   history: HistoryMessage[],
-  detectedUserLanguage: AppLanguage
+  detectedUserLanguage: AppLanguage,
+  existingHtml?: string | null
 ): ChatMessage[] {
-  const system = [
+  const systemParts = [
     PERSONALITY,
     LANGUAGE_GUIDANCE,
     APP_KNOWLEDGE,
     CHAT_MODE,
     OUTPUT_FORMAT,
     `Conversation reply language: ${detectedUserLanguage}`,
-  ].join("\n\n");
+  ];
+
+  if (existingHtml && existingHtml.trim().length > 0) {
+    systemParts.push(
+      `CURRENT WEBSITE HTML (this is the live version the user sees — answer questions based on this, not on earlier chat history):\n${existingHtml}`
+    );
+  }
+
+  const system = systemParts.join("\n\n");
 
   return [
     { role: "system", content: system },
