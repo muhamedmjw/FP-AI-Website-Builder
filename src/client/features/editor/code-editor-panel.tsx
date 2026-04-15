@@ -272,8 +272,8 @@ export default function CodeEditorPanel({
             aria-label="Select file"
           >
             <option value="index">index.html</option>
-            {showCssTab ? <option value="css">assets/css/styles.css</option> : null}
-            {showJsTab ? <option value="js">assets/js/main.js</option> : null}
+            {showCssTab ? <option value="css">css/styles.css</option> : null}
+            {showJsTab ? <option value="js">js/main.js</option> : null}
           </select>
         </div>
         <button
