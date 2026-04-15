@@ -180,16 +180,13 @@ export default function ChatBubble({
 
         {/* Message */}
         {isUser ? (
-          <div className="min-w-0 space-y-2">
+          <div className="min-w-0 space-y-2 relative">
             <div
               dir="auto"
               className="relative min-w-0 break-words whitespace-normal rounded-2xl px-3 py-2.5 text-sm leading-relaxed shadow-(--app-shadow-md) sm:px-4 sm:py-3.5 sm:text-base bg-(--app-bubble-user-bg) text-(--app-bubble-user-text)"
               style={{ overflowWrap: "anywhere" }}
             >
               <MarkdownMessage content={content} />
-              <div className="absolute -bottom-7 right-0">
-                <CopyButton content={content} />
-              </div>
             </div>
 
             {hasAttachedImages ? (
@@ -218,12 +215,16 @@ export default function ChatBubble({
                 ))}
               </div>
             ) : null}
+
+            <div className="absolute -bottom-7 right-0">
+              <CopyButton content={content} />
+            </div>
           </div>
         ) : (
           <div className="relative min-w-0">
             <div
               dir="auto"
-              className="min-w-0 break-words whitespace-normal rounded-2xl px-3 py-2.5 text-sm leading-relaxed shadow-(--app-shadow-md) sm:px-4 sm:py-3.5 sm:text-base bg-(--app-bubble-bot-bg) text-(--app-bubble-bot-text)"
+              className="relative min-w-0 break-words whitespace-normal rounded-2xl px-3 py-2.5 text-sm leading-relaxed shadow-(--app-shadow-md) sm:px-4 sm:py-3.5 sm:text-base bg-(--app-bubble-bot-bg) text-(--app-bubble-bot-text)"
               style={{ overflowWrap: "anywhere" }}
             >
               <MarkdownMessage content={content} />
