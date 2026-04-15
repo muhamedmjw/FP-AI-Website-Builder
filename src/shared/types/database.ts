@@ -37,6 +37,7 @@ export type HistoryMessage = {
   chat_id: string;
   role: HistoryRole;
   content: string;
+  image_file_ids?: string[] | null;
   created_at: string;
 };
 
