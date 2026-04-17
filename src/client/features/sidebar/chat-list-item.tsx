@@ -236,6 +236,7 @@ export default function ChatListItem({
       <div className="group relative">
         <Link
           href={`/chat/${chat.id}`}
+          prefetch={false}
           className={`ui-fade-up block rounded-xl px-3.5 py-3 ${linkPaddingClass} text-base ${
             isActive
               ? "bg-[var(--app-hover-bg-strong)] text-[var(--app-text-heading)] shadow-[var(--app-shadow-sm)]"
