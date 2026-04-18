@@ -1,5 +1,5 @@
-import AccountPageView from "@/client/views/account";
+import LandingView from "@/client/views/landing-view";
 
 export default function AccountPage() {
-  return <AccountPageView />;
+  return <LandingView />;
 }
