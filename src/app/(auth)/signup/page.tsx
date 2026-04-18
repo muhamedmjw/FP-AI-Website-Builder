@@ -1,5 +1,5 @@
-import SignUpPageContent from "@/client/features/auth/signup-page-content";
+import SignUpLayout from "@/client/features/auth/signup-layout";
 
 export default function SignupPage() {
-  return <SignUpPageContent />;
+  return <SignUpLayout />;
 }

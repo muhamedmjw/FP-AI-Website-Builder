@@ -31,7 +31,7 @@ import { MAX_PROMPT_LENGTH, MAX_ATTACHMENTS_PER_MESSAGE } from "@/shared/constan
  * Typing a message creates a new chat, sends the first message,
  * and navigates to the chat page.
  */
-export default function HomePage() {
+export default function WorkspaceView() {
   const { language } = useLanguage();
   const displayModelName = getDisplayModelName(PRIMARY_MODEL);
   const disclaimerTemplate = t("aiDisclaimer", language);

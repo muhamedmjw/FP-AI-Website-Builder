@@ -1,5 +1,5 @@
-import SignInPageContent from "@/client/features/auth/signin-page-content";
+import SignInLayout from "@/client/features/auth/signin-layout";
 
 export default function SignInPage() {
-  return <SignInPageContent />;
+  return <SignInLayout />;
 }

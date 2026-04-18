@@ -43,8 +43,14 @@ function getInitialLanguage(): AppLanguage {
 export function LanguageProvider({
 	children,
 }: LanguageProviderProps) {
+	// ---------------------------------------------------------
+	// Job 1: Current Language Box (State)
+	// ---------------------------------------------------------
 	const [language, setLanguageState] = useState<AppLanguage>("en");
 
+	// ---------------------------------------------------------
+	// Job 2: First-time Load (Load from LocalStorage)
+	// ---------------------------------------------------------
 	useEffect(() => {
 		const initial = getInitialLanguage();
 		if (initial !== "en") {
@@ -63,6 +69,9 @@ export function LanguageProvider({
 		applyDocumentLanguageState(language);
 	});
 
+	// ---------------------------------------------------------
+	// Job 3: Syncing (Keeping multiple tabs in sync)
+	// ---------------------------------------------------------
 	useEffect(() => {
 		function handleLanguageSync(event: Event) {
 			const customEvent = event as CustomEvent<AppLanguage>;
@@ -82,6 +91,9 @@ export function LanguageProvider({
 		};
 	}, [language]);
 
+	// ---------------------------------------------------------
+	// Job 4: Side Effects (RTL Flip & Saving to DB/Local)
+	// ---------------------------------------------------------
 	useEffect(() => {
 		applyDocumentLanguageState(language);
 

@@ -1,5 +1,5 @@
-import HomePage from "@/client/views/home";
-import AccountPageView from "@/client/views/account";
+import WorkspaceView from "@/client/views/workspace-view";
+import LandingView from "@/client/views/landing-view";
 import { getSupabaseServerClient } from "@/server/supabase/server-client";
 import { getCurrentUser } from "@/shared/services/user-service";
 
@@ -8,8 +8,8 @@ export default async function AppHomePage() {
   const user = await getCurrentUser(supabase);
 
   if (!user) {
-    return <AccountPageView />;
+    return <LandingView />;
   }
 
-  return <HomePage />;
+  return <WorkspaceView />;
 }

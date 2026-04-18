@@ -12,7 +12,7 @@ import { t } from "@/shared/constants/translations";
  * Authenticated users are directed to / by the proxy,
  * so this component never needs to check auth state.
  */
-export default function AccountPageView() {
+export default function LandingView() {
   const { language } = useLanguage();
 
   return (

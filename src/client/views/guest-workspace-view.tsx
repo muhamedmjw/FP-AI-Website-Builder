@@ -312,7 +312,7 @@ function GuestWebsiteReadyBanner({
   );
 }
 
-export default function GuestHomePage() {
+export default function GuestWorkspaceView() {
   const { language } = useLanguage();
   const shouldWrapBrandOnMobile = language === "en" || language === "ar";
   const providerName = getDisplayModelName(PRIMARY_MODEL);

@@ -1,5 +1,5 @@
-import GuestHomePage from "@/client/views/guest-home";
+import GuestWorkspaceView from "@/client/views/guest-workspace-view";
 
 export default function GuestModePage() {
-  return <GuestHomePage />;
+  return <GuestWorkspaceView />;
 }
