@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient, SupabaseClient } from "@supabase/supabase-js";
 import { generateGuestAIResponse } from "@/server/services/ai-service";
 import { checkEthicalCompliance } from "@/server/services/ethics-service";
+import { detectPromptLanguage } from "@/shared/utils/language-detection";
 import { MAX_GUEST_PROMPTS, MAX_PROMPT_LENGTH } from "@/shared/constants/limits";
 import { t } from "@/shared/constants/translations";
 import type { AppLanguage } from "@/shared/types/database";
@@ -272,9 +273,10 @@ export async function POST(request: NextRequest) {
     try {
       const ethicalStatus = await checkEthicalCompliance(content.trim());
       if (ethicalStatus === "lock" || ethicalStatus === "age_verification") {
+        const promptLanguage = detectPromptLanguage(content.trim());
         return NextResponse.json({
           type: "questions",
-          message: t("chatLockedAssistantMessage", preferredLanguage),
+          message: t("chatLockedAssistantMessage", promptLanguage),
         });
       }
     } catch (error) {

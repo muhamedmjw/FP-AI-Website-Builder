@@ -62,9 +62,10 @@ Rules for categorization:
 1. "lock":
    - Explicit NSFW, pornography, adult content.
    - Stripclubs, nightclubs, or similar adult entertainment venues.
-   - Hate speech, offensive historical figures (e.g., Hitler, Saddam Hussein), or promotion of violence.
+   - Hate speech, offensive historical figures, or promotion of violence.
    - Casinos, betting, or gambling platforms.
    - Political campaigns, governmental styled websites, or political figures.
+   - Illegal substances, illegal activities, or weapons.
 
 2. "age_verification":
    - ANY mention of alcohol, beer, cocktails, wine, spirits, bars, pubs, or liquor stores.
@@ -73,7 +74,7 @@ Rules for categorization:
 
 3. "pass":
    - Everything else not covered above.
-   - Examples of "pass": normal businesses, e-commerce, portfolios, blogs, restaurants (including those that serve pork), cafes, etc.
+   - Examples of "pass": normal businesses, e-commerce, portfolios, blogs, restaurants, cafes, etc.
 
 You must reply with ONLY a valid JSON object matching this schema:
 {

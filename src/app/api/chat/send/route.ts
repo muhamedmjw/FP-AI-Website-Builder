@@ -18,6 +18,7 @@ import {
 } from "@/server/services/chat-send-service";
 import { applyEditPatches } from "@/server/services/html-patch";
 import { checkEthicalCompliance } from "@/server/services/ethics-service";
+import { detectPromptLanguage } from "@/shared/utils/language-detection";
 // Allow up to 60s for AI generation on Vercel (default is 10s which is too short).
 export const maxDuration = 60;
 
@@ -223,12 +224,9 @@ export async function POST(request: NextRequest) {
         { status: 429 }
       );
     }
-
-    // Resolve language early so ethical compliance messages can use it.
-    const existingWebsite = await getWebsiteByChatId(supabase, sendRequest.chatId);
-    const effectiveLanguage: AppLanguage = isAppLanguage(sendRequest.language)
-      ? sendRequest.language
-      : existingWebsite?.language ?? "en";
+      
+    // Detect language of the actual prompt for the AI's internal response
+    const promptLanguage = detectPromptLanguage(trimmedContent);
 
     // Run ethical checks BEFORE saving the user's message for age verification to avoid dirty state
     const ethicalStatus = await checkEthicalCompliance(trimmedContent);
@@ -249,19 +247,27 @@ export async function POST(request: NextRequest) {
         supabase,
         sendRequest.chatId,
         "assistant",
-        t("ageVerificationAssistantMessage", effectiveLanguage)
+        t("ageVerificationAssistantMessage", promptLanguage)
       );
-      const messages = await getChatMessages(supabase, sendRequest.chatId);
-      return NextResponse.json({ messages, userMessage, assistantMessage, aiResponseType: "age_verification_required" });
+      
+      return NextResponse.json({
+        aiResponseType: "age_verification_required",
+        assistantMessage: {
+          id: assistantMessage.id,
+          role: "assistant",
+          content: assistantMessage.content,
+        },
+      });
     }
 
     if (ethicalStatus === "lock") {
+      // Permanently lock the chat
       await supabase.from("chats").update({ is_locked: true }).eq("id", sendRequest.chatId);
       const assistantMessage = await addMessage(
         supabase,
         sendRequest.chatId,
         "assistant",
-        t("chatLockedAssistantMessage", effectiveLanguage)
+        t("chatLockedAssistantMessage", promptLanguage)
       );
       const messages = await getChatMessages(supabase, sendRequest.chatId);
       return NextResponse.json({ messages, userMessage, assistantMessage, aiResponseType: "locked" });

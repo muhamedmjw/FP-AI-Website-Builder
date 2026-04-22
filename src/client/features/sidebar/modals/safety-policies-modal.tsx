@@ -53,6 +53,7 @@ export default function SafetyPoliciesModal({ isOpen, onClose }: SafetyPoliciesM
               <li>{t("safetyProhibitedItem3", language)}</li>
               <li>{t("safetyProhibitedItem4", language)}</li>
               <li>{t("safetyProhibitedItem5", language)}</li>
+              <li>{t("safetyProhibitedItem6", language)}</li>
             </ul>
           </section>
 

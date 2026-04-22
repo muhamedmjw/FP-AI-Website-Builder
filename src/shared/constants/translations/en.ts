@@ -295,9 +295,10 @@ export const en: Record<string, string> = {
   safetyProhibitedItem1: "Explicit NSFW material, pornography, and adult content.",
   safetyProhibitedItem2: "Adult entertainment venues such as nightclubs and strip clubs.",
   safetyProhibitedItem3:
-    "Hate speech, promotion of violence, or offensive historical figures (e.g., Hitler, Saddam Hussein).",
+    "Hate speech, promotion of violence, or offensive historical figures.",
   safetyProhibitedItem4: "Casinos, betting platforms, and gambling.",
   safetyProhibitedItem5: "Governmental or political campaign websites.",
+  safetyProhibitedItem6: "Illegal substances, illegal activities, or weapons.",
   safetyAgeRestrictedTitle: "2. Age-Restricted Content (Verification Required)",
   safetyAgeRestrictedDesc:
     "Some topics are allowed but require you to confirm you are over 18 years of age and take full responsibility for the generated content. These include:",
@@ -305,6 +306,6 @@ export const en: Record<string, string> = {
   safetyAgeRestrictedItem2: "Tobacco, cigar lounges, and vape shops.",
   safetyAllowedTitle: "3. Allowed Content",
   safetyAllowedDesc:
-    "You are free to generate websites for standard businesses, e-commerce stores, portfolios, blogs, restaurants (including those serving pork), and cafes. If you have any questions regarding a specific use case, please test it out or contact our support team.",
+    "You are free to generate websites for standard businesses, e-commerce stores, portfolios, blogs, restaurants, and cafes. If you have any questions regarding a specific use case, please test it out or contact our support team.",
   safetyPoliciesLabel: "Safety Policies",
 };
