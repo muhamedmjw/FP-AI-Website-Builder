@@ -3,12 +3,15 @@
 -- =============================================================
 
 create table if not exists public.chats (
-  id          uuid primary key default gen_random_uuid(),
-  user_id     uuid not null references public.users(id) on delete cascade,
-  title       text not null default 'New Chat',
-  archived_at timestamptz,
-  created_at  timestamptz not null default now(),
-  updated_at  timestamptz not null default now()
+  id                     uuid primary key default gen_random_uuid(),
+  user_id                uuid not null references public.users(id) on delete cascade,
+  title                  text not null default 'New Chat',
+  is_locked              boolean not null default false,
+  age_verified           boolean not null default false,
+  needs_age_verification boolean not null default false,
+  archived_at            timestamptz,
+  created_at             timestamptz not null default now(),
+  updated_at             timestamptz not null default now()
 );
 
 create index if not exists chats_user_id_idx     on public.chats(user_id);

@@ -98,6 +98,7 @@ create table if not exists public.chats (
   title        text not null default 'New Chat',
   is_locked    boolean not null default false,
   age_verified boolean not null default false,
+  needs_age_verification boolean not null default false,
   archived_at  timestamptz,
   created_at   timestamptz not null default now(),
   updated_at   timestamptz not null default now()
