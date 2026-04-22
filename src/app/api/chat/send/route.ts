@@ -274,7 +274,11 @@ export async function POST(request: NextRequest) {
     }
 
     // Load website context and selected images.
-    // existingWebsite and effectiveLanguage resolved earlier for ethical compliance messages.
+    const existingWebsite = await getWebsiteByChatId(supabase, sendRequest.chatId);
+    const effectiveLanguage = isAppLanguage(sendRequest.language)
+      ? sendRequest.language
+      : (existingWebsite?.language ?? "en");
+
     const existingHtml = existingWebsite
       ? await getGeneratedHtml(supabase, existingWebsite.id)
       : null;
