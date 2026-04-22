@@ -369,6 +369,7 @@ export default function BuilderView({
                     onDownload={() => void handleDownloadZip()}
                     isDownloading={isDownloading}
                     downloadSuccess={downloadSuccess}
+                    isGenerating={isSending}
                   />
                 </PreviewErrorBoundary>
               </div>
@@ -427,6 +428,7 @@ export default function BuilderView({
                 downloadSuccess={downloadSuccess}
                 activePanelOverride={activeMobilePreviewMode}
                 showModeToggle={false}
+                isGenerating={isSending}
               />
             </PreviewErrorBoundary>
           </div>

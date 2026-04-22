@@ -40,6 +40,7 @@ type PreviewPanelProps = {
   downloadSuccess?: boolean;
   activePanelOverride?: "preview" | "editor";
   showModeToggle?: boolean;
+  isGenerating?: boolean;
 };
 
 export default function PreviewPanel({
@@ -60,6 +61,7 @@ export default function PreviewPanel({
   downloadSuccess = false,
   activePanelOverride,
   showModeToggle = true,
+  isGenerating = false,
 }: PreviewPanelProps) {
   const { language } = useLanguage();
   const isRtlLanguage = RTL_LANGUAGES.includes(language);
@@ -70,7 +72,10 @@ export default function PreviewPanel({
     activePanelOverride === "editor" && !onChange
       ? "preview"
       : activePanelOverride ?? activePanel;
-  const toggleTargetPanel = effectiveActivePanel === "preview" ? "editor" : "preview";
+
+  function handlePanelToggle() {
+    handlePanelSwitch(effectiveActivePanel === "preview" ? "editor" : "preview");
+  }
 
   function ensureEditorPanelMounted() {
     setEditorMounted((mounted) => mounted || true);
@@ -83,15 +88,6 @@ export default function PreviewPanel({
     }
 
     setActivePanel(nextPanel);
-  }
-
-  function handlePanelToggle() {
-    if (effectiveActivePanel === "preview") {
-      handlePanelSwitch("editor");
-      return;
-    }
-
-    handlePanelSwitch("preview");
   }
 
   if (!html) {
@@ -136,19 +132,44 @@ export default function PreviewPanel({
         className="flex h-12 shrink-0 items-center gap-1.5 overflow-x-auto border-b border-[var(--app-border)] bg-[var(--app-panel)] px-3"
       >
         {onChange && showModeToggle ? (
-          <button
-            type="button"
-            onClick={handlePanelToggle}
-            className={`mr-1 flex h-8 items-center gap-1.5 rounded-lg border px-2.5 text-xs font-medium transition ${
-              effectiveActivePanel === "preview"
-                ? "border-[var(--button-hover-border)] bg-[var(--app-hover-bg)] text-[var(--app-text-heading)]"
-                : "border-[var(--app-border)] text-[var(--app-text-secondary)] hover:bg-[var(--app-hover-bg)] hover:text-[var(--app-text-heading)]"
+          <div
+            className={`relative mr-1 flex h-8 w-44 items-center rounded-full border border-[var(--app-border)] bg-[var(--app-bg-soft)] p-[3px] shadow-inner transition-opacity ${
+              isGenerating ? "pointer-events-none opacity-50" : ""
             }`}
-            title={t(toggleTargetPanel, language)}
           >
-            {toggleTargetPanel === "preview" ? <Eye size={14} /> : <Code size={14} />}
-            {t(toggleTargetPanel, language)}
-          </button>
+            {/* Sliding Thumb */}
+            <div
+              className={`absolute bottom-[3px] left-[3px] top-[3px] w-[calc(50%-3px)] rounded-full bg-[var(--app-panel)] border border-[var(--app-border)] shadow-sm transition-transform duration-300 cubic-bezier(0.22, 1, 0.36, 1) ${
+                effectiveActivePanel === "preview" ? "translate-x-0" : "translate-x-full"
+              }`}
+            />
+            <button
+              type="button"
+              onClick={() => handlePanelSwitch("preview")}
+              className={`relative z-10 flex h-full flex-1 items-center justify-center gap-1.5 rounded-full text-xs font-medium transition-colors duration-300 ${
+                effectiveActivePanel === "preview"
+                  ? "text-[var(--app-text-heading)]"
+                  : "text-[var(--app-text-secondary)] hover:text-[var(--app-text-primary)]"
+              }`}
+              title={t("preview", language)}
+            >
+              <Eye size={13} />
+              {t("preview", language)}
+            </button>
+            <button
+              type="button"
+              onClick={() => handlePanelSwitch("editor")}
+              className={`relative z-10 flex h-full flex-1 items-center justify-center gap-1.5 rounded-full text-xs font-medium transition-colors duration-300 ${
+                effectiveActivePanel === "editor"
+                  ? "text-[var(--app-text-heading)]"
+                  : "text-[var(--app-text-secondary)] hover:text-[var(--app-text-primary)]"
+              }`}
+              title={t("editor", language)}
+            >
+              <Code size={13} />
+              {t("editor", language)}
+            </button>
+          </div>
         ) : null}
 
         {/* Spacer */}
@@ -158,7 +179,8 @@ export default function PreviewPanel({
           <button
             type="button"
             onClick={() => setIsHistoryOpen((open) => !open)}
-            className="flex h-8 items-center gap-1.5 rounded-lg border border-[var(--app-border)] px-2.5 text-xs font-medium text-[var(--app-text-secondary)] transition hover:bg-[var(--app-hover-bg)] hover:text-[var(--app-text-heading)]"
+            disabled={isGenerating}
+            className="flex h-8 items-center gap-1.5 rounded-lg border border-[var(--app-border)] px-2.5 text-xs font-medium text-[var(--app-text-secondary)] transition hover:bg-[var(--app-hover-bg)] hover:text-[var(--app-text-heading)] disabled:cursor-not-allowed disabled:opacity-50"
             title={t("history", language)}
             aria-label={t("history", language)}
           >
