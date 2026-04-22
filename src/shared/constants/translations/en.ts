@@ -262,4 +262,49 @@ export const en: Record<string, string> = {
   guestCheckForReset: "Check for reset",
   imagesAttachedCount: "{count}/{max} images attached",
   errorCouldNotRestoreGuest: "Could not restore guest chat/download. Please try again.",
+
+  // ── Ethical / Safety ──
+  chatLocked: "Chat Locked",
+  chatLockedPlaceholder: "Chat locked",
+  chatLockedDescription:
+    "This chat has been permanently locked due to a violation of our safety policies. We do not generate content related to explicit material, hate speech, or governmental/political campaigns.",
+  chatLockedAssistantMessage:
+    "This chat has been permanently locked due to a violation of our safety policies.",
+  startNewChat: "Start New Chat",
+
+  ageVerificationTitle: "Pending Age Verification",
+  ageVerificationDescription:
+    "You have a pending verification for age-restricted content. To proceed, please confirm you are over 18 and acknowledge your responsibility for generating this content.",
+  ageVerificationInputLabel: "Type {phrase} to confirm",
+  ageVerificationPhrase: "I take responsibility",
+  ageVerificationPlaceholder: "I take responsibility",
+  ageVerificationConfirm: "Confirm & Proceed",
+  ageVerificationInputPlaceholder: "Age verification required to continue...",
+  ageVerificationBanner:
+    "Age verification pending — click here to verify and continue chatting",
+  ageVerificationAssistantMessage:
+    "You have a pending age verification for this request. Please confirm you are over 18 and acknowledge responsibility to proceed.",
+  ageVerificationFailed: "Failed to verify age. Please try again.",
+
+  safetyPoliciesTitle: "Safety & Ethical Policies",
+  safetyPoliciesSubtitle: "Guidelines for using our AI Website Builder",
+  safetyPoliciesAcknowledge: "Acknowledge",
+  safetyProhibitedTitle: "1. Prohibited Content (Chat Lock)",
+  safetyProhibitedDesc:
+    "We enforce strict boundaries to ensure a safe environment for all users. Generating websites related to the following topics is strictly prohibited and will result in your chat being permanently locked:",
+  safetyProhibitedItem1: "Explicit NSFW material, pornography, and adult content.",
+  safetyProhibitedItem2: "Adult entertainment venues such as nightclubs and strip clubs.",
+  safetyProhibitedItem3:
+    "Hate speech, promotion of violence, or offensive historical figures (e.g., Hitler, Saddam Hussein).",
+  safetyProhibitedItem4: "Casinos, betting platforms, and gambling.",
+  safetyProhibitedItem5: "Governmental or political campaign websites.",
+  safetyAgeRestrictedTitle: "2. Age-Restricted Content (Verification Required)",
+  safetyAgeRestrictedDesc:
+    "Some topics are allowed but require you to confirm you are over 18 years of age and take full responsibility for the generated content. These include:",
+  safetyAgeRestrictedItem1: "Alcohol sales, bars, and pubs.",
+  safetyAgeRestrictedItem2: "Tobacco, cigar lounges, and vape shops.",
+  safetyAllowedTitle: "3. Allowed Content",
+  safetyAllowedDesc:
+    "You are free to generate websites for standard businesses, e-commerce stores, portfolios, blogs, restaurants (including those serving pork), and cafes. If you have any questions regarding a specific use case, please test it out or contact our support team.",
+  safetyPoliciesLabel: "Safety Policies",
 };

@@ -2,6 +2,8 @@
 
 import { Shield, X } from "lucide-react";
 import { createPortal } from "react-dom";
+import { useLanguage } from "@/client/lib/language-context";
+import { t } from "@/shared/constants/translations";
 
 type SafetyPoliciesModalProps = {
   isOpen: boolean;
@@ -9,11 +11,15 @@ type SafetyPoliciesModalProps = {
 };
 
 export default function SafetyPoliciesModal({ isOpen, onClose }: SafetyPoliciesModalProps) {
+  const { language } = useLanguage();
+
   if (!isOpen) return null;
+
+  const isRtl = language === "ar" || language === "ku";
 
   return createPortal(
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm">
-      <div className="w-full max-w-xl max-h-[90vh] overflow-y-auto rounded-2xl bg-[var(--app-bg)] p-6 shadow-2xl ring-1 ring-white/10">
+      <div className="w-full max-w-xl max-h-[90vh] overflow-y-auto rounded-2xl bg-[var(--app-bg)] p-6 shadow-2xl ring-1 ring-white/10" dir={isRtl ? "rtl" : "ltr"}>
         <div className="mb-6 flex items-start justify-between">
           <div className="flex items-center gap-3">
             <div className="flex h-10 w-10 items-center justify-center rounded-full bg-blue-500/20 text-blue-400">
@@ -21,10 +27,10 @@ export default function SafetyPoliciesModal({ isOpen, onClose }: SafetyPoliciesM
             </div>
             <div>
               <h2 className="text-xl font-semibold text-[var(--app-text-heading)]">
-                Safety & Ethical Policies
+                {t("safetyPoliciesTitle", language)}
               </h2>
               <p className="text-sm text-[var(--app-text-tertiary)]">
-                Guidelines for using our AI Website Builder
+                {t("safetyPoliciesSubtitle", language)}
               </p>
             </div>
           </div>
@@ -39,41 +45,41 @@ export default function SafetyPoliciesModal({ isOpen, onClose }: SafetyPoliciesM
 
         <div className="space-y-6 text-sm text-[var(--app-text-secondary)]">
           <section>
-            <h3 className="mb-2 text-base font-medium text-[var(--app-text-heading)]">1. Prohibited Content (Chat Lock)</h3>
-            <p className="mb-2">We enforce strict boundaries to ensure a safe environment for all users. Generating websites related to the following topics is strictly prohibited and will result in your chat being permanently locked:</p>
-            <ul className="ml-5 list-disc space-y-1">
-              <li>Explicit NSFW material, pornography, and adult content.</li>
-              <li>Adult entertainment venues such as nightclubs and strip clubs.</li>
-              <li>Hate speech, promotion of violence, or offensive historical figures (e.g., Hitler, Saddam Hussein).</li>
-              <li>Casinos, betting platforms, and gambling.</li>
-              <li>Governmental or political campaign websites.</li>
+            <h3 className="mb-2 text-base font-medium text-[var(--app-text-heading)]">{t("safetyProhibitedTitle", language)}</h3>
+            <p className="mb-2">{t("safetyProhibitedDesc", language)}</p>
+            <ul className={`${isRtl ? "mr-5" : "ml-5"} list-disc space-y-1`}>
+              <li>{t("safetyProhibitedItem1", language)}</li>
+              <li>{t("safetyProhibitedItem2", language)}</li>
+              <li>{t("safetyProhibitedItem3", language)}</li>
+              <li>{t("safetyProhibitedItem4", language)}</li>
+              <li>{t("safetyProhibitedItem5", language)}</li>
             </ul>
           </section>
 
           <section>
-            <h3 className="mb-2 text-base font-medium text-[var(--app-text-heading)]">2. Age-Restricted Content (Verification Required)</h3>
-            <p className="mb-2">Some topics are allowed but require you to confirm you are over 18 years of age and take full responsibility for the generated content. These include:</p>
-            <ul className="ml-5 list-disc space-y-1">
-              <li>Alcohol sales, bars, and pubs.</li>
-              <li>Tobacco, cigar lounges, and vape shops.</li>
+            <h3 className="mb-2 text-base font-medium text-[var(--app-text-heading)]">{t("safetyAgeRestrictedTitle", language)}</h3>
+            <p className="mb-2">{t("safetyAgeRestrictedDesc", language)}</p>
+            <ul className={`${isRtl ? "mr-5" : "ml-5"} list-disc space-y-1`}>
+              <li>{t("safetyAgeRestrictedItem1", language)}</li>
+              <li>{t("safetyAgeRestrictedItem2", language)}</li>
             </ul>
           </section>
 
           <section>
-            <h3 className="mb-2 text-base font-medium text-[var(--app-text-heading)]">3. Allowed Content</h3>
+            <h3 className="mb-2 text-base font-medium text-[var(--app-text-heading)]">{t("safetyAllowedTitle", language)}</h3>
             <p>
-              You are free to generate websites for standard businesses, e-commerce stores, portfolios, blogs, restaurants (including those serving pork), and cafes. If you have any questions regarding a specific use case, please test it out or contact our support team.
+              {t("safetyAllowedDesc", language)}
             </p>
           </section>
         </div>
 
-        <div className="mt-8 flex justify-end">
+        <div className={`mt-8 flex ${isRtl ? "justify-start" : "justify-end"}`}>
           <button
             type="button"
             onClick={onClose}
             className="rounded-lg bg-[var(--app-btn-primary-bg)] px-5 py-2.5 text-sm font-medium text-[var(--app-btn-primary-text)] hover:opacity-90"
           >
-            Acknowledge
+            {t("safetyPoliciesAcknowledge", language)}
           </button>
         </div>
       </div>

@@ -261,4 +261,49 @@ export const ar: Record<string, string> = {
   guestCheckForReset: "تحقق من إعادة التعيين",
   imagesAttachedCount: "{count}/{max} صورة مرفقة",
   errorCouldNotRestoreGuest: "تعذر استعادة محادثة الزائر/التنزيل. يرجى المحاولة مرة أخرى.",
+
+  // ── Ethical / Safety ──
+  chatLocked: "المحادثة مقفلة",
+  chatLockedPlaceholder: "المحادثة مقفلة",
+  chatLockedDescription:
+    "تم قفل هذه المحادثة نهائياً بسبب انتهاك سياسات السلامة لدينا. لا نقوم بإنشاء محتوى يتعلق بالمواد الصريحة أو خطاب الكراهية أو الحملات السياسية/الحكومية.",
+  chatLockedAssistantMessage:
+    "تم قفل هذه المحادثة نهائياً بسبب انتهاك سياسات السلامة لدينا.",
+  startNewChat: "بدء محادثة جديدة",
+
+  ageVerificationTitle: "التحقق من العمر معلّق",
+  ageVerificationDescription:
+    "لديك تحقق معلّق للمحتوى المقيّد بالعمر. للمتابعة، يرجى تأكيد أن عمرك أكثر من 18 عاماً وتحمّل مسؤولية إنشاء هذا المحتوى.",
+  ageVerificationInputLabel: "اكتب {phrase} للتأكيد",
+  ageVerificationPhrase: "أتحمل المسؤولية",
+  ageVerificationPlaceholder: "أتحمل المسؤولية",
+  ageVerificationConfirm: "تأكيد ومتابعة",
+  ageVerificationInputPlaceholder: "التحقق من العمر مطلوب للمتابعة...",
+  ageVerificationBanner:
+    "التحقق من العمر معلّق — اضغط هنا للتحقق ومتابعة المحادثة",
+  ageVerificationAssistantMessage:
+    "لديك تحقق معلّق من العمر لهذا الطلب. يرجى تأكيد أن عمرك أكثر من 18 عاماً وتحمّل المسؤولية للمتابعة.",
+  ageVerificationFailed: "فشل التحقق من العمر. يرجى المحاولة مرة أخرى.",
+
+  safetyPoliciesTitle: "سياسات السلامة والأخلاقيات",
+  safetyPoliciesSubtitle: "إرشادات استخدام أداة بناء المواقع بالذكاء الاصطناعي",
+  safetyPoliciesAcknowledge: "إقرار",
+  safetyProhibitedTitle: "١. المحتوى المحظور (قفل المحادثة)",
+  safetyProhibitedDesc:
+    "نحن نفرض حدوداً صارمة لضمان بيئة آمنة لجميع المستخدمين. إنشاء مواقع تتعلق بالموضوعات التالية محظور تماماً وسيؤدي إلى قفل محادثتك نهائياً:",
+  safetyProhibitedItem1: "المواد الصريحة غير اللائقة، والمحتوى الإباحي، ومحتوى البالغين.",
+  safetyProhibitedItem2: "أماكن الترفيه للبالغين مثل النوادي الليلية ونوادي التعري.",
+  safetyProhibitedItem3:
+    "خطاب الكراهية، والتحريض على العنف، أو الشخصيات التاريخية المسيئة (مثل هتلر، صدام حسين).",
+  safetyProhibitedItem4: "الكازينوهات، ومنصات المراهنات، والقمار.",
+  safetyProhibitedItem5: "مواقع الحملات الحكومية أو السياسية.",
+  safetyAgeRestrictedTitle: "٢. المحتوى المقيّد بالعمر (يتطلب تحققاً)",
+  safetyAgeRestrictedDesc:
+    "بعض الموضوعات مسموح بها لكنها تتطلب تأكيد أن عمرك أكثر من 18 عاماً وتحمّل المسؤولية الكاملة عن المحتوى المُنشأ. تشمل:",
+  safetyAgeRestrictedItem1: "بيع الكحول والبارات والحانات.",
+  safetyAgeRestrictedItem2: "التبغ وصالات السيجار ومحلات الفيب.",
+  safetyAllowedTitle: "٣. المحتوى المسموح به",
+  safetyAllowedDesc:
+    "لك حرية إنشاء مواقع للأعمال العادية، والمتاجر الإلكترونية، والمحافظ، والمدونات، والمطاعم (بما في ذلك تلك التي تقدم لحم الخنزير)، والمقاهي. إذا كان لديك أي سؤال حول حالة استخدام محددة، يرجى تجربتها أو التواصل مع فريق الدعم.",
+  safetyPoliciesLabel: "سياسات السلامة",
 };

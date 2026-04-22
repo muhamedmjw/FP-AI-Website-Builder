@@ -552,9 +552,9 @@ export function useBuilderState({
       setNeedsAgeVerification(false);
       // The user is now verified. They can just continue chatting naturally.
     } catch (error) {
-      setInputErrorMessage("Failed to verify age. Please try again.");
+      setInputErrorMessage(t("ageVerificationFailed", language));
     }
-  }, [chatId, setInputErrorMessage]);
+  }, [chatId, language, setInputErrorMessage]);
 
   const handleAgeVerificationCancel = useCallback(() => {
     setShowAgeVerification(false);

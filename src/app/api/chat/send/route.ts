@@ -8,6 +8,7 @@ import { getWebsiteByChatId, getGeneratedHtml } from "@/server/services/website-
 import { MAX_PROMPT_LENGTH } from "@/shared/constants/limits";
 import type { AppLanguage, HistoryMessage } from "@/shared/types/database";
 import { extractBooleanField, extractStringArrayField, extractStringField } from "@/shared/utils/request-helpers";
+import { t } from "@/shared/constants/translations";
 import { getSupabaseRouteClient } from "@/server/supabase/server-client";
 import {
   checkUserTokenBudget,
@@ -223,6 +224,12 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Resolve language early so ethical compliance messages can use it.
+    const existingWebsite = await getWebsiteByChatId(supabase, sendRequest.chatId);
+    const effectiveLanguage: AppLanguage = isAppLanguage(sendRequest.language)
+      ? sendRequest.language
+      : existingWebsite?.language ?? "en";
+
     // Run ethical checks BEFORE saving the user's message for age verification to avoid dirty state
     const ethicalStatus = await checkEthicalCompliance(trimmedContent);
 
@@ -242,7 +249,7 @@ export async function POST(request: NextRequest) {
         supabase,
         sendRequest.chatId,
         "assistant",
-        "You have a pending age verification for this request. Please confirm you are over 18 and acknowledge responsibility to proceed."
+        t("ageVerificationAssistantMessage", effectiveLanguage)
       );
       const messages = await getChatMessages(supabase, sendRequest.chatId);
       return NextResponse.json({ messages, userMessage, assistantMessage, aiResponseType: "age_verification_required" });
@@ -254,17 +261,14 @@ export async function POST(request: NextRequest) {
         supabase,
         sendRequest.chatId,
         "assistant",
-        "This chat has been permanently locked due to a violation of our safety policies."
+        t("chatLockedAssistantMessage", effectiveLanguage)
       );
       const messages = await getChatMessages(supabase, sendRequest.chatId);
       return NextResponse.json({ messages, userMessage, assistantMessage, aiResponseType: "locked" });
     }
 
     // Load website context and selected images.
-    const existingWebsite = await getWebsiteByChatId(supabase, sendRequest.chatId);
-    const effectiveLanguage: AppLanguage = isAppLanguage(sendRequest.language)
-      ? sendRequest.language
-      : existingWebsite?.language ?? "en";
+    // existingWebsite and effectiveLanguage resolved earlier for ethical compliance messages.
     const existingHtml = existingWebsite
       ? await getGeneratedHtml(supabase, existingWebsite.id)
       : null;

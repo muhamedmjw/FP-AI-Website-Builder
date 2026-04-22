@@ -4,6 +4,7 @@ export type EthicalStatus = "pass" | "lock" | "age_verification";
 
 /**
  * Classifies a prompt based on strict ethical and safety rules.
+ * Supports English, Kurdish Sorani, and Arabic prompts.
  * 
  * Categories:
  * - lock: explicit NSFW, pornography, stripclubs, nightclubs, hate speech, offensive history (Hitler, Saddam), casinos, gambling, governmental/political.
@@ -15,13 +16,37 @@ export async function checkEthicalCompliance(
 ): Promise<EthicalStatus> {
   const promptLower = prompt.toLowerCase();
   
-  // Instant failsafe for locked terms
-  if (/(porn|nsfw|stripclub|nightclub|hitler|saddam|casino|gambling|sex|nude)/i.test(promptLower)) {
+  // ── Instant failsafe: locked terms (English + Kurdish + Arabic) ──
+  const lockPattern = new RegExp(
+    [
+      // English
+      'porn', 'nsfw', 'stripclub', 'nightclub', 'hitler', 'saddam', 'casino', 'gambling', 'sex', 'nude',
+      // Kurdish Sorani
+      'پۆرنۆ', 'پۆرنۆگرافی', 'ستریپ کلوب', 'کلوبی شەو', 'هیتلەر', 'سەددام', 'کازینۆ', 'قومار',
+      // Arabic
+      'إباحي', 'إباحية', 'بورنو', 'نادي ليلي', 'ملهى ليلي', 'نادي تعري', 'هتلر', 'صدام', 'كازينو', 'قمار', 'مقامرة',
+    ].join('|'),
+    'i'
+  );
+  
+  if (lockPattern.test(promptLower) || lockPattern.test(prompt)) {
     return "lock";
   }
 
-  // Instant failsafe for age-restricted terms
-  if (/(alcohol|beer|cocktail|wine|liquor|pub | pub|bar | bar|tobacco|cigar|vape|smoke)/i.test(promptLower)) {
+  // ── Instant failsafe: age-restricted terms (English + Kurdish + Arabic) ──
+  const agePattern = new RegExp(
+    [
+      // English
+      'alcohol', 'beer', 'cocktail', 'wine', 'liquor', 'pub ', ' pub', 'bar ', ' bar', 'tobacco', 'cigar', 'vape', 'smoke',
+      // Kurdish Sorani
+      'مەی', 'بیرە', 'ئاڵکۆل', 'شەراب', 'ویسکی', 'بار', 'پاب', 'تووتن', 'جگەرە', 'ڤەیپ', 'نارگیلە',
+      // Arabic
+      'كحول', 'خمر', 'بيرة', 'نبيذ', 'ويسكي', 'مشروبات كحولية', 'حانة', 'تبغ', 'سيجار', 'فيب', 'شيشة', 'أرجيلة',
+    ].join('|'),
+    'i'
+  );
+  
+  if (agePattern.test(promptLower) || agePattern.test(prompt)) {
     return "age_verification";
   }
 
@@ -30,6 +55,8 @@ export async function checkEthicalCompliance(
       role: "system" as const,
       content: `You are an ethical and safety compliance classifier for an AI website builder.
 You must analyze the user's prompt and categorize it into exactly one of the following JSON categories: "lock", "age_verification", or "pass".
+
+IMPORTANT: The user's prompt may be in English, Kurdish Sorani, or Arabic. You MUST understand and classify the prompt regardless of the language it is written in.
 
 Rules for categorization:
 1. "lock":

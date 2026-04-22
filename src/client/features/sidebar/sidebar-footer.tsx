@@ -531,7 +531,7 @@ export default function SidebarFooter({
               className={menuItemClass}
             >
               <ShieldAlert size={15} />
-              Safety Policies
+              {t("safetyPoliciesLabel", language)}
             </button>
 
             <a
