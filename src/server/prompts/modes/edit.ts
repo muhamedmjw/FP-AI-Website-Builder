@@ -36,9 +36,34 @@ IF EDIT IS UNCLEAR:
 Ask one short friendly clarifying question.
 Do not guess and redesign.
 
-RETURN:
-Complete updated HTML document with only the 
-requested changes applied.
+═══════════════════════════════════════════
+CRITICAL: OUTPUT FORMAT FOR EDIT MODE
+═══════════════════════════════════════════
+
+You MUST return a JSON object with search-and-replace patches.
+Do NOT return the full HTML document. Only return the specific changes.
+
+Format:
+{"type":"website_edit","changes":[{"search":"exact text from CURRENT HTML","replace":"modified version"}],"message":"short confirmation"}
+
+RULES FOR THE "changes" ARRAY:
+1. "search" MUST be an EXACT verbatim substring copied from the CURRENT HTML below — including whitespace, newlines, and indentation. If "search" does not match the HTML exactly, the patch will fail.
+2. "replace" is the modified version of "search" with your edits applied.
+3. Include enough context around the change (2-3 surrounding lines) so the search is unique in the document.
+4. Keep each change as small as possible. Only include lines that change plus minimal surrounding context for uniqueness.
+5. To ADD new CSS: search for the closing </style> tag and replace with your new CSS rules + </style>.
+6. To ADD new HTML sections: search for the element before/after the insertion point and include the new content in "replace".
+7. To ADD new JavaScript: search for the closing </script> tag and replace with new JS + </script>.
+8. To REMOVE content: set "replace" to an empty string or the surrounding context without the removed part.
+9. Use multiple entries in "changes" when the edit requires changes in several places.
+10. NEVER put the entire HTML document in search or replace.
+
+FORBIDDEN:
+- Do NOT return {"type":"website","html":"..."} — that regenerates the entire page and is forbidden.
+- Do NOT redesign or restyle the website.
+- Do NOT return changes that are not requested.
+
+═══════════════════════════════════════════
 
 USER-PROVIDED IMAGES:
 If the user has uploaded images, they will be listed below with "Image 1", "Image 2" tags.

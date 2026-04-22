@@ -15,6 +15,7 @@ import {
   resolveUserImages,
   saveWebsiteRecord,
 } from "@/server/services/chat-send-service";
+import { applyEditPatches } from "@/server/services/html-patch";
 
 // Allow up to 60s for AI generation on Vercel (default is 10s which is too short).
 export const maxDuration = 60;
@@ -242,7 +243,7 @@ export async function POST(request: NextRequest) {
     );
 
     // Generate AI response for the current chat.
-    const aiResponse = await generateAIResponse(
+    let aiResponse = await generateAIResponse(
       supabase,
       sendRequest.chatId,
       historyForAI,
@@ -257,6 +258,31 @@ export async function POST(request: NextRequest) {
         { error: "Generation cancelled by user.", cancelled: true },
         { status: 499 }
       );
+    }
+
+    // Handle patch-based edits: apply search/replace patches to the original HTML.
+    if (aiResponse.type === "website_edit" && existingHtml) {
+      const patchResult = applyEditPatches(existingHtml, aiResponse.changes);
+
+      if (patchResult.appliedCount > 0) {
+        aiResponse = {
+          type: "website",
+          html: patchResult.html,
+          message: aiResponse.message,
+        };
+      } else {
+        // All patches failed — treat as a conversational response so we don't break the site.
+        console.warn(
+          "All edit patches failed to apply:",
+          patchResult.failedPatches
+        );
+        aiResponse = {
+          type: "questions",
+          message:
+            aiResponse.message +
+            "\n\n(The edit could not be applied automatically. Please try rephrasing your request.)",
+        };
+      }
     }
 
     // Transform and persist generated HTML output.

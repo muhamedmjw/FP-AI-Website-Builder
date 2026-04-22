@@ -465,7 +465,6 @@ export function buildEditMessages(
     editModeWithImages,
     hasUserUploads ? IMAGE_RULES : "",
     isRtl ? RTL_RULES : "",
-    OUTPUT_FORMAT,
     `Website content language: ${contentLanguage}`,
     `Conversation reply language: ${detectedUserLanguage}`,
     `CURRENT HTML:\n${existingHtml}`,

@@ -27,7 +27,7 @@ import {
 
 // Re-export public symbols so existing imports keep working.
 export { GenerationCancelledError } from "./ai-client";
-export type { AIResponse, AIResponseQuestions, AIResponseWebsite } from "./ai-response-parser";
+export type { AIResponse, AIResponseQuestions, AIResponseWebsite, AIResponseEdit } from "./ai-response-parser";
 export { generateChatTitle } from "./chat-title-service";
 
 import {
@@ -147,7 +147,7 @@ async function classifyIntent(
     detectedLanguage: "en" as AppLanguage,
   };
 
-  const messages = buildClassifierMessages(userMessage, websiteLanguage) as AIMessage[];
+  const messages = buildClassifierMessages(userMessage, websiteLanguage, hasExistingWebsite) as AIMessage[];
 
   for (const model of MODEL_CANDIDATES) {
     try {

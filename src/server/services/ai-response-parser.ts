@@ -1,6 +1,6 @@
 /**
  * AI Response Parser — handles parsing raw model output into typed
- * response objects (website HTML or follow-up questions).
+ * response objects (website HTML, edit patches, or follow-up questions).
  */
 
 import type { AppLanguage } from "@/shared/types/database";
@@ -18,7 +18,13 @@ export type AIResponseWebsite = {
   message: string;
 };
 
-export type AIResponse = AIResponseQuestions | AIResponseWebsite;
+export type AIResponseEdit = {
+  type: "website_edit";
+  changes: Array<{ search: string; replace: string }>;
+  message: string;
+};
+
+export type AIResponse = AIResponseQuestions | AIResponseWebsite | AIResponseEdit;
 
 // ── Classifier types ──
 
@@ -66,6 +72,23 @@ export function validateWebsiteHtml(html: string): boolean {
   return hasDoctype && hasClosingHtml && hasBody && hasHead && hasSomeContent;
 }
 
+function isValidEditChanges(
+  value: unknown
+): value is Array<{ search: string; replace: string }> {
+  if (!Array.isArray(value) || value.length === 0) {
+    return false;
+  }
+
+  return value.every(
+    (item) =>
+      item &&
+      typeof item === "object" &&
+      typeof item.search === "string" &&
+      item.search.length > 0 &&
+      typeof item.replace === "string"
+  );
+}
+
 // ── Parsers ──
 
 export function parseClassifierResult(raw: string): ClassifierResult | null {
@@ -90,6 +113,50 @@ export function parseClassifierResult(raw: string): ClassifierResult | null {
   }
 }
 
+function tryParseJson(text: string): Record<string, unknown> | null {
+  try {
+    return JSON.parse(text);
+  } catch {
+    return null;
+  }
+}
+
+function classifyParsedResponse(parsed: Record<string, unknown>): AIResponse | null {
+  // Handle website_edit (patch-based edits)
+  if (parsed.type === "website_edit" && isValidEditChanges(parsed.changes)) {
+    return {
+      type: "website_edit",
+      changes: parsed.changes as Array<{ search: string; replace: string }>,
+      message:
+        typeof parsed.message === "string"
+          ? parsed.message
+          : "Edit applied successfully.",
+    };
+  }
+
+  // Handle full website HTML
+  if (parsed.type === "website" && typeof parsed.html === "string") {
+    return {
+      type: "website",
+      html: parsed.html,
+      message:
+        typeof parsed.message === "string"
+          ? parsed.message
+          : "Website generated successfully.",
+    };
+  }
+
+  // Handle questions / chat
+  if (parsed.type === "questions" && typeof parsed.message === "string") {
+    return {
+      type: "questions",
+      message: parsed.message,
+    };
+  }
+
+  return null;
+}
+
 export function parseAIResponse(raw: string): AIResponse {
   let cleaned = raw.trim();
 
@@ -98,60 +165,41 @@ export function parseAIResponse(raw: string): AIResponse {
     cleaned = fenceMatch[1].trim();
   }
 
-  try {
-    const parsed = JSON.parse(cleaned);
-
-    if (parsed.type === "website" && typeof parsed.html === "string") {
-      return {
-        type: "website",
-        html: parsed.html,
-        message: parsed.message ?? "Website generated successfully.",
-      };
-    }
-
-    if (parsed.type === "questions" && typeof parsed.message === "string") {
-      return {
-        type: "questions",
-        message: parsed.message,
-      };
+  // Try direct parse
+  const directParsed = tryParseJson(cleaned);
+  if (directParsed) {
+    const classified = classifyParsedResponse(directParsed);
+    if (classified) {
+      return classified;
     }
 
     return {
       type: "questions",
-      message: parsed.message ?? parsed.text ?? raw,
-    };
-  } catch {
-    // Attempt to extract JSON from text if direct parsing fails
-    const firstBrace = raw.indexOf("{");
-    const lastBrace = raw.lastIndexOf("}");
-
-    if (firstBrace !== -1 && lastBrace !== -1 && lastBrace > firstBrace) {
-      try {
-        const potentialJson = raw.slice(firstBrace, lastBrace + 1);
-        const parsed = JSON.parse(potentialJson);
-
-        if (parsed.type === "website" && typeof parsed.html === "string") {
-          return {
-            type: "website",
-            html: parsed.html,
-            message: parsed.message ?? "Website generated successfully.",
-          };
-        }
-
-        if (parsed.type === "questions" && typeof parsed.message === "string") {
-          return {
-            type: "questions",
-            message: parsed.message,
-          };
-        }
-      } catch {
-        // Fall through to default
-      }
-    }
-
-    return {
-      type: "questions",
-      message: raw,
+      message:
+        typeof directParsed.message === "string"
+          ? directParsed.message
+          : (typeof directParsed.text === "string" ? directParsed.text : raw),
     };
   }
+
+  // Attempt to extract JSON from text if direct parsing fails
+  const firstBrace = raw.indexOf("{");
+  const lastBrace = raw.lastIndexOf("}");
+
+  if (firstBrace !== -1 && lastBrace !== -1 && lastBrace > firstBrace) {
+    const potentialJson = raw.slice(firstBrace, lastBrace + 1);
+    const extracted = tryParseJson(potentialJson);
+
+    if (extracted) {
+      const classified = classifyParsedResponse(extracted);
+      if (classified) {
+        return classified;
+      }
+    }
+  }
+
+  return {
+    type: "questions",
+    message: raw,
+  };
 }
