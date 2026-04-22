@@ -1,7 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient, SupabaseClient } from "@supabase/supabase-js";
 import { generateGuestAIResponse } from "@/server/services/ai-service";
+import { checkEthicalCompliance } from "@/server/services/ethics-service";
 import { MAX_GUEST_PROMPTS, MAX_PROMPT_LENGTH } from "@/shared/constants/limits";
+import { t } from "@/shared/constants/translations";
 import type { AppLanguage } from "@/shared/types/database";
 
 // Allow up to 60s for AI generation on Vercel (default is 10s which is too short).
@@ -265,6 +267,20 @@ export async function POST(request: NextRequest) {
 
     // Add the current user message
     conversationHistory.push({ role: "user", content: content.trim() });
+
+    // Ethical compliance check — refuse prohibited content for guests
+    try {
+      const ethicalStatus = await checkEthicalCompliance(content.trim());
+      if (ethicalStatus === "lock" || ethicalStatus === "age_verification") {
+        return NextResponse.json({
+          type: "questions",
+          message: t("chatLockedAssistantMessage", preferredLanguage),
+        });
+      }
+    } catch (error) {
+      // If the ethics check fails, let the request through rather than blocking
+      console.error("POST /api/guest/chat ethics check failed; continuing.", error);
+    }
 
     if (!process.env.DEEPSEEK_API_KEY?.trim()) {
       console.error("POST /api/guest/chat missing DEEPSEEK_API_KEY");
