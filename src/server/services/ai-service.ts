@@ -263,8 +263,7 @@ async function prepareGeneration(
     promptContentLanguage
   );
 
-  const contentLanguage: AppLanguage =
-    promptContentLanguage !== "en" ? promptContentLanguage : language;
+  const contentLanguage: AppLanguage = detectedLanguage;
 
   return {
     intent,
