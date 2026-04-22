@@ -243,7 +243,7 @@ export default function ChatListItem({
               : "text-[var(--app-text-secondary)] hover:bg-[var(--app-hover-bg)] hover:text-[var(--app-text-heading)]"
           }`}
         >
-          <p className="truncate text-[15px] font-semibold">{chat.title}</p>
+          <p className={`truncate text-[15px] font-semibold ${chat.is_locked ? "line-through text-red-500/80" : chat.needs_age_verification ? "text-orange-400" : ""}`}>{chat.title}</p>
           <p className="mt-0.5 truncate text-xs uppercase tracking-[0.08em] text-[var(--app-text-muted)]">
             {new Date(chat.updated_at).toLocaleDateString()}
           </p>

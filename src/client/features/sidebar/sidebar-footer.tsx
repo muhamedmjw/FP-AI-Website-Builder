@@ -20,8 +20,10 @@ import { useLanguage } from "@/client/lib/language-context";
 import SettingsModal from "@/client/features/sidebar/modals/settings-modal";
 import DeploymentsModal from "@/client/features/sidebar/modals/deployments-modal";
 import ArchivedChatsModal from "@/client/features/sidebar/modals/archived-chats-modal";
+import SafetyPoliciesModal from "@/client/features/sidebar/modals/safety-policies-modal";
 import useDeploymentsData from "@/client/features/sidebar/hooks/use-deployments-data";
 import useArchivedChatsData from "@/client/features/sidebar/hooks/use-archived-chats-data";
+import { ShieldAlert } from "lucide-react";
 import { t } from "@/shared/constants/translations";
 import { isMissingSessionError } from "@/shared/utils/auth-errors";
 import { MAX_AVATAR_FILE_SIZE } from "@/shared/constants/limits";
@@ -75,6 +77,7 @@ export default function SidebarFooter({
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [deploymentsOpen, setDeploymentsOpen] = useState(false);
   const [archivedChatsOpen, setArchivedChatsOpen] = useState(false);
+  const [safetyPoliciesOpen, setSafetyPoliciesOpen] = useState(false);
   const [isSigningOut, setIsSigningOut] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
@@ -124,6 +127,7 @@ export default function SidebarFooter({
         setSettingsOpen(false);
         setDeploymentsOpen(false);
         setArchivedChatsOpen(false);
+        setSafetyPoliciesOpen(false);
         setIsLanguageMenuOpen(false);
       }
     }
@@ -517,6 +521,19 @@ export default function SidebarFooter({
               {t("archivedChats", language)}
             </button>
 
+            <button
+              type="button"
+              onClick={() => {
+                setMenuOpen(false);
+                setSafetyPoliciesOpen(true);
+              }}
+              role="menuitem"
+              className={menuItemClass}
+            >
+              <ShieldAlert size={15} />
+              Safety Policies
+            </button>
+
             <a
               href={GITHUB_REPO_URL}
               target="_blank"
@@ -626,6 +643,11 @@ export default function SidebarFooter({
         onRefresh={() => void archivedChatsData.loadArchivedChats()}
         onRestoreChat={(chatId) => void archivedChatsData.restoreArchivedChat(chatId)}
         formatDateTime={formatDateTime}
+      />
+
+      <SafetyPoliciesModal
+        isOpen={safetyPoliciesOpen}
+        onClose={() => setSafetyPoliciesOpen(false)}
       />
 
       {settingsOpen &&

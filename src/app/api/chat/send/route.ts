@@ -16,7 +16,7 @@ import {
   saveWebsiteRecord,
 } from "@/server/services/chat-send-service";
 import { applyEditPatches } from "@/server/services/html-patch";
-
+import { checkEthicalCompliance } from "@/server/services/ethics-service";
 // Allow up to 60s for AI generation on Vercel (default is 10s which is too short).
 export const maxDuration = 60;
 
@@ -200,13 +200,18 @@ export async function POST(request: NextRequest) {
     // Verify chat ownership.
     const { data: chat, error: chatError } = await supabase
       .from("chats")
-      .select("id")
+      .select("id, is_locked, age_verified")
       .eq("id", sendRequest.chatId)
       .eq("user_id", user.id)
       .single();
 
     if (chatError || !chat) {
       return NextResponse.json({ error: "Chat not found." }, { status: 404 });
+    }
+
+    if (chat.is_locked) {
+      const messages = await getChatMessages(supabase, sendRequest.chatId);
+      return NextResponse.json({ messages, aiResponseType: "locked" });
     }
 
     // Enforce daily token budget.
@@ -218,7 +223,10 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Resolve user message and full history context.
+    // Run ethical checks BEFORE saving the user's message for age verification to avoid dirty state
+    const ethicalStatus = await checkEthicalCompliance(trimmedContent);
+
+    // Resolve user message and full history context first so we can save it for age verification if needed
     const { userMessage, historyForAI } = await resolveUserMessageAndHistory({
       supabase,
       chatId: sendRequest.chatId,
@@ -226,6 +234,31 @@ export async function POST(request: NextRequest) {
       shouldSkipUserMessageSave: sendRequest.shouldSkipUserMessageSave,
       selectedImageFileIds: sendRequest.selectedImageFileIds,
     });
+
+    if (ethicalStatus === "age_verification" && !chat.age_verified) {
+      // Mark the chat as needing age verification
+      await supabase.from("chats").update({ needs_age_verification: true }).eq("id", sendRequest.chatId);
+      const assistantMessage = await addMessage(
+        supabase,
+        sendRequest.chatId,
+        "assistant",
+        "You have a pending age verification for this request. Please confirm you are over 18 and acknowledge responsibility to proceed."
+      );
+      const messages = await getChatMessages(supabase, sendRequest.chatId);
+      return NextResponse.json({ messages, userMessage, assistantMessage, aiResponseType: "age_verification_required" });
+    }
+
+    if (ethicalStatus === "lock") {
+      await supabase.from("chats").update({ is_locked: true }).eq("id", sendRequest.chatId);
+      const assistantMessage = await addMessage(
+        supabase,
+        sendRequest.chatId,
+        "assistant",
+        "This chat has been permanently locked due to a violation of our safety policies."
+      );
+      const messages = await getChatMessages(supabase, sendRequest.chatId);
+      return NextResponse.json({ messages, userMessage, assistantMessage, aiResponseType: "locked" });
+    }
 
     // Load website context and selected images.
     const existingWebsite = await getWebsiteByChatId(supabase, sendRequest.chatId);

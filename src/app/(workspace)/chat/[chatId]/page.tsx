@@ -29,7 +29,7 @@ export default async function ChatPage({ params }: ChatPageProps) {
 
   // Run independent queries in parallel to avoid waterfall latency.
   const [chatResult, messages, website, profile] = await Promise.all([
-    supabase.from("chats").select("id, title").eq("id", chatId).maybeSingle(),
+    supabase.from("chats").select("id, title, is_locked, age_verified, needs_age_verification").eq("id", chatId).maybeSingle(),
     getChatMessages(supabase, chatId).catch((error) => {
       console.error("Failed to load chat messages:", error);
       return [];
@@ -111,6 +111,8 @@ export default async function ChatPage({ params }: ChatPageProps) {
       initialDeployUrl={initialDeployUrl}
       isAuthenticated
       currentUserAvatarUrl={profile?.avatarUrl ?? null}
+      initialIsLocked={chat.is_locked ?? false}
+      initialNeedsAgeVerification={chat.needs_age_verification ?? false}
     />
   );
 }

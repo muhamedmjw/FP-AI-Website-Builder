@@ -436,6 +436,13 @@ export default function WorkspaceView() {
         skipUserMessageSave: true,
         imageFileIds: images.map((image) => image.fileId),
         signal: abortController.signal,
+      }).then((data) => {
+        // If the background send detected an ethical violation, reload the page
+        // so the chat view picks up the new DB state (locked / age_verification modal).
+        if (data.aiResponseType === "locked" || data.aiResponseType === "age_verification_required") {
+          window.location.reload();
+          return;
+        }
       }).catch((error) => {
         const isAbortError = error instanceof DOMException && error.name === "AbortError";
         const isCancellationError =

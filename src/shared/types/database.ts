@@ -27,6 +27,9 @@ export type Chat = {
   user_id: string;
   title: string;
   model_name: string | null;
+  is_locked: boolean;
+  age_verified: boolean;
+  needs_age_verification: boolean;
   archived_at: string | null;
   created_at: string;
   updated_at: string;

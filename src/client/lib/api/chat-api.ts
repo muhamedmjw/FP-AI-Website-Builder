@@ -16,6 +16,7 @@ export type SendChatMessageResponse = {
   assistantMessage: HistoryMessage;
   messages: HistoryMessage[];
   html?: string | null;
+  aiResponseType?: string;
 };
 
 export type AbortGenerationResponse = {
