@@ -30,7 +30,8 @@ export function isUnsplashImageSearchEnabled(): boolean {
 
 export async function searchUnsplashImageUrls(
   query: string,
-  count: number
+  count: number,
+  abortSignal?: AbortSignal
 ): Promise<string[]> {
   if (!isUnsplashImageSearchEnabled()) {
     return [];
@@ -48,6 +49,16 @@ export async function searchUnsplashImageUrls(
 
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), UNSPLASH_TIMEOUT_MS);
+
+  // If an external abort signal is provided, we should respect it.
+  // We can't easily merge signals without AbortSignal.any (which might not be available in all Node versions),
+  // so we'll check it before the fetch and rely on the fact that if the external signal aborts,
+  // the caller will likely stop awaiting this function anyway.
+  // However, we can also manually listen to the external signal.
+  const onAbort = () => controller.abort();
+  if (abortSignal) {
+    abortSignal.addEventListener("abort", onAbort);
+  }
 
   try {
     const response = await fetch(endpoint, {
@@ -74,5 +85,8 @@ export async function searchUnsplashImageUrls(
     return [];
   } finally {
     clearTimeout(timeout);
+    if (abortSignal) {
+      abortSignal.removeEventListener("abort", onAbort);
+    }
   }
 }

@@ -21,7 +21,7 @@ function clamp(value: number, min: number, max: number): number {
  */
 export async function enrichHtmlWithStockImages(
   html: string,
-  options: { context: string; maxImages?: number }
+  options: { context: string; maxImages?: number; abortSignal?: AbortSignal }
 ): Promise<string> {
   if (!isUnsplashImageSearchEnabled()) {
     console.warn("Stock image enrichment skipped: set UNSPLASH_ACCESS_KEY in .env");
@@ -42,14 +42,21 @@ export async function enrichHtmlWithStockImages(
   const replacements: { start: number; end: number; replacement: string }[] = [];
 
   const getUnsplashResults = async (query: string) => {
+    if (options.abortSignal?.aborted) {
+      return [];
+    }
+
     if (!resultCache.has(query)) {
-      resultCache.set(query, searchUnsplashImageUrls(query, DEFAULT_RESULTS_PER_QUERY));
+      resultCache.set(query, searchUnsplashImageUrls(query, DEFAULT_RESULTS_PER_QUERY, options.abortSignal));
     }
     const results = await resultCache.get(query);
     return results ?? [];
   };
 
   for (const match of matches) {
+    if (options.abortSignal?.aborted) {
+      break;
+    }
     const query = buildStockImageQuery(context, match.alt, match.dataImageQuery);
 
     const results = await getUnsplashResults(query);

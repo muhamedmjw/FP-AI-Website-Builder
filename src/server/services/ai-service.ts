@@ -96,13 +96,17 @@ function buildImageSearchContext(history: HistoryMessage[]): string {
 
 async function enrichWebsiteHtmlImages(
   html: string,
-  history: HistoryMessage[]
+  history: HistoryMessage[],
+  abortSignal?: AbortSignal
 ): Promise<string> {
   const context = buildImageSearchContext(history);
 
   try {
-    return await enrichHtmlWithStockImages(html, { context });
+    return await enrichHtmlWithStockImages(html, { context, abortSignal });
   } catch (error) {
+    if (error instanceof Error && error.name === "AbortError") {
+      throw error;
+    }
     const errorMessage =
       error instanceof Error ? error.message : "Unknown stock image enrichment error";
     console.warn("Stock image enrichment failed:", errorMessage);
@@ -140,7 +144,8 @@ function injectUserImageDataUris(
 async function classifyIntent(
   userMessage: string,
   hasExistingWebsite: boolean,
-  websiteLanguage: AppLanguage
+  websiteLanguage: AppLanguage,
+  abortSignal?: AbortSignal
 ): Promise<{ intent: "build" | "edit" | "chat"; detectedLanguage: AppLanguage }> {
   const fallback = {
     intent: "build" as const,
@@ -156,7 +161,7 @@ async function classifyIntent(
         messages,
         max_tokens: 1024,
         temperature: 0.1,
-      });
+      }, { signal: abortSignal });
 
       const rawText =
         typeof response.choices[0]?.message?.content === "string"
@@ -176,7 +181,10 @@ async function classifyIntent(
       }
 
       return parsed;
-    } catch {
+    } catch (error) {
+      if (error instanceof Error && error.name === "AbortError") {
+        throw new GenerationCancelledError();
+      }
       continue;
     }
   }
@@ -244,7 +252,8 @@ function buildIntentExecutionConfig(
 async function prepareGeneration(
   history: HistoryMessage[],
   language: AppLanguage,
-  existingHtml: string | null
+  existingHtml: string | null,
+  abortSignal?: AbortSignal
 ): Promise<GenerationPreparation> {
   const latestUserMessage =
     history.filter((message) => message.role === "user").at(-1)?.content ?? "";
@@ -260,7 +269,8 @@ async function prepareGeneration(
   const { intent, detectedLanguage } = await classifyIntent(
     latestUserMessage,
     existingHtml !== null,
-    promptContentLanguage
+    promptContentLanguage,
+    abortSignal
   );
 
   const contentLanguage: AppLanguage = detectedLanguage;
@@ -317,7 +327,8 @@ async function runGenerationWorker(
   const parsed = await enrichWebsiteResponse(
     workerResult.parsed,
     history,
-    effectiveUserImages
+    effectiveUserImages,
+    abortSignal
   );
 
   return {
@@ -387,13 +398,19 @@ function trimImagesToPromptLimit(
 async function enrichWebsiteResponse(
   parsed: AIResponse,
   history: HistoryMessage[],
-  effectiveUserImages: Array<{ fileName: string; dataUri: string }>
+  effectiveUserImages: Array<{ fileName: string; dataUri: string }>,
+  abortSignal?: AbortSignal
 ): Promise<AIResponse> {
   if (parsed.type !== "website") {
     return parsed;
   }
 
-  let enrichedHtml = await enrichWebsiteHtmlImages(parsed.html, history);
+  let enrichedHtml = await enrichWebsiteHtmlImages(parsed.html, history, abortSignal);
+  
+  if (abortSignal?.aborted) {
+    throw new GenerationCancelledError();
+  }
+
   enrichedHtml = injectUserImageDataUris(enrichedHtml, effectiveUserImages);
   const nextParsed: AIResponse = {
     ...parsed,
@@ -424,7 +441,11 @@ async function generateAIResponseOnce(
     throw new GenerationCancelledError();
   }
 
-  const preparation = await prepareGeneration(history, language, existingHtml);
+  const preparation = await prepareGeneration(history, language, existingHtml, abortSignal);
+
+  if (abortSignal?.aborted) {
+    throw new GenerationCancelledError();
+  }
 
 
   try {

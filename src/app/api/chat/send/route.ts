@@ -299,14 +299,6 @@ export async function POST(request: NextRequest) {
       userImages
     );
 
-    // Handle cancellation without surfacing as a server error.
-    if ((aiResponse as { type: string }).type === "cancelled") {
-      return NextResponse.json(
-        { error: "Generation cancelled by user.", cancelled: true },
-        { status: 499 }
-      );
-    }
-
     // Handle patch-based edits: apply search/replace patches to the original HTML.
     if (aiResponse.type === "website_edit" && existingHtml) {
       const patchResult = applyEditPatches(existingHtml, aiResponse.changes);

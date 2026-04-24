@@ -256,7 +256,6 @@ export function useBuilderState({
       return initialMessages;
     });
   }, [chatId, hasOptimisticMessage, initialMessages, isRequestInFlight]);
-
   useEffect(() => {
     currentInputImagesRef.current = [];
     setMessageImages({});
