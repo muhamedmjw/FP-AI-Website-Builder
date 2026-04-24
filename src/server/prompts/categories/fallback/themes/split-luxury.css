@@ -1,0 +1,45 @@
+/* =============================================
+   THEME: Split Luxury | Category: Fallback
+   Fonts: Cormorant Garamond (heading), Inter (body)
+   ============================================= */
+@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@300;400;700&family=Inter:wght@300;400;500&display=swap');
+
+:root {
+  --bg:           #fdfcfb;
+  --surface:      #ffffff;
+  --primary:      #44403c;
+  --secondary:    #78716c;
+  --text:         #1c1917;
+  --muted:        #57534e;
+  --border:       #e7e5e4;
+  --font-heading: 'Cormorant Garamond', serif;
+  --font-body:    'Inter', sans-serif;
+  --radius:       0px;
+  --transition:   0.4s ease;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+body { background: var(--bg); color: var(--text); font-family: var(--font-body); font-size: 16px; line-height: 1.8; }
+
+nav { padding: 2.5rem; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border); }
+.logo { font-family: var(--font-heading); font-size: 1.75rem; font-style: italic; color: var(--primary); }
+
+.split-screen { display: grid; grid-template-columns: 1fr 1fr; min-height: 80vh; border-bottom: 1px solid var(--border); }
+.split-content { padding: 6rem; display: flex; flex-direction: column; justify-content: center; }
+.split-visual { background: var(--primary); display: flex; align-items: center; justify-content: center; overflow: hidden; }
+.split-visual img { width: 100%; height: 100%; object-fit: cover; opacity: 0.8; }
+
+h1 { font-family: var(--font-heading); font-size: 4.5rem; line-height: 0.95; margin-bottom: 2.5rem; font-weight: 300; }
+.btn { display: inline-block; padding: 1.25rem 3rem; border: 1px solid var(--primary); text-decoration: none; color: var(--primary); text-transform: uppercase; letter-spacing: 0.2em; font-size: 0.75rem; transition: var(--transition); }
+.btn:hover { background: var(--primary); color: white; }
+
+.section { padding: 8rem 4rem; text-align: center; }
+.section h2 { font-family: var(--font-heading); font-size: 3rem; margin-bottom: 3rem; }
+
+footer { padding: 4rem; text-align: center; font-family: var(--font-heading); font-style: italic; border-top: 1px solid var(--border); }
+
+@media (max-width: 968px) {
+  .split-screen { grid-template-columns: 1fr; }
+  .split-content { padding: 4rem 2rem; }
+  h1 { font-size: 3rem; }
+}

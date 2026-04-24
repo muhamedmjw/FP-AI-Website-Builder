@@ -37,7 +37,7 @@ FOOTER — LOGOS & SOCIAL ICONS (EQUAL SPACING):
 - Rows of partner logos, trust badges, or social icons must have **uniform** spacing between every item.
 - Put all icons/logos in one wrapper (e.g. .footer-socials or .footer-logos) and space them with **CSS gap** (e.g. display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 1rem 1.25rem;) — never mix different margin-left/right on individual items.
 - Optional: give each icon link an identical square hit area (e.g. width/height 2.5rem) so alignment looks even.
-- For Twitter/X social icons, ALWAYS use the new X logo (SVG path: `M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z`) instead of the old Twitter bird, or use `fa-x-twitter` if using Font Awesome.
+- For Twitter/X social icons, ALWAYS use the new X logo: <i class="fa-brands fa-x-twitter"></i>
 
 FOOTER COPYRIGHT YEAR:
 - The authoritative year for “© …” and similar footer lines is {CURRENT_SITE_YEAR} (see system prompt).

@@ -199,8 +199,8 @@ RTL / ARABIC / KURDISH — SAME VISUAL AMBITION AS ENGLISH:
     .join("\n\n");
 }
 
-function readThemeCssFile(category: Category, cssFileName: string): string | null {
-  const filePath = path.join(
+function readThemeCssFile(category: string, cssFileName: string): string | null {
+  const primaryPath = path.join(
     process.cwd(),
     "src",
     "server",
@@ -212,11 +212,35 @@ function readThemeCssFile(category: Category, cssFileName: string): string | nul
   );
 
   try {
-    return fs.readFileSync(filePath, "utf8");
-  } catch {
-    console.warn(`Theme CSS not found: ${filePath}`);
-    return null;
+    if (fs.existsSync(primaryPath)) {
+      return fs.readFileSync(primaryPath, "utf8");
+    }
+  } catch (err) {
+    console.error(`Error reading primary CSS file: ${primaryPath}`, err);
   }
+
+  // Fallback to the generic fallback themes directory
+  const fallbackPath = path.join(
+    process.cwd(),
+    "src",
+    "server",
+    "prompts",
+    "categories",
+    "fallback",
+    "themes",
+    cssFileName
+  );
+
+  try {
+    if (fs.existsSync(fallbackPath)) {
+      return fs.readFileSync(fallbackPath, "utf8");
+    }
+  } catch (err) {
+    console.error(`Error reading fallback CSS file: ${fallbackPath}`, err);
+  }
+
+  console.warn(`Theme CSS not found in primary or fallback locations: ${cssFileName}`);
+  return null;
 }
 
 function buildThemeInjection(
@@ -425,9 +449,9 @@ export function buildGenerationMessages(
     IMAGE_RULES,
     isRtl ? RTL_RULES : "",
     websiteStructureForYear,
-    OUTPUT_FORMAT,
     `Website content language: ${contentLanguage}`,
     `Conversation reply language: ${detectedUserLanguage}`,
+    OUTPUT_FORMAT,
   ].filter(Boolean);
 
   const system = systemParts.join("\n\n");

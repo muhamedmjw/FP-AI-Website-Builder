@@ -198,6 +198,29 @@ export function parseAIResponse(raw: string): AIResponse {
     }
   }
 
+  // FALLBACK: If no JSON found, look for HTML code block
+  const htmlFenceMatch = raw.match(/```html\s*\n?([\s\S]*?)\n?\s*```/i);
+  if (htmlFenceMatch) {
+    const html = htmlFenceMatch[1].trim();
+    if (validateWebsiteHtml(html)) {
+      const message = raw.replace(htmlFenceMatch[0], "").trim() || "Website generated successfully.";
+      return {
+        type: "website",
+        html,
+        message: message.length > 500 ? "Website generated successfully." : message,
+      };
+    }
+  }
+
+  // FALLBACK 2: If the entire raw string looks like valid HTML
+  if (validateWebsiteHtml(raw)) {
+    return {
+      type: "website",
+      html: raw,
+      message: "Website generated successfully.",
+    };
+  }
+
   return {
     type: "questions",
     message: raw,

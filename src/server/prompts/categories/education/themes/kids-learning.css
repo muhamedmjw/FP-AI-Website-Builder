@@ -1,0 +1,40 @@
+/* =============================================
+   THEME: Kids Learning | Category: Education
+   Fonts: Poppins (heading), Outfit (body)
+   ============================================= */
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&family=Outfit:wght@300;400;500&display=swap');
+
+:root {
+  --bg:           #fef3c7;
+  --surface:      #ffffff;
+  --primary:      #f59e0b;
+  --secondary:    #ec4899;
+  --text:         #451a03;
+  --muted:        #92400e;
+  --border:       #fde68a;
+  --font-heading: 'Poppins', sans-serif;
+  --font-body:    'Outfit', sans-serif;
+  --radius:       24px;
+  --transition:   0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+body { background: var(--bg); color: var(--text); font-family: var(--font-body); font-size: 18px; line-height: 1.6; }
+
+nav { padding: 1.5rem 2rem; display: flex; justify-content: space-between; align-items: center; background: var(--surface); border-radius: 0 0 var(--radius) var(--radius); box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05); }
+.logo { font-family: var(--font-heading); font-size: 1.75rem; font-weight: 700; color: var(--secondary); }
+nav ul { display: flex; gap: 1.5rem; list-style: none; }
+nav ul a { color: var(--muted); text-decoration: none; font-weight: 600; padding: 0.5rem 1rem; border-radius: 12px; transition: var(--transition); }
+nav ul a:hover { background: var(--primary); color: white; }
+
+.centered { max-width: 800px; margin: 0 auto; padding: 4rem 2rem; text-align: center; }
+.centered h1 { font-family: var(--font-heading); font-size: 3rem; margin-bottom: 1.5rem; color: var(--primary); }
+
+.card { background: var(--surface); border-radius: var(--radius); padding: 2.5rem; border: 4px solid var(--border); box-shadow: 0 8px 0 var(--border); transition: var(--transition); margin-bottom: 2rem; }
+.card:hover { transform: translateY(-4px); box-shadow: 0 12px 0 var(--border); }
+
+.btn { display: inline-block; padding: 1rem 2.5rem; border-radius: 100px; font-weight: 700; text-decoration: none; transition: var(--transition); cursor: pointer; border: none; font-size: 1.1rem; }
+.btn-primary { background: var(--secondary); color: white; box-shadow: 0 4px 0 #be185d; }
+.btn-primary:hover { transform: scale(1.05); }
+
+footer { padding: 4rem 2rem; text-align: center; color: var(--muted); }

@@ -1,0 +1,72 @@
+/* =============================================
+   THEME: EdTech Modern | Category: Education
+   Fonts: Poppins (heading), Inter (body)
+   ============================================= */
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&family=Inter:wght@300;400;500&display=swap');
+
+:root {
+  --bg:           #ffffff;
+  --surface:      #f0f9ff;
+  --primary:      #0284c7;
+  --secondary:    #22d3ee;
+  --text:         #0c4a6e;
+  --muted:        #0e7490;
+  --border:       #bae6fd;
+  --font-heading: 'Poppins', sans-serif;
+  --font-body:    'Inter', sans-serif;
+  --radius:       12px;
+  --transition:   0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; }
+body { background: var(--bg); color: var(--text); font-family: var(--font-body); font-size: 16px; line-height: 1.6; }
+
+nav {
+  padding: 1rem 2rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: rgba(255, 255, 255, 0.8);
+  backdrop-filter: blur(8px);
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  border-bottom: 1px solid var(--border);
+}
+.logo { font-family: var(--font-heading); font-size: 1.5rem; font-weight: 700; color: var(--primary); }
+nav ul { display: flex; gap: 2rem; list-style: none; }
+nav ul a { color: var(--text); text-decoration: none; font-weight: 500; transition: var(--transition); }
+nav ul a:hover { color: var(--primary); }
+
+.grid-heavy {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 2rem;
+  padding: 4rem 2rem;
+}
+
+.card {
+  background: var(--surface);
+  border-radius: var(--radius);
+  padding: 2rem;
+  border: 1px solid var(--border);
+  transition: var(--transition);
+}
+.card:hover { transform: translateY(-5px); box-shadow: 0 10px 25px -5px rgba(2, 132, 199, 0.1); }
+.card h3 { font-family: var(--font-heading); margin-bottom: 1rem; color: var(--primary); }
+
+.btn {
+  display: inline-block;
+  padding: 0.75rem 2rem;
+  border-radius: 50px;
+  font-weight: 600;
+  text-decoration: none;
+  transition: var(--transition);
+  border: none;
+  cursor: pointer;
+}
+.btn-primary { background: var(--primary); color: white; }
+.btn-primary:hover { background: var(--secondary); box-shadow: 0 4px 14px 0 rgba(34, 211, 238, 0.39); }
+
+footer { padding: 4rem 2rem; background: var(--text); color: white; text-align: center; }

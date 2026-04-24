@@ -1,0 +1,40 @@
+/* =============================================
+   THEME: Vibrant Grid | Category: Fallback
+   Fonts: Plus Jakarta Sans (heading), Inter (body)
+   ============================================= */
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;700&family=Inter:wght@300;400;500&display=swap');
+
+:root {
+  --bg:           #ffffff;
+  --surface:      #fefce8;
+  --primary:      #ca8a04;
+  --secondary:    #facc15;
+  --text:         #422006;
+  --muted:        #713f12;
+  --border:       #fef08a;
+  --font-heading: 'Plus Jakarta Sans', sans-serif;
+  --font-body:    'Inter', sans-serif;
+  --radius:       20px;
+  --transition:   0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+body { background: var(--bg); color: var(--text); font-family: var(--font-body); font-size: 16px; line-height: 1.6; }
+
+nav { padding: 1.5rem 2rem; display: flex; justify-content: space-between; align-items: center; }
+.logo { font-family: var(--font-heading); font-size: 1.5rem; font-weight: 700; color: var(--primary); }
+nav ul { display: flex; gap: 2rem; list-style: none; }
+nav ul a { color: var(--text); text-decoration: none; font-weight: 600; }
+
+.hero { padding: 6rem 2rem; text-align: center; background: var(--surface); border-radius: 0 0 var(--radius) var(--radius); margin-bottom: 4rem; }
+.hero h1 { font-family: var(--font-heading); font-size: 4rem; font-weight: 800; margin-bottom: 1.5rem; letter-spacing: -0.03em; line-height: 1; }
+
+.grid-heavy { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 2rem; padding: 0 2rem; }
+.card { background: var(--bg); border: 2px solid var(--border); padding: 2.5rem; border-radius: var(--radius); transition: var(--transition); }
+.card:hover { transform: scale(1.02); box-shadow: 0 20px 25px -5px rgba(202, 138, 4, 0.1); }
+.card h3 { font-family: var(--font-heading); font-size: 1.5rem; margin-bottom: 1rem; }
+
+.btn { display: inline-block; padding: 1rem 2.5rem; border-radius: 100px; background: var(--primary); color: white; text-decoration: none; font-weight: 700; transition: var(--transition); box-shadow: 0 10px 15px -3px rgba(202, 138, 4, 0.3); }
+.btn:hover { background: var(--text); transform: translateY(-2px); }
+
+footer { padding: 6rem 2rem; text-align: center; color: var(--muted); opacity: 0.8; }

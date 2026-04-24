@@ -13,7 +13,7 @@ import { NONPROFIT_THEMES } from './categories/nonprofit/nonprofit-themes';
 import { EDUCATION_THEMES } from './categories/education/education-themes';
 import { MEDICAL_THEMES } from './categories/medical/medical-themes';
 import { REALESTATE_THEMES } from './categories/realestate/realestate-themes';
-import { PHOTOGRAPHY_THEMES } from './categories/photography/photography-themes';
+import { FALLBACK_THEMES } from './categories/fallback/fallback-themes';
 import { pickThemeFromList } from './theme-selection';
 import type { AppLanguage } from '@/shared/types/database';
 import type { WebsiteTheme } from './theme-types';
@@ -24,47 +24,29 @@ export type Category =
   | 'business' 
   | 'blog' 
   | 'ecommerce' 
-  | 'agency' 
-  | 'landing' 
   | 'event' 
   | 'saas' 
-  | 'nonprofit' 
-  | 'education' 
-  | 'medical' 
-  | 'realestate' 
-  | 'photography';
+  | 'education';
 
 const CATEGORY_KEYWORDS: Record<Category, string[]> = {
-  portfolio: ['portfolio', 'پۆرتفۆلیۆ', 'my work', 'showcase', 'personal site', 'designer', 'developer portfolio', 'resume site'],
+  portfolio: ['portfolio', 'پۆرتفۆلیۆ', 'my work', 'showcase', 'personal site', 'designer', 'developer portfolio', 'resume site', 'photo', 'photography', 'gallery', 'camera', 'portraits', 'photographer', 'visual'],
   restaurant: ['restaurant', 'food', 'چێشتخانە', 'cafe', 'bistro', 'menu', 'dining', 'bakery', 'coffee shop', 'bar', 'eatery', 'cuisine'],
   ecommerce: ['shop', 'store', 'ecommerce', 'فرۆشگا', 'boutique', 'buy', 'sell', 'product', 'cart', 'checkout', 'luxury store', 'fashion store', 'clothing', 'accessories', 'online store'],
   blog: ['blog', 'بلۆگ', 'article', 'post', 'writing', 'journal', 'newsletter'],
-  agency: ['agency', 'studio', 'design agency', 'creative', 'branding', 'marketing agency'],
-  landing: ['landing', 'coming soon', 'waitlist', 'launch', 'pre-launch', 'single page'],
   event: ['event', 'conference', 'wedding', 'festival', 'meetup', 'concert', 'party', 'ceremony', 'hackathon'],
   saas: ['saas', 'software', 'app', 'platform', 'tool', 'dashboard', 'subscription', 'task', 'tasks', 'workflow', 'sync', 'team', 'teams', 'productivity', 'collaboration'],
-  medical: ['clinic', 'medical', 'health', 'doctor', 'dentist', 'hospital', 'pharmacy', 'wellness', 'spa', 'therapy'],
-  realestate: ['real estate', 'property', 'خانوو', 'خانووبەرە', 'housing', 'apartment', 'rent', 'mortgage', 'listings'],
-  photography: ['photo', 'photography', 'gallery', 'camera', 'portraits', 'photographer', 'visual'],
-  nonprofit: ['charity', 'nonprofit', 'ngo', 'donation', 'volunteer', 'foundation', 'cause'],
   education: ['school', 'course', 'education', 'learn', 'class', 'university', 'tutor', 'training', 'e-learning'],
-  business: ['business', 'company', 'firm', 'corporate', 'service', 'consulting', 'professional'],
+  business: ['business', 'company', 'firm', 'corporate', 'service', 'consulting', 'professional', 'agency', 'studio', 'design agency', 'creative', 'branding', 'marketing agency', 'landing', 'coming soon', 'waitlist', 'launch', 'pre-launch', 'single page', 'clinic', 'medical', 'health', 'doctor', 'dentist', 'hospital', 'pharmacy', 'wellness', 'spa', 'therapy', 'real estate', 'property', 'خانوو', 'خانووبەرە', 'housing', 'apartment', 'rent', 'mortgage', 'listings', 'charity', 'nonprofit', 'ngo', 'donation', 'volunteer', 'foundation', 'cause'],
 };
 
 const CATEGORY_SPECIFICITY: Record<Category, number> = {
-  ecommerce: 14,
-  realestate: 13,
-  medical: 12,
-  nonprofit: 11,
-  education: 10,
-  photography: 9,
-  restaurant: 8,
-  event: 7,
-  saas: 6,
-  portfolio: 5,
-  agency: 4,
-  blog: 3,
-  landing: 2,
+  ecommerce: 8,
+  education: 7,
+  restaurant: 6,
+  event: 5,
+  saas: 4,
+  portfolio: 3,
+  blog: 2,
   business: 1,
 };
 
@@ -104,54 +86,43 @@ export function getThemeForCategory(
   language?: AppLanguage,
   userMessage = ""
 ): WebsiteTheme {
-  let theme: WebsiteTheme;
+  let themes: WebsiteTheme[] = [];
 
   switch (category) {
     case 'portfolio':
-      theme = pickThemeFromList(PORTFOLIO_THEMES, userMessage);
+      themes = PORTFOLIO_THEMES;
       break;
     case 'restaurant':
-      theme = pickThemeFromList(RESTAURANT_THEMES, userMessage);
+      themes = RESTAURANT_THEMES;
       break;
     case 'business':
-      theme = pickThemeFromList(BUSINESS_THEMES, userMessage);
+      themes = BUSINESS_THEMES;
       break;
     case 'blog':
-      theme = pickThemeFromList(BLOG_THEMES, userMessage);
+      themes = BLOG_THEMES;
       break;
     case 'ecommerce':
-      theme = pickThemeFromList(ECOMMERCE_THEMES, userMessage);
-      break;
-    case 'agency':
-      theme = pickThemeFromList(AGENCY_THEMES, userMessage);
-      break;
-    case 'landing':
-      theme = pickThemeFromList(LANDING_THEMES, userMessage);
+      themes = ECOMMERCE_THEMES;
       break;
     case 'event':
-      theme = pickThemeFromList(EVENT_THEMES, userMessage);
+      themes = EVENT_THEMES;
       break;
     case 'saas':
-      theme = pickThemeFromList(SAAS_THEMES, userMessage);
-      break;
-    case 'nonprofit':
-      theme = pickThemeFromList(NONPROFIT_THEMES, userMessage);
+      themes = SAAS_THEMES;
       break;
     case 'education':
-      theme = pickThemeFromList(EDUCATION_THEMES, userMessage);
-      break;
-    case 'medical':
-      theme = pickThemeFromList(MEDICAL_THEMES, userMessage);
-      break;
-    case 'realestate':
-      theme = pickThemeFromList(REALESTATE_THEMES, userMessage);
-      break;
-    case 'photography':
-      theme = pickThemeFromList(PHOTOGRAPHY_THEMES, userMessage);
+      themes = EDUCATION_THEMES;
       break;
     default:
-      theme = pickThemeFromList(BUSINESS_THEMES, userMessage);
+      themes = BUSINESS_THEMES;
   }
+
+  // Use fallback themes if the primary list is empty
+  if (!themes || themes.length === 0) {
+    themes = FALLBACK_THEMES;
+  }
+
+  const theme = pickThemeFromList(themes, userMessage);
 
   if (language === 'ku') {
     return {

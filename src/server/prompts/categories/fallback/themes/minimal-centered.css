@@ -1,0 +1,41 @@
+/* =============================================
+   THEME: Minimal Centered | Category: Fallback
+   Fonts: Outfit (heading), Inter (body)
+   ============================================= */
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600&family=Inter:wght@300;400;500&display=swap');
+
+:root {
+  --bg:           #fafafa;
+  --surface:      #ffffff;
+  --primary:      #171717;
+  --secondary:    #737373;
+  --text:         #262626;
+  --muted:        #a3a3a3;
+  --border:       #e5e5e5;
+  --font-heading: 'Outfit', sans-serif;
+  --font-body:    'Inter', sans-serif;
+  --radius:       4px;
+  --transition:   0.3s ease;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+body { background: var(--bg); color: var(--text); font-family: var(--font-body); font-size: 16px; line-height: 1.7; text-align: center; }
+
+nav { padding: 2rem; display: flex; justify-content: center; gap: 3rem; }
+.logo { font-family: var(--font-heading); font-size: 1.5rem; font-weight: 600; margin-bottom: 2rem; display: block; }
+nav ul { display: flex; gap: 2rem; list-style: none; }
+nav ul a { color: var(--muted); text-decoration: none; font-size: 0.9rem; letter-spacing: 0.05em; text-transform: uppercase; }
+nav ul a:hover { color: var(--primary); }
+
+.centered { max-width: 720px; margin: 4rem auto; padding: 0 1.5rem; }
+.centered h1 { font-family: var(--font-heading); font-size: 3.5rem; line-height: 1.1; margin-bottom: 1.5rem; letter-spacing: -0.02em; }
+.centered p { font-size: 1.25rem; color: var(--secondary); margin-bottom: 3rem; }
+
+.btn { display: inline-block; padding: 1rem 2.5rem; border: 1px solid var(--primary); background: var(--primary); color: white; text-decoration: none; transition: var(--transition); font-weight: 500; }
+.btn:hover { background: transparent; color: var(--primary); }
+
+.grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 2rem; margin-top: 5rem; text-align: left; }
+.card { padding: 2rem; border: 1px solid var(--border); border-radius: var(--radius); }
+.card h3 { font-family: var(--font-heading); margin-bottom: 1rem; }
+
+footer { margin-top: 10rem; padding: 4rem 2rem; color: var(--muted); font-size: 0.875rem; border-top: 1px solid var(--border); }
