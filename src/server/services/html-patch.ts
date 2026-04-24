@@ -53,18 +53,30 @@ function applySinglePatch(
   replace: string
 ): string | null {
   // 1. Try exact substring match
-  const exactIndex = html.indexOf(search);
-  if (exactIndex !== -1) {
+  const firstIndex = html.indexOf(search);
+  if (firstIndex !== -1) {
+    const lastIndex = html.lastIndexOf(search);
+    if (firstIndex !== lastIndex) {
+      console.warn(
+        `Ambiguous edit patch: multiple matches found for search string (length ${search.length}). Replacing the first occurrence only.`
+      );
+    }
     return (
-      html.slice(0, exactIndex) +
+      html.slice(0, firstIndex) +
       replace +
-      html.slice(exactIndex + search.length)
+      html.slice(firstIndex + search.length)
     );
   }
 
   // 2. Try whitespace-tolerant regex match
   const tolerantRegex = buildWhitespaceTolerantRegex(search);
-  if (tolerantRegex.test(html)) {
+  const matches = html.match(new RegExp(tolerantRegex.source, "g"));
+  if (matches && matches.length > 0) {
+    if (matches.length > 1) {
+      console.warn(
+        `Ambiguous whitespace-tolerant patch: ${matches.length} matches found. Replacing the first occurrence only.`
+      );
+    }
     return html.replace(tolerantRegex, replace);
   }
 
@@ -75,12 +87,18 @@ function applySinglePatch(
     .filter(Boolean)
     .join("\n");
 
-  const trimmedIndex = html.indexOf(trimmedSearch);
-  if (trimmedIndex !== -1) {
+  const firstTrimmedIndex = html.indexOf(trimmedSearch);
+  if (firstTrimmedIndex !== -1) {
+    const lastTrimmedIndex = html.lastIndexOf(trimmedSearch);
+    if (firstTrimmedIndex !== lastTrimmedIndex) {
+      console.warn(
+        `Ambiguous trimmed-search patch: multiple matches found. Replacing the first occurrence only.`
+      );
+    }
     return (
-      html.slice(0, trimmedIndex) +
+      html.slice(0, firstTrimmedIndex) +
       replace +
-      html.slice(trimmedIndex + trimmedSearch.length)
+      html.slice(firstTrimmedIndex + trimmedSearch.length)
     );
   }
 
