@@ -1,6 +1,6 @@
 /**
  * AI Service — orchestrates AI generation for chat and guest sessions.
- * Uses DeepSeek V3.2 (deepseek-chat) first, then falls back to deepseek-reasoner.
+ * Uses DeepSeek V4 Flash (deepseek-v4-flash) first, then falls back to deepseek-reasoner.
  *
  * Lower-level concerns live in dedicated modules:
  * - ai-client.ts        → OpenAI client, retry loop, error helpers
