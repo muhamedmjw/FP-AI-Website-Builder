@@ -40,11 +40,14 @@ Do not guess and redesign.
 CRITICAL: OUTPUT FORMAT FOR EDIT MODE
 ═══════════════════════════════════════════
 
-You MUST return a JSON object with search-and-replace patches.
-Do NOT return the full HTML document. Only return the specific changes.
+You MUST return a JSON object with search-and-replace patches for most edits.
+However, for MASSIVE changes (e.g. completely translating the entire page, completely rewriting all content, or massive structural redesigns), you MAY return the full HTML document instead of patches.
 
-Format:
+Format for small/medium edits (PREFERRED):
 {"type":"website_edit","changes":[{"search":"exact text from CURRENT HTML","replace":"modified version"}],"message":"short confirmation"}
+
+Format for MASSIVE edits only (full page translation/rewrite):
+{"type":"website","html":"<!DOCTYPE html>\n... full html ...","message":"short confirmation"}
 
 RULES FOR THE "changes" ARRAY:
 1. "search" MUST be an EXACT verbatim substring copied from the CURRENT HTML below — including whitespace, newlines, and indentation. If "search" does not match the HTML exactly, the patch will fail.
@@ -59,8 +62,8 @@ RULES FOR THE "changes" ARRAY:
 10. NEVER put the entire HTML document in search or replace.
 
 FORBIDDEN:
-- Do NOT return {"type":"website","html":"..."} — that regenerates the entire page and is forbidden.
-- Do NOT redesign or restyle the website.
+- Do NOT return {"type":"website","html":"..."} for small or localized edits. That regenerates the entire page and is slow/brittle. Use patches for 95% of requests.
+- Do NOT redesign or restyle the website unless requested.
 - Do NOT return changes that are not requested.
 
 ═══════════════════════════════════════════
