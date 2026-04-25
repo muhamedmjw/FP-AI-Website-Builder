@@ -86,9 +86,10 @@ export function buildStockImageQuery(
 ): string {
   const dq = normalizeQueryTerms(dataImageQuery);
   if (dq.length >= 2) {
-    const hint = buildShortContextQuery(context);
-    const merged = hint ? normalizeWhitespace(`${hint} ${dq}`) : dq;
-    return merged.slice(0, 160) || dq.slice(0, 160);
+    // We rely solely on data-image-query as it is generated in English 
+    // and includes context per the system prompt. Appending the context
+    // could mix non-English words into the search query.
+    return dq.slice(0, 160);
   }
 
   const altTerms = normalizeQueryTerms(alt);

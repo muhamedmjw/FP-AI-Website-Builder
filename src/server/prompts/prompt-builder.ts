@@ -536,7 +536,7 @@ export function buildEditMessages(
     `CURRENT_SITE_YEAR (authoritative footer copyright year): ${currentYear}`,
     LANGUAGE_GUIDANCE,
     editModeWithImages,
-    hasUserUploads ? IMAGE_RULES : "",
+    IMAGE_RULES,
     isRtl ? RTL_RULES : "",
     `Website content language: ${contentLanguage}`,
     `Conversation reply language: ${detectedUserLanguage}`,

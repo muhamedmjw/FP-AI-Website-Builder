@@ -59,7 +59,29 @@ export async function enrichHtmlWithStockImages(
     }
     const query = buildStockImageQuery(context, match.alt, match.dataImageQuery);
 
-    const results = await getUnsplashResults(query);
+    let results = await getUnsplashResults(query);
+
+    if (results.length === 0) {
+      const parts = query.split(" ").filter(Boolean);
+      
+      // Fallback 1: Try dropping the first word (often an adjective or location)
+      if (parts.length > 2) {
+        const fallback1 = parts.slice(1).join(" ");
+        results = await getUnsplashResults(fallback1);
+      }
+
+      // Fallback 2: Try dropping the last word
+      if (results.length === 0 && parts.length > 2) {
+        const fallback2 = parts.slice(0, 2).join(" ");
+        results = await getUnsplashResults(fallback2);
+      }
+      
+      // Fallback 3: Just use the longest word (most likely the unique noun)
+      if (results.length === 0 && parts.length > 1) {
+        const fallback3 = parts.reduce((a, b) => (a.length > b.length ? a : b));
+        results = await getUnsplashResults(fallback3);
+      }
+    }
 
     if (results.length === 0) {
       console.warn(`Unsplash image enrichment skipped: no results for query "${query}".`);
