@@ -19,6 +19,7 @@ import {
 import { applyEditPatches } from "@/server/services/html-patch";
 import { checkEthicalCompliance } from "@/server/services/ethics-service";
 import { detectPromptLanguage } from "@/shared/utils/language-detection";
+import { isAgeConfirmationMessage } from "@/shared/utils/age-confirmation";
 // Allow up to 60s for AI generation on Vercel (default is 10s which is too short).
 export const maxDuration = 60;
 
@@ -202,7 +203,7 @@ export async function POST(request: NextRequest) {
     // Verify chat ownership.
     const { data: chat, error: chatError } = await supabase
       .from("chats")
-      .select("id, is_locked, age_verified")
+      .select("id, is_locked, age_verified, needs_age_verification")
       .eq("id", sendRequest.chatId)
       .eq("user_id", user.id)
       .single();
@@ -228,10 +229,115 @@ export async function POST(request: NextRequest) {
     // Detect language of the actual prompt for the AI's internal response
     const promptLanguage = detectPromptLanguage(trimmedContent);
 
-    // Run ethical checks BEFORE saving the user's message for age verification to avoid dirty state
-    const ethicalStatus = await checkEthicalCompliance(trimmedContent);
+    // ── Handle pending age verification confirmation (user is replying to confirm) ──
+    if (chat.needs_age_verification && !chat.age_verified) {
+      const { userMessage, historyForAI } = await resolveUserMessageAndHistory({
+        supabase,
+        chatId: sendRequest.chatId,
+        content: trimmedContent,
+        shouldSkipUserMessageSave: sendRequest.shouldSkipUserMessageSave,
+        selectedImageFileIds: sendRequest.selectedImageFileIds,
+      });
 
-    // Resolve user message and full history context first so we can save it for age verification if needed
+      if (isAgeConfirmationMessage(trimmedContent)) {
+        // User confirmed — mark the chat as age verified
+        await supabase
+          .from("chats")
+          .update({ age_verified: true, needs_age_verification: false })
+          .eq("id", sendRequest.chatId);
+
+        // Save a brief confirmation assistant message
+        await addMessage(
+          supabase,
+          sendRequest.chatId,
+          "assistant",
+          t("ageVerificationConfirmedMessage", promptLanguage)
+        );
+
+        // Re-fetch full history including the confirmation exchange
+        const updatedHistory = await getChatMessages(supabase, sendRequest.chatId);
+
+        // Load website context and proceed with AI generation (isAgeRestricted = true)
+        const existingWebsite = await getWebsiteByChatId(supabase, sendRequest.chatId);
+        const effectiveLanguage = isAppLanguage(sendRequest.language)
+          ? sendRequest.language
+          : (existingWebsite?.language ?? "en");
+        const existingHtml = existingWebsite
+          ? await getGeneratedHtml(supabase, existingWebsite.id)
+          : null;
+        const { userImages, websiteImagePool } = await resolveUserImages(
+          supabase,
+          existingWebsite?.id ?? null,
+          sendRequest.selectedImageFileIds
+        );
+
+        let aiResponse = await generateAIResponse(
+          supabase,
+          sendRequest.chatId,
+          updatedHistory,
+          effectiveLanguage,
+          normalizeExistingHtmlForPrompt(existingHtml),
+          userImages,
+          true // isAgeRestricted
+        );
+
+        // Handle patch-based edits
+        if (aiResponse.type === "website_edit" && existingHtml) {
+          const patchResult = applyEditPatches(existingHtml, aiResponse.changes);
+          if (patchResult.appliedCount > 0) {
+            aiResponse = { type: "website", html: patchResult.html, message: aiResponse.message };
+          } else {
+            aiResponse = { type: "questions", message: aiResponse.message + "\n\n(The edit could not be applied automatically. Please try rephrasing your request.)" };
+          }
+        }
+
+        const { htmlToSave, htmlForPreview } = handleHtmlGeneration({
+          aiResponse,
+          existingWebsiteId: existingWebsite?.id ?? null,
+          existingHtml,
+          content: trimmedContent,
+          userImages,
+          websiteImagePool,
+        });
+
+        await saveWebsiteRecord({
+          supabase,
+          chatId: sendRequest.chatId,
+          businessPrompt: trimmedContent,
+          language: effectiveLanguage,
+          existingWebsite,
+          htmlToSave,
+        });
+
+        const assistantMessage = await addMessage(supabase, sendRequest.chatId, "assistant", aiResponse.message);
+        await maybeRenameNewChat(supabase, sendRequest.chatId, updatedHistory, trimmedContent, effectiveLanguage);
+
+        const messages = await getChatMessages(supabase, sendRequest.chatId);
+        return NextResponse.json({
+          userMessage,
+          assistantMessage,
+          messages,
+          aiResponseType: aiResponse.type,
+          html: typeof htmlForPreview === "string" ? htmlForPreview : aiResponse.type === "website" ? aiResponse.html : undefined,
+        });
+      } else {
+        // User did not type the correct confirmation — ask again
+        const assistantMessage = await addMessage(
+          supabase,
+          sendRequest.chatId,
+          "assistant",
+          t("ageVerificationRetryMessage", promptLanguage)
+        );
+        const messages = await getChatMessages(supabase, sendRequest.chatId);
+        return NextResponse.json({ messages, userMessage, assistantMessage, aiResponseType: "questions" });
+      }
+    }
+
+    // ── Run ethical checks (only when no pending age verification) ──
+    const ethicalStatus = await checkEthicalCompliance(trimmedContent);
+    const isAgeRestricted = chat.age_verified === true;
+
+    // Resolve user message and full history context
     const { userMessage, historyForAI } = await resolveUserMessageAndHistory({
       supabase,
       chatId: sendRequest.chatId,
@@ -241,7 +347,7 @@ export async function POST(request: NextRequest) {
     });
 
     if (ethicalStatus === "age_verification" && !chat.age_verified) {
-      // Mark the chat as needing age verification
+      // First time age-restricted prompt — ask user to confirm via chat
       await supabase.from("chats").update({ needs_age_verification: true }).eq("id", sendRequest.chatId);
       const assistantMessage = await addMessage(
         supabase,
@@ -249,14 +355,12 @@ export async function POST(request: NextRequest) {
         "assistant",
         t("ageVerificationAssistantMessage", promptLanguage)
       );
-      
+      const messages = await getChatMessages(supabase, sendRequest.chatId);
       return NextResponse.json({
-        aiResponseType: "age_verification_required",
-        assistantMessage: {
-          id: assistantMessage.id,
-          role: "assistant",
-          content: assistantMessage.content,
-        },
+        messages,
+        userMessage,
+        assistantMessage,
+        aiResponseType: "questions",
       });
     }
 
@@ -296,7 +400,8 @@ export async function POST(request: NextRequest) {
       historyForAI,
       effectiveLanguage,
       normalizeExistingHtmlForPrompt(existingHtml),
-      userImages
+      userImages,
+      isAgeRestricted
     );
 
     // Handle patch-based edits: apply search/replace patches to the original HTML.

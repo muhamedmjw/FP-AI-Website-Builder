@@ -5,6 +5,8 @@
 
 import type { AppLanguage } from "@/shared/types/database";
 
+import { t } from "@/shared/constants/translations";
+
 // ── Response types ──
 
 export type AIResponseQuestions = {
@@ -91,6 +93,46 @@ function isValidEditChanges(
 
 // ── Parsers ──
 
+function extractHtmlFallback(raw: string): string | null {
+  const startIndex = raw.search(/<!DOCTYPE html>|<html[\s>]/i);
+  if (startIndex === -1) return null;
+
+  let endIndex = raw.lastIndexOf("</html>");
+  if (endIndex === -1) {
+    // If no closing tag, it might be truncated. Take the rest of the string.
+    endIndex = raw.length;
+  } else {
+    endIndex += 7; // length of "</html>"
+  }
+
+  let html = raw.slice(startIndex, endIndex);
+
+  // If the HTML was embedded inside a JSON string, it will likely have JSON-escaped quotes and newlines.
+  // We unescape them here so the HTML renders correctly.
+  if (html.includes('\\"') || html.includes('\\n')) {
+    html = html
+      .replace(/\\"/g, '"')
+      .replace(/\\n/g, '\n')
+      .replace(/\\t/g, '\t')
+      .replace(/\\\\/g, '\\');
+  }
+
+  return html;
+}
+
+function extractMessageFallback(raw: string): string | null {
+  // Try to find a "message" field in the broken JSON
+  const messageMatch = raw.match(/"message"\s*:\s*"([^"\\]*(?:\\.[^"\\]*)*)"/i);
+  if (messageMatch && messageMatch[1]) {
+    let msg = messageMatch[1];
+    if (msg.includes('\\"') || msg.includes('\\n')) {
+      msg = msg.replace(/\\"/g, '"').replace(/\\n/g, '\n');
+    }
+    return msg;
+  }
+  return null;
+}
+
 export function parseClassifierResult(raw: string): ClassifierResult | null {
   try {
     const parsed = JSON.parse(stripCodeFences(raw));
@@ -121,7 +163,7 @@ function tryParseJson(text: string): Record<string, unknown> | null {
   }
 }
 
-function classifyParsedResponse(parsed: Record<string, unknown>): AIResponse | null {
+function classifyParsedResponse(parsed: Record<string, unknown>, language: AppLanguage = "en"): AIResponse | null {
   // Handle website_edit (patch-based edits)
   if (parsed.type === "website_edit" && isValidEditChanges(parsed.changes)) {
     return {
@@ -130,7 +172,7 @@ function classifyParsedResponse(parsed: Record<string, unknown>): AIResponse | n
       message:
         typeof parsed.message === "string"
           ? parsed.message
-          : "Edit applied successfully.",
+          : t("generatingEditSuccess", language),
     };
   }
 
@@ -142,7 +184,7 @@ function classifyParsedResponse(parsed: Record<string, unknown>): AIResponse | n
       message:
         typeof parsed.message === "string"
           ? parsed.message
-          : "Website generated successfully.",
+          : t("generatingWebsiteSuccess", language),
     };
   }
 
@@ -157,7 +199,7 @@ function classifyParsedResponse(parsed: Record<string, unknown>): AIResponse | n
   return null;
 }
 
-export function parseAIResponse(raw: string): AIResponse {
+export function parseAIResponse(raw: string, language: AppLanguage = "en"): AIResponse {
   let cleaned = raw.trim();
 
   const fenceMatch = cleaned.match(/^```(?:json)?\s*\n?([\s\S]*?)\n?\s*```$/);
@@ -168,7 +210,7 @@ export function parseAIResponse(raw: string): AIResponse {
   // Try direct parse
   const directParsed = tryParseJson(cleaned);
   if (directParsed) {
-    const classified = classifyParsedResponse(directParsed);
+    const classified = classifyParsedResponse(directParsed, language);
     if (classified) {
       return classified;
     }
@@ -191,7 +233,7 @@ export function parseAIResponse(raw: string): AIResponse {
     const extracted = tryParseJson(potentialJson);
 
     if (extracted) {
-      const classified = classifyParsedResponse(extracted);
+      const classified = classifyParsedResponse(extracted, language);
       if (classified) {
         return classified;
       }
@@ -203,22 +245,27 @@ export function parseAIResponse(raw: string): AIResponse {
   if (htmlFenceMatch) {
     const html = htmlFenceMatch[1].trim();
     if (validateWebsiteHtml(html)) {
-      const message = raw.replace(htmlFenceMatch[0], "").trim() || "Website generated successfully.";
+      const message = raw.replace(htmlFenceMatch[0], "").trim() || t("generatingWebsiteSuccess", language);
       return {
         type: "website",
         html,
-        message: message.length > 500 ? "Website generated successfully." : message,
+        message: message.length > 500 ? t("generatingWebsiteSuccess", language) : message,
       };
     }
   }
 
-  // FALLBACK 2: If the entire raw string looks like valid HTML
+  // FALLBACK 2: If the entire raw string contains valid HTML tags
   if (validateWebsiteHtml(raw)) {
-    return {
-      type: "website",
-      html: raw,
-      message: "Website generated successfully.",
-    };
+    const extractedHtml = extractHtmlFallback(raw);
+    const extractedMessage = extractMessageFallback(raw);
+    
+    if (extractedHtml) {
+      return {
+        type: "website",
+        html: extractedHtml,
+        message: extractedMessage || t("generatingWebsiteSuccess", language),
+      };
+    }
   }
 
   return {

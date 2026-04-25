@@ -15,7 +15,6 @@ import { useEditorSync } from "@/client/features/builder/hooks/use-editor-sync";
 import { useLanguage } from "@/client/lib/language-context";
 import { t } from "@/shared/constants/translations";
 import ChatLockedModal from "@/client/features/chat/chat-locked-modal";
-import AgeVerificationModal from "@/client/features/chat/age-verification-modal";
 
 /**
  * Builder view - main split layout.
@@ -32,7 +31,6 @@ type BuilderViewProps = {
   isAuthenticated?: boolean;
   currentUserAvatarUrl?: string | null;
   initialIsLocked?: boolean;
-  initialNeedsAgeVerification?: boolean;
 };
 
 /** Minimum preview width in pixels */
@@ -52,7 +50,6 @@ export default function BuilderView({
   isAuthenticated = true,
   currentUserAvatarUrl = null,
   initialIsLocked = false,
-  initialNeedsAgeVerification = false,
 }: BuilderViewProps) {
   const { language } = useLanguage();
   const hasInitialPreview =
@@ -135,11 +132,6 @@ export default function BuilderView({
     handleStop,
     handleInputImagesChange,
     isChatLocked,
-    needsAgeVerification,
-    showAgeVerification,
-    handleAgeVerificationSuccess,
-    handleAgeVerificationCancel,
-    handleReopenAgeVerification,
   } = useBuilderState({
     chatId,
     initialMessages,
@@ -148,28 +140,12 @@ export default function BuilderView({
     setInputErrorMessage,
     onApplyGeneratedHtml: applyGeneratedHtml,
     initialIsLocked,
-    initialNeedsAgeVerification,
   });
 
-  const isInputDisabled = isChatLocked || needsAgeVerification;
+  const isInputDisabled = isChatLocked;
   const inputPlaceholderText = isChatLocked
     ? t("chatLockedPlaceholder", language)
-    : needsAgeVerification
-      ? t("ageVerificationInputPlaceholder", language)
-      : undefined;
-
-  const ageVerificationBanner = needsAgeVerification && !showAgeVerification ? (
-    <div className="mx-auto w-full max-w-4xl px-5 pb-2">
-      <button
-        type="button"
-        onClick={handleReopenAgeVerification}
-        className="flex w-full items-center gap-2 rounded-lg bg-orange-500/15 px-3 py-2 text-left text-sm text-orange-400 transition hover:bg-orange-500/25"
-      >
-        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
-        <span>{t("ageVerificationBanner", language)}</span>
-      </button>
-    </div>
-  ) : null;
+    : undefined;
 
   const activeMobileTab = hasPreview ? mobileTab : "chat";
   const activeMobilePreviewMode = hasPreview ? mobilePreviewMode : "preview";
@@ -330,7 +306,6 @@ export default function BuilderView({
             showHeader={false}
             disableInput={isInputDisabled}
             inputPlaceholder={inputPlaceholderText}
-            inputBanner={ageVerificationBanner}
           />
         </div>
 
@@ -400,7 +375,6 @@ export default function BuilderView({
             showHeader={false}
             disableInput={isInputDisabled}
             inputPlaceholder={inputPlaceholderText}
-            inputBanner={ageVerificationBanner}
           />
         </div>
 
@@ -452,12 +426,6 @@ export default function BuilderView({
       />
       
       <ChatLockedModal isOpen={isChatLocked} />
-      
-      <AgeVerificationModal 
-        isOpen={showAgeVerification} 
-        onConfirm={handleAgeVerificationSuccess} 
-        onCancel={handleAgeVerificationCancel} 
-      />
     </div>
   );
 }

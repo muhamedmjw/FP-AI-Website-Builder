@@ -112,7 +112,6 @@ export default async function ChatPage({ params }: ChatPageProps) {
       isAuthenticated
       currentUserAvatarUrl={profile?.avatarUrl ?? null}
       initialIsLocked={chat.is_locked ?? false}
-      initialNeedsAgeVerification={chat.needs_age_verification ?? false}
     />
   );
 }

@@ -283,7 +283,13 @@ export const en: Record<string, string> = {
   ageVerificationBanner:
     "Age verification pending — click here to verify and continue chatting",
   ageVerificationAssistantMessage:
-    "You have a pending age verification for this request. Please confirm you are over 18 and acknowledge responsibility to proceed.",
+    "I appreciate your interest! However, this request involves content related to age-restricted products. Before I can proceed with building your website, I need you to verify that you meet the minimum age requirement.\n\nPlease type the following in your next message exactly as shown:\n\n\"I confirm that I am at least 18 years old and take full responsibility for the content generated.\"\n\nOnce confirmed, I will continue with your original request right away.",
+  ageVerificationConfirmedMessage:
+    "Thank you for confirming. I will now proceed with building your website.",
+  ageVerificationRetryMessage:
+    "It looks like your response didn't match the required confirmation phrase. To proceed, please type the following exactly as shown:\n\n\"I confirm that I am at least 18 years old and take full responsibility for the content generated.\"",
+  ageConfirmationPhrase: "I confirm that I am at least 18 years old and take full responsibility for the content generated",
+  ageConfirmationKeyword: "responsibility",
   ageVerificationFailed: "Failed to verify age. Please try again.",
 
   safetyPoliciesTitle: "Safety & Ethical Policies",
@@ -308,4 +314,7 @@ export const en: Record<string, string> = {
   safetyAllowedDesc:
     "You are free to generate websites for standard businesses, e-commerce stores, portfolios, blogs, restaurants, and cafes. If you have any questions regarding a specific use case, please test it out or contact our support team.",
   safetyPoliciesLabel: "Safety Policies",
+
+  generatingWebsiteSuccess: "Website generated successfully.",
+  generatingEditSuccess: "Edit applied successfully.",
 };

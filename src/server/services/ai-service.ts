@@ -68,6 +68,7 @@ type GenerationPreparation = {
   intent: ClassifiedIntent;
   contentLanguage: AppLanguage;
   detectedLanguage: AppLanguage;
+  isAgeRestricted: boolean;
 };
 
 type GenerationLog = {
@@ -200,7 +201,8 @@ function buildIntentExecutionConfig(
   contentLanguage: AppLanguage,
   detectedLanguage: AppLanguage,
   existingHtml: string | null,
-  selectedUserImages: Array<{ fileName: string; dataUri: string }>
+  selectedUserImages: Array<{ fileName: string; dataUri: string }>,
+  isAgeRestricted = false
 ): IntentExecutionConfig {
   if (intent === "build") {
     return {
@@ -208,7 +210,8 @@ function buildIntentExecutionConfig(
         history,
         contentLanguage,
         detectedLanguage,
-        selectedUserImages
+        selectedUserImages,
+        isAgeRestricted
       ) as AIMessage[],
       maxTokens: AI_CONFIG.MAX_TOKENS,
       temperature: 0.52,
@@ -223,7 +226,8 @@ function buildIntentExecutionConfig(
           existingHtml,
           contentLanguage,
           detectedLanguage,
-          selectedUserImages
+          selectedUserImages,
+          isAgeRestricted
         ) as AIMessage[],
         maxTokens: AI_CONFIG.MAX_TOKENS,
         temperature: 0.2,
@@ -235,7 +239,8 @@ function buildIntentExecutionConfig(
         history,
         contentLanguage,
         detectedLanguage,
-        selectedUserImages
+        selectedUserImages,
+        isAgeRestricted
       ) as AIMessage[],
       maxTokens: AI_CONFIG.MAX_TOKENS,
       temperature: 0.52,
@@ -253,7 +258,8 @@ async function prepareGeneration(
   history: HistoryMessage[],
   language: AppLanguage,
   existingHtml: string | null,
-  abortSignal?: AbortSignal
+  abortSignal?: AbortSignal,
+  isAgeRestricted = false
 ): Promise<GenerationPreparation> {
   const latestUserMessage =
     history.filter((message) => message.role === "user").at(-1)?.content ?? "";
@@ -266,12 +272,18 @@ async function prepareGeneration(
         ? "ar"
         : "en";
 
-  const { intent, detectedLanguage } = await classifyIntent(
+  let { intent, detectedLanguage } = await classifyIntent(
     latestUserMessage,
     existingHtml !== null,
     promptContentLanguage,
     abortSignal
   );
+
+  // When user just confirmed age, the latest message is the confirmation phrase.
+  // Override intent to "build" so the AI generates the website from the original request.
+  if (isAgeRestricted && intent === "chat" && existingHtml === null) {
+    intent = "build";
+  }
 
   const contentLanguage: AppLanguage = detectedLanguage;
 
@@ -279,6 +291,7 @@ async function prepareGeneration(
     intent,
     contentLanguage,
     detectedLanguage,
+    isAgeRestricted,
   };
 }
 
@@ -299,7 +312,8 @@ function buildGenerationConfig(params: {
     preparation.contentLanguage,
     preparation.detectedLanguage,
     existingHtml,
-    userImages
+    userImages,
+    preparation.isAgeRestricted
   );
 }
 
@@ -309,7 +323,8 @@ async function runGenerationWorker(
   config: IntentExecutionConfig,
   history: HistoryMessage[],
   effectiveUserImages: Array<{ fileName: string; dataUri: string }>,
-  abortSignal?: AbortSignal
+  abortSignal?: AbortSignal,
+  language?: AppLanguage
 ): Promise<{
   parsed: AIResponse;
   modelUsed: string;
@@ -321,7 +336,8 @@ async function runGenerationWorker(
     config.messages,
     config.maxTokens,
     config.temperature,
-    abortSignal
+    abortSignal,
+    language
   );
 
   const parsed = await enrichWebsiteResponse(
@@ -346,7 +362,8 @@ function trimImagesToPromptLimit(
   contentLanguage: AppLanguage,
   detectedLanguage: AppLanguage,
   existingHtml: string | null,
-  userImages: Array<{ fileName: string; dataUri: string }>
+  userImages: Array<{ fileName: string; dataUri: string }>,
+  isAgeRestricted = false
 ): {
   effectiveUserImages: Array<{ fileName: string; dataUri: string }>;
   config: IntentExecutionConfig;
@@ -358,7 +375,8 @@ function trimImagesToPromptLimit(
     contentLanguage,
     detectedLanguage,
     existingHtml,
-    effectiveUserImages
+    effectiveUserImages,
+    isAgeRestricted
   );
 
   let totalPromptChars = config.messages.reduce(
@@ -375,7 +393,8 @@ function trimImagesToPromptLimit(
       contentLanguage,
       detectedLanguage,
       existingHtml,
-      effectiveUserImages
+      effectiveUserImages,
+      isAgeRestricted
     );
     totalPromptChars = config.messages.reduce(
       (sum, msg) => sum + (typeof msg.content === "string" ? msg.content.length : 0),
@@ -433,7 +452,8 @@ async function generateAIResponseOnce(
   language: "en" | "ar" | "ku" = "en",
   existingHtml: string | null = null,
   userImages: Array<{ fileName: string; dataUri: string }> = [],
-  abortSignal?: AbortSignal
+  abortSignal?: AbortSignal,
+  isAgeRestricted = false
 ): Promise<AIResponse> {
   const startTime = Date.now();
 
@@ -441,7 +461,7 @@ async function generateAIResponseOnce(
     throw new GenerationCancelledError();
   }
 
-  const preparation = await prepareGeneration(history, language, existingHtml, abortSignal);
+  const preparation = await prepareGeneration(history, language, existingHtml, abortSignal, isAgeRestricted);
 
   if (abortSignal?.aborted) {
     throw new GenerationCancelledError();
@@ -460,7 +480,8 @@ async function generateAIResponseOnce(
       config,
       history,
       effectiveUserImages,
-      abortSignal
+      abortSignal,
+      language
     );
 
     const durationMs = Date.now() - startTime;
@@ -511,7 +532,8 @@ export async function generateAIResponse(
   history: HistoryMessage[],
   language: "en" | "ar" | "ku" = "en",
   existingHtml: string | null = null,
-  userImages: Array<{ fileName: string; dataUri: string }> = []
+  userImages: Array<{ fileName: string; dataUri: string }> = [],
+  isAgeRestricted = false
 ): Promise<AIResponse> {
   const abortController = new AbortController();
   registerGeneration(chatId, abortController);
@@ -524,7 +546,8 @@ export async function generateAIResponse(
       language,
       existingHtml,
       userImages,
-      abortController.signal
+      abortController.signal,
+      isAgeRestricted
     );
     return result;
   } finally {
@@ -539,7 +562,8 @@ async function generateAIResponseWithAbort(
   language: "en" | "ar" | "ku" = "en",
   existingHtml: string | null = null,
   userImages: Array<{ fileName: string; dataUri: string }> = [],
-  abortSignal?: AbortSignal
+  abortSignal?: AbortSignal,
+  isAgeRestricted = false
 ): Promise<AIResponse> {
   try {
     return await generateAIResponseOnce(
@@ -549,7 +573,8 @@ async function generateAIResponseWithAbort(
       language,
       existingHtml,
       userImages,
-      abortSignal
+      abortSignal,
+      isAgeRestricted
     );
   } catch (error) {
     if (error instanceof GenerationCancelledError || abortSignal?.aborted) {
@@ -582,7 +607,8 @@ async function generateAIResponseWithAbort(
       language,
       existingHtml,
       [],
-      abortSignal
+      abortSignal,
+      isAgeRestricted
     );
   }
 }
@@ -619,7 +645,9 @@ export async function generateGuestAIResponse(
     const workerResult = await callDeepSeekWithRetry(
       config.messages,
       config.maxTokens,
-      config.temperature
+      config.temperature,
+      undefined,
+      language
     );
 
     let parsed = workerResult.parsed;

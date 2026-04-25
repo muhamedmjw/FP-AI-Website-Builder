@@ -20,6 +20,52 @@ import {
 import type { Category, WebsiteTheme } from "./index";
 import { LANGUAGE_RULES as LANGUAGE_GUIDANCE } from "./language";
 
+/**
+ * Builds the system prompt instruction for age-restricted websites.
+ * Tells the AI to include a full-screen 18+ age verification gate
+ * before any content is visible. Language-aware.
+ */
+function buildAgeRestrictionInstruction(contentLanguage: AppLanguage): string {
+  const labels: Record<AppLanguage, { title: string; message: string; button: string; warning: string }> = {
+    en: {
+      title: "Age Verification Required",
+      message: "You must be at least 18 years old to access this website. By entering, you confirm that you meet the legal age requirement and accept full responsibility.",
+      button: "I am 18 or older — Enter",
+      warning: "18+",
+    },
+    ar: {
+      title: "التحقق من العمر مطلوب",
+      message: "يجب أن يكون عمرك 18 عامًا على الأقل للوصول إلى هذا الموقع. بدخولك، تؤكد أنك تستوفي متطلبات السن القانونية وتتحمل المسؤولية الكاملة.",
+      button: "عمري 18 سنة أو أكثر — دخول",
+      warning: "+18",
+    },
+    ku: {
+      title: "پشتڕاستکردنەوەی تەمەن پێویستە",
+      message: "دەبێت لانیکەم ١٨ ساڵ تەمەنت بێت بۆ چوونەژوورەوەی ئەم وێبسایتە. بە چوونەژوورەوە، پشتڕاست دەکەیتەوە کە مەرجی تەمەنی یاسایی بەجێ دەهێنیت و تەواوی بەرپرسیارێتی قبوڵ دەکەیت.",
+      button: "تەمەنم ١٨ ساڵ یان زیاترە — بچۆ ژوورەوە",
+      warning: "+١٨",
+    },
+  };
+
+  const l = labels[contentLanguage] ?? labels.en;
+  const dir = contentLanguage === "ar" || contentLanguage === "ku" ? "rtl" : "ltr";
+
+  return `
+AGE-RESTRICTED CONTENT — MANDATORY 18+ GATE (NON-NEGOTIABLE):
+This website contains age-restricted content. You MUST include a full-screen age verification overlay as the FIRST visible element.
+
+Requirements:
+- A fixed, full-screen overlay (id="age-gate") covering the entire page with a dark semi-transparent backdrop.
+- Centered card with the title "${l.title}", the message "${l.message}", and a styled button "${l.button}".
+- A prominent "${l.warning}" badge/icon in the overlay.
+- The overlay must use dir="${dir}" for proper text direction.
+- On button click, hide the overlay and show the website content. Use simple JS: document.getElementById('age-gate').style.display='none'.
+- The website body content should have overflow:hidden while the gate is visible.
+- Style the gate to match the website theme (colors, fonts, border-radius).
+- Do NOT skip this gate under any circumstances.
+`.trim();
+}
+
 export type ChatMessage = {
   role: "system" | "user" | "assistant";
   content: string;
@@ -416,7 +462,8 @@ export function buildGenerationMessages(
   history: HistoryMessage[],
   contentLanguage: AppLanguage,
   detectedUserLanguage: AppLanguage,
-  userImages?: PromptUserImage[]
+  userImages?: PromptUserImage[],
+  isAgeRestricted = false
 ): ChatMessage[] {
   const isRtl = contentLanguage === "ar" || contentLanguage === "ku";
   const latestUserMessage =
@@ -452,6 +499,7 @@ export function buildGenerationMessages(
     `Website content language: ${contentLanguage}`,
     `Conversation reply language: ${detectedUserLanguage}`,
     OUTPUT_FORMAT,
+    isAgeRestricted ? buildAgeRestrictionInstruction(contentLanguage) : "",
   ].filter(Boolean);
 
   const system = systemParts.join("\n\n");
@@ -471,7 +519,8 @@ export function buildEditMessages(
   existingHtml: string,
   contentLanguage: AppLanguage,
   detectedUserLanguage: AppLanguage,
-  userImages?: PromptUserImage[]
+  userImages?: PromptUserImage[],
+  isAgeRestricted = false
 ): ChatMessage[] {
   const isRtl = contentLanguage === "ar" || contentLanguage === "ku";
   const editModeWithImages = EDIT_MODE.replace(
@@ -492,6 +541,7 @@ export function buildEditMessages(
     `Website content language: ${contentLanguage}`,
     `Conversation reply language: ${detectedUserLanguage}`,
     `CURRENT HTML:\n${existingHtml}`,
+    isAgeRestricted ? buildAgeRestrictionInstruction(contentLanguage) : "",
   ].filter(Boolean);
 
   const system = systemParts.join("\n\n");

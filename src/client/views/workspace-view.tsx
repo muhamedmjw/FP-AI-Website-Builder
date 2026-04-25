@@ -438,8 +438,8 @@ export default function WorkspaceView() {
         signal: abortController.signal,
       }).then((data) => {
         // If the background send detected an ethical violation, reload the page
-        // so the chat view picks up the new DB state (locked / age_verification modal).
-        if (data.aiResponseType === "locked" || data.aiResponseType === "age_verification_required") {
+        // so the chat view picks up the new DB state (locked).
+        if (data.aiResponseType === "locked") {
           window.location.reload();
           return;
         }

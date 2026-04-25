@@ -98,13 +98,15 @@ export class GenerationCancelledError extends Error {
 
 import type { AIResponse } from "./ai-response-parser";
 import { parseAIResponse, looksLikeBadJson } from "./ai-response-parser";
+import type { AppLanguage } from "@/shared/types/database";
 
 export async function callModelOnce(
   model: string,
   messages: AIMessage[],
   maxTokens: number,
   temperature: number,
-  abortSignal?: AbortSignal
+  abortSignal?: AbortSignal,
+  language?: AppLanguage
 ): Promise<{
   parsed: AIResponse;
   promptTokens: number | null;
@@ -139,7 +141,7 @@ export async function callModelOnce(
     throw new Error(`Empty response from model: ${model}`);
   }
 
-  const parsed = parseAIResponse(rawText);
+  const parsed = parseAIResponse(rawText, language);
 
   if (
     parsed.type === "questions" &&
@@ -164,7 +166,8 @@ export async function callDeepSeekWithRetry(
   messages: AIMessage[],
   maxTokens: number,
   temperature: number,
-  abortSignal?: AbortSignal
+  abortSignal?: AbortSignal,
+  language?: AppLanguage
 ): Promise<{
   parsed: AIResponse;
   promptTokens: number | null;
@@ -182,7 +185,7 @@ export async function callDeepSeekWithRetry(
   for (const model of modelsToTry) {
     for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
       try {
-        return await callModelOnce(model, messages, maxTokens, temperature, abortSignal);
+        return await callModelOnce(model, messages, maxTokens, temperature, abortSignal, language);
       } catch (error) {
         lastError = error instanceof Error ? error : new Error("Unknown AI error");
 

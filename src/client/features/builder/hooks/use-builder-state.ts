@@ -26,7 +26,6 @@ type UseBuilderStateParams = {
   setInputErrorMessage: (message: string) => void;
   onApplyGeneratedHtml: (generatedHtml: string) => void;
   initialIsLocked?: boolean;
-  initialNeedsAgeVerification?: boolean;
 };
 
 type PreSendSnapshot = {
@@ -216,7 +215,6 @@ export function useBuilderState({
   setInputErrorMessage,
   onApplyGeneratedHtml,
   initialIsLocked = false,
-  initialNeedsAgeVerification = false,
 }: UseBuilderStateParams) {
   const currentInputImagesRef = useRef<UserImage[]>([]);
   const [messages, setMessages] = useState<HistoryMessage[]>(initialMessages);
@@ -228,8 +226,7 @@ export function useBuilderState({
   );
   
   const [isChatLocked, setIsChatLocked] = useState(initialIsLocked);
-  const [needsAgeVerification, setNeedsAgeVerification] = useState(initialNeedsAgeVerification);
-  const [showAgeVerification, setShowAgeVerification] = useState(initialNeedsAgeVerification);
+
 
 
   const previousChatIdRef = useRef(chatId);
@@ -427,15 +424,11 @@ export function useBuilderState({
       if (data.aiResponseType === "locked") {
         setMessages(data.messages);
         setIsChatLocked(true);
-      } else if (data.aiResponseType === "age_verification_required") {
-        setMessages(data.messages);
-        setNeedsAgeVerification(true);
-        setShowAgeVerification(true);
       } else {
         setMessages(data.messages);
       }
 
-      if (outgoingImages.length > 0 && data.userMessage && data.aiResponseType !== "age_verification_required" && data.aiResponseType !== "locked") {
+      if (outgoingImages.length > 0 && data.userMessage && data.aiResponseType !== "locked") {
         // React batches these updates in async handlers to keep message and attachments in sync.
         setMessageImages((prev) => {
           const next = { ...prev };
@@ -531,39 +524,6 @@ export function useBuilderState({
     setIsRequestInFlight(false);
   }, [chatId, isSending]);
 
-  const handleAgeVerificationSuccess = useCallback(async () => {
-    setShowAgeVerification(false);
-    
-    try {
-      const response = await fetch("/api/chat/verify-age", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          chatId,
-          acknowledgment: "I take responsibility",
-        }),
-      });
-
-      if (!response.ok) {
-        throw new Error("Failed to verify age.");
-      }
-
-      setNeedsAgeVerification(false);
-      // The user is now verified. They can just continue chatting naturally.
-    } catch (error) {
-      setInputErrorMessage(t("ageVerificationFailed", language));
-    }
-  }, [chatId, language, setInputErrorMessage]);
-
-  const handleAgeVerificationCancel = useCallback(() => {
-    setShowAgeVerification(false);
-    // needsAgeVerification stays true — input remains disabled
-  }, []);
-
-  const handleReopenAgeVerification = useCallback(() => {
-    setShowAgeVerification(true);
-  }, []);
-
   return {
     messages,
     messageImages,
@@ -573,10 +533,5 @@ export function useBuilderState({
     handleStop,
     handleInputImagesChange,
     isChatLocked,
-    needsAgeVerification,
-    showAgeVerification,
-    handleAgeVerificationSuccess,
-    handleAgeVerificationCancel,
-    handleReopenAgeVerification,
   };
 }
