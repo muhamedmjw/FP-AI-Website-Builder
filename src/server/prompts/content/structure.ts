@@ -7,8 +7,8 @@ JavaScript lives in a <script> tag before </body>.
 Never reference external local files.
 
 ICONS CDN — use when needed:
-<link rel="stylesheet" href=
-"https://cdnjs.cloudflare.com/ajax/libs/font-awesome/7.0.1/css/all.min.css">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0" />
+- DO NOT USE EMOJIS anywhere on the site. Always use Google Material Symbols (e.g., <span class="material-symbols-outlined">home</span>).
 
 
 SECTION ORDER — include what fits the business:
@@ -37,7 +37,7 @@ FOOTER — LOGOS & SOCIAL ICONS (EQUAL SPACING):
 - Rows of partner logos, trust badges, or social icons must have **uniform** spacing between every item.
 - Put all icons/logos in one wrapper (e.g. .footer-socials or .footer-logos) and space them with **CSS gap** (e.g. display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 1rem 1.25rem;) — never mix different margin-left/right on individual items.
 - Optional: give each icon link an identical square hit area (e.g. width/height 2.5rem) so alignment looks even.
-- For Twitter/X social icons, ALWAYS use the new X logo: <i class="fa-brands fa-x-twitter"></i>
+- For Twitter/X social icons, ALWAYS use a clean SVG or text "X" instead of emojis.
 
 FOOTER COPYRIGHT YEAR:
 - The authoritative year for “© …” and similar footer lines is {CURRENT_SITE_YEAR} (see system prompt).
