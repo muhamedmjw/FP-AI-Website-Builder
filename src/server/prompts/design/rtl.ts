@@ -2,7 +2,7 @@ export const RTL_RULES = `
 RTL RULES — apply when websiteLanguage is "ar" or "ku":
 
 QUALITY (READ FIRST):
-- RTL sites must match the same design ambition as LTR: premium layouts from BASE THEME CSS, asymmetry, grids, and depth — never a simplified “basic RTL template.”
+- RTL sites must match the same design ambition as LTR: premium layouts, asymmetry, grids, and depth — never a simplified "basic RTL template."
 - Do not collapse into plain white sections + three equal cards as the whole page unless the selected LAYOUT STYLE truly requires it.
 
 HTML:
@@ -14,7 +14,7 @@ CSS:
 - Flip flex rows where needed for RTL flow
 - Ensure navigation links flow right to left
 - Form labels and inputs right-aligned
-- Preserve theme backgrounds, gradients, and shadows from BASE THEME CSS — RTL does not mean remove styling.
+- Preserve all visual styling (backgrounds, gradients, shadows) — RTL does not mean remove styling.
 
 ARABIC TYPOGRAPHY (when content is Arabic):
 - Prefer pairing the theme with a strong Arabic web font via Google Fonts + @import, e.g. IBM Plex Sans Arabic, Cairo, Tajawal, or Noto Sans Arabic — pick one that fits the theme mood.

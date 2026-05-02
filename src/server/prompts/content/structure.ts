@@ -6,9 +6,14 @@ CSS lives in a <style> tag in <head>.
 JavaScript lives in a <script> tag before </body>.
 Never reference external local files.
 
-ICONS CDN — use when needed:
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0" />
-- DO NOT USE EMOJIS anywhere on the site. Always use Google Material Symbols (e.g., <span class="material-symbols-outlined">home</span>).
+ICONS CDNs — use as specified:
+1. Google Material Symbols (Main Site): <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0" />
+2. Font Awesome 6 (Footer Icons): <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
+
+ICON RULES:
+- DO NOT USE EMOJIS anywhere on the site.
+- MAIN SITE: Use Google Material Symbols (e.g., <span class="material-symbols-outlined">home</span>) for UI icons.
+- FOOTER: NEVER use Google Material Symbols in the footer. For social media icons (Facebook, Instagram, LinkedIn, X, etc.) and footer contact icons, you MUST use Font Awesome 6 (e.g., <i class="fa-brands fa-instagram"></i> or <i class="fa-solid fa-envelope"></i>).
 
 
 SECTION ORDER — include what fits the business:
@@ -34,10 +39,11 @@ SECTION POOL — include what fits the business:
 12. Footer (logo, links, social icons, copyright)
 
 FOOTER — LOGOS & SOCIAL ICONS (EQUAL SPACING):
+- SOCIAL ICONS: You MUST use Font Awesome 6 (fa-brands) for social media. NEVER use Google Material Symbols in the footer.
 - Rows of partner logos, trust badges, or social icons must have **uniform** spacing between every item.
 - Put all icons/logos in one wrapper (e.g. .footer-socials or .footer-logos) and space them with **CSS gap** (e.g. display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 1rem 1.25rem;) — never mix different margin-left/right on individual items.
 - Optional: give each icon link an identical square hit area (e.g. width/height 2.5rem) so alignment looks even.
-- For Twitter/X social icons, ALWAYS use a clean SVG or text "X" instead of emojis.
+- For Twitter/X social icons, use the Font Awesome X icon (e.g., <i class="fa-brands fa-x-twitter"></i>).
 
 FOOTER COPYRIGHT YEAR:
 - The authoritative year for “© …” and similar footer lines is {CURRENT_SITE_YEAR} (see system prompt).

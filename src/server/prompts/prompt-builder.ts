@@ -1,6 +1,3 @@
-import fs from "fs";
-import path from "path";
-
 import { AI_CONFIG } from "@/shared/constants/ai";
 import { AppLanguage, HistoryMessage } from "@/shared/types/database";
 import {
@@ -15,10 +12,11 @@ import {
   BUILD_MODE,
   EDIT_MODE,
   CHAT_MODE,
-  buildSystemPrompt,
+  detectCategory,
 } from "./index";
-import type { Category, WebsiteTheme } from "./index";
+import type { Category } from "./index";
 import { LANGUAGE_RULES as LANGUAGE_GUIDANCE } from "./language";
+import { pickRandomLayout } from "./theme-selection";
 
 /**
  * Builds the system prompt instruction for age-restricted websites.
@@ -171,38 +169,10 @@ const LAYOUT_BLUEPRINTS: Record<string, string> = {
   ].join("\n"),
 };
 
-function getGradientDirection(theme: WebsiteTheme): string {
-  const personality = theme.personality.toLowerCase();
-
-  if (/luxury|elegant|minimal|clean|corporate|medical/.test(personality)) {
-    return "subtle";
-  }
-  if (/bold|energetic|playful|creative|neon|vibrant/.test(personality)) {
-    return "bold";
-  }
-
-  return "balanced";
-}
-
-function buildVisualStyleInstruction(theme: WebsiteTheme): string {
-  const gradientDirection = getGradientDirection(theme);
-
-  return [
-    "VISUAL STYLE DEPTH (MANDATORY):",
-    "- Do not produce a flat plain-color site. Use layered visual depth.",
-    `- Gradient intensity should be ${gradientDirection} based on theme personality.`,
-    `- Use at least 2 gradients derived from theme colors (${theme.colors.primary}, ${theme.colors.secondary}, ${theme.colors.bg}).`,
-    "- Apply one large atmospheric gradient background (hero or page backdrop).",
-    "- Apply one interactive gradient treatment (buttons, badges, or callouts).",
-    "- Add at least one elevated surface style: soft shadow + border + backdrop contrast.",
-    "- Keep contrast and readability high; gradients must never hurt text legibility.",
-  ].join("\n");
-}
-
 function buildLayoutInstruction(layout: string): string {
   const layoutDesc =
     LAYOUT_DESCRIPTIONS[layout] ??
-    "Follow the selected theme layout style consistently across all sections.";
+    "Follow the selected layout style consistently across all sections.";
   const layoutBlueprint =
     LAYOUT_BLUEPRINTS[layout] ??
     "Desktop blueprint: Use clearly distinct section geometries and avoid repetitive stacked blocks.";
@@ -224,8 +194,8 @@ function buildPremiumOutputBar(isRtl: boolean): string {
     ? `
 RTL / ARABIC / KURDISH — SAME VISUAL AMBITION AS ENGLISH:
 - RTL is direction and mirroring only — NOT permission for a flat, generic, “template” stacked page.
-- You MUST still deliver split heroes, editorial grids, asymmetric sections, dramatic typography, and the full personality of BASE THEME CSS.
-- Mirror flex/grid direction and navigation order for RTL; keep the same section geometry and visual drama as a premium English site in this theme.
+- You MUST still deliver split heroes, editorial grids, asymmetric sections, dramatic typography, and full creative ambition.
+- Mirror flex/grid direction and navigation order for RTL; keep the same section geometry and visual drama as a premium English site.
 - For Arabic/Kurdish copy, use confident display typography (scale + weight contrast). Do not reduce the whole page to uniform small body text.
 - Team/profile photos: set data-image-query to the depicted role (e.g. "professional lawyer portrait office") — never unrelated stock subjects.
 `.trim()
@@ -235,108 +205,60 @@ RTL / ARABIC / KURDISH — SAME VISUAL AMBITION AS ENGLISH:
     "PREMIUM OUTPUT BAR (NON-NEGOTIABLE):",
     "- Aim for top-tier portfolio / editorial / high-end marketing quality — never a default landing-page cliché.",
     "- One strong hero moment, clear hierarchy, intentional whitespace, polished buttons and form fields, subtle motion (scroll reveal, hover states).",
-    "- When the user does not specify colors or art direction, still ship premium work: follow BASE THEME CSS and DESIGN SYSTEM button/input minimums.",
+    "- When the user does not specify colors or art direction, still ship premium work: use your creative judgment and the DESIGN SYSTEM button/input minimums.",
     "- Forbidden as the entire desktop experience: repeated full-width bands with identical 3-column card grids only.",
-    "- Honor BASE THEME CSS verbatim; extra CSS should refine details, not replace the theme system.",
-    "- Theme selection is server-side: do not substitute a different visual system — express the locked theme through HTML structure and content.",
+    "- Write all CSS inline in a single <style> tag. Do not reference external CSS files.",
     rtlBlock,
   ]
     .filter(Boolean)
     .join("\n\n");
 }
 
-function readThemeCssFile(category: string, cssFileName: string): string | null {
-  const primaryPath = path.join(
-    process.cwd(),
-    "src",
-    "server",
-    "prompts",
-    "categories",
-    category,
-    "themes",
-    cssFileName
-  );
-
-  try {
-    if (fs.existsSync(primaryPath)) {
-      return fs.readFileSync(primaryPath, "utf8");
-    }
-  } catch (err) {
-    console.error(`Error reading primary CSS file: ${primaryPath}`, err);
-  }
-
-  // Fallback to the generic fallback themes directory
-  const fallbackPath = path.join(
-    process.cwd(),
-    "src",
-    "server",
-    "prompts",
-    "categories",
-    "fallback",
-    "themes",
-    cssFileName
-  );
-
-  try {
-    if (fs.existsSync(fallbackPath)) {
-      return fs.readFileSync(fallbackPath, "utf8");
-    }
-  } catch (err) {
-    console.error(`Error reading fallback CSS file: ${fallbackPath}`, err);
-  }
-
-  console.warn(`Theme CSS not found in primary or fallback locations: ${cssFileName}`);
-  return null;
-}
-
-function buildThemeInjection(
-  theme: WebsiteTheme,
-  category: string,
-  baseThemeCss: string | null
-): string {
-  const layoutInstruction = buildLayoutInstruction(theme.layout);
-  const visualStyleInstruction = buildVisualStyleInstruction(theme);
-
-  const baseCssBlock =
-    baseThemeCss && baseThemeCss.trim().length > 0
-      ? `
-BASE THEME CSS (REQUIRED — paste verbatim):
-Put the following block inside <head> as the FIRST content of a single <style> element.
-Do not omit, rewrite, or reorder this CSS. You may append small page-specific rules after it only.
-
----BEGIN_BASE_THEME_CSS---
-${baseThemeCss.trim()}
----END_BASE_THEME_CSS---
-
-Your HTML must use the class names and layout patterns defined in this stylesheet (including theme-specific classes like .menu-grid, .hero-content, etc.).
-`.trim()
-      : "";
+function buildCreativeDesignBrief(category: string, layout: string): string {
+  const layoutInstruction = buildLayoutInstruction(layout);
 
   return `
 ═══════════════════════════════════════════
-MANDATORY DESIGN BRIEF — READ BEFORE WRITING ANY HTML
+CREATIVE DESIGN BRIEF — READ BEFORE WRITING ANY HTML
 ═══════════════════════════════════════════
-SELECTED THEME: ${theme.name} (id: ${theme.id})
 CATEGORY: ${category}
-PERSONALITY: ${theme.personality}
-LAYOUT STYLE: ${theme.layout}
+LAYOUT STYLE: ${layout}
 
-HEADING FONT: ${theme.fonts.heading}
-BODY FONT: ${theme.fonts.body}
-GOOGLE FONTS URL: ${theme.fonts.googleFontsUrl}
+CREATIVE FREEDOM — DESIGN YOUR OWN THEME:
+You have FULL creative freedom to design the visual style.
+There is NO pre-made theme or external CSS file to follow.
+Write ALL CSS yourself inside a single <style> tag in <head>.
 
-COLORS:
-  Background:  ${theme.colors.bg}
-  Surface:     ${theme.colors.surface}
-  Primary:     ${theme.colors.primary}
-  Secondary:   ${theme.colors.secondary}
-  Text:        ${theme.colors.text}
-  Muted:       ${theme.colors.muted}
-  Border:      ${theme.colors.border}
+YOUR DESIGN RESPONSIBILITIES:
+1. COLOR PALETTE: Choose a unique, harmonious color palette 
+   (3-5 colors) that fits the "${category}" category and feels premium.
+   - Define all colors as CSS custom properties in :root {}
+   - Use these variable names: --bg, --surface, --primary, 
+     --secondary, --text, --muted, --border
+   - Ensure sufficient contrast for accessibility
 
-${baseCssBlock}
+2. TYPOGRAPHY: Pick a complementary Google Fonts pairing 
+   (one display/heading font + one body font).
+   - Load via @import url('...') at the top of <style>
+   - Define as: --font-heading and --font-body in :root {}
+   - Hero heading: 3rem–4rem, weight 700
+   - Section heading: 2rem–2.5rem, weight 700
+   - Body: 1rem, weight 400, line-height 1.6
 
-CSS CLASS REMINDER (supplemental — the BASE THEME CSS defines the real class set):
+3. VISUAL DEPTH (MANDATORY):
+   - Do NOT produce a flat plain-color site. Use layered visual depth.
+   - Use at least 2 gradients derived from your chosen colors.
+   - Apply one large atmospheric gradient (hero or page backdrop).
+   - Apply one interactive gradient (buttons, badges, or callouts).
+   - Add elevated surfaces: soft shadows + border + backdrop contrast.
+   - Keep contrast and readability high; gradients must never hurt legibility.
+
+4. ANIMATIONS:
+   - Scroll fade-in with IntersectionObserver (data-scroll → .visible)
+   - Hover effects on buttons, cards, and links
+   - Smooth transitions (0.3s ease) on all interactive elements
+
+CSS CLASS CONVENTIONS (use these for structure):
   nav, .logo, nav ul, nav ul a
   .hero, .hero h1, .hero p
   .btn, .btn-primary
@@ -344,14 +266,11 @@ CSS CLASS REMINDER (supplemental — the BASE THEME CSS defines the real class s
   .card, .card h3, .grid-3
   footer
   [data-scroll], .visible
-
-ANIMATIONS: ${theme.animations.join(", ")}
+Also define in :root {}: --radius: 8px; --transition: 0.3s ease;
 
 ${layoutInstruction}
-
-${visualStyleInstruction}
 ═══════════════════════════════════════════
-Ignoring this design brief = incorrect output. Follow it exactly.
+Be original and creative. Every website should feel unique.
 ═══════════════════════════════════════════
 `.trim();
 }
@@ -468,15 +387,15 @@ export function buildGenerationMessages(
   const isRtl = contentLanguage === "ar" || contentLanguage === "ku";
   const latestUserMessage =
     history.filter((m) => m.role === "user").at(-1)?.content ?? "";
-  const { theme, category } = buildSystemPrompt(latestUserMessage, contentLanguage);
+  const category = detectCategory(latestUserMessage);
+  const layout = pickRandomLayout(latestUserMessage);
   const currentYear = new Date().getFullYear();
-  const baseThemeCss = readThemeCssFile(category, theme.cssFile);
-  const themeInjection = buildThemeInjection(theme, category, baseThemeCss);
+  const designBrief = buildCreativeDesignBrief(category, layout);
 
   const populatedBuildMode = BUILD_MODE
-    .replace("{GOOGLE_FONTS_URL}", theme.fonts.googleFontsUrl)
-    .replace("{BODY_FONT}", theme.fonts.body)
-    .replace("{HEADING_FONT}", theme.fonts.heading)
+    .replace("{GOOGLE_FONTS_URL}", "")
+    .replace("{BODY_FONT}", "")
+    .replace("{HEADING_FONT}", "")
     .replace("{USER_IMAGES_BLOCK}", buildUserImagesBlock(userImages));
 
   const websiteStructureForYear = WEBSITE_STRUCTURE.replaceAll(
@@ -487,7 +406,7 @@ export function buildGenerationMessages(
   const systemParts = [
     PERSONALITY,
     `CURRENT_SITE_YEAR (authoritative footer copyright year): ${currentYear}`,
-    themeInjection,
+    designBrief,
     buildPremiumOutputBar(isRtl),
     LANGUAGE_GUIDANCE,
     populatedBuildMode,

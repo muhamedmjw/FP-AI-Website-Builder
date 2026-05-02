@@ -1,22 +1,6 @@
 // src/server/prompts/index.ts
 import { detectLanguage, LANGUAGE_RULES } from './language-rules';
-import { PORTFOLIO_THEMES } from './categories/portfolio/portfolio-themes';
-import { RESTAURANT_THEMES } from './categories/restaurant/restaurant-themes';
-import { BUSINESS_THEMES } from './categories/business/business-themes';
-import { BLOG_THEMES } from './categories/blog/blog-themes';
-import { ECOMMERCE_THEMES } from './categories/ecommerce/ecommerce-themes';
-import { AGENCY_THEMES } from './categories/agency/agency-themes';
-import { LANDING_THEMES } from './categories/landing/landing-themes';
-import { EVENT_THEMES } from './categories/event/event-themes';
-import { SAAS_THEMES } from './categories/saas/saas-themes';
-import { NONPROFIT_THEMES } from './categories/nonprofit/nonprofit-themes';
-import { EDUCATION_THEMES } from './categories/education/education-themes';
-import { MEDICAL_THEMES } from './categories/medical/medical-themes';
-import { REALESTATE_THEMES } from './categories/realestate/realestate-themes';
-import { FALLBACK_THEMES } from './categories/fallback/fallback-themes';
-import { pickThemeFromList } from './theme-selection';
-import type { AppLanguage } from '@/shared/types/database';
-import type { WebsiteTheme } from './theme-types';
+import { pickRandomLayout } from './theme-selection';
 
 export type Category = 
   | 'portfolio' 
@@ -50,12 +34,6 @@ const CATEGORY_SPECIFICITY: Record<Category, number> = {
   business: 1,
 };
 
-function toAppLanguage(language: 'sorani' | 'arabic' | 'english'): AppLanguage {
-  if (language === 'sorani') return 'ku';
-  if (language === 'arabic') return 'ar';
-  return 'en';
-}
-
 export function detectCategory(userMessage: string): Category {
   const message = userMessage.toLowerCase();
   let bestCategory: Category = 'business';
@@ -81,75 +59,18 @@ export function detectCategory(userMessage: string): Category {
   return bestScore > 0 ? bestCategory : 'business';
 }
 
-export function getThemeForCategory(
-  category: Category,
-  language?: AppLanguage,
-  userMessage = ""
-): WebsiteTheme {
-  let themes: WebsiteTheme[] = [];
-
-  switch (category) {
-    case 'portfolio':
-      themes = PORTFOLIO_THEMES;
-      break;
-    case 'restaurant':
-      themes = RESTAURANT_THEMES;
-      break;
-    case 'business':
-      themes = BUSINESS_THEMES;
-      break;
-    case 'blog':
-      themes = BLOG_THEMES;
-      break;
-    case 'ecommerce':
-      themes = ECOMMERCE_THEMES;
-      break;
-    case 'event':
-      themes = EVENT_THEMES;
-      break;
-    case 'saas':
-      themes = SAAS_THEMES;
-      break;
-    case 'education':
-      themes = EDUCATION_THEMES;
-      break;
-    default:
-      themes = BUSINESS_THEMES;
-  }
-
-  // Use fallback themes if the primary list is empty
-  if (!themes || themes.length === 0) {
-    themes = FALLBACK_THEMES;
-  }
-
-  const theme = pickThemeFromList(themes, userMessage);
-
-  if (language === 'ku') {
-    return {
-      ...theme,
-      fonts: {
-        heading: 'NRT',
-        body: 'NRT',
-        googleFontsUrl: '',
-      },
-    };
-  }
-
-  return theme;
-}
-
 export interface SystemPromptResult {
   prompt: string;
-  theme: WebsiteTheme;
   category: Category;
+  layout: string;
   language: 'sorani' | 'arabic' | 'english';
 }
 
-export function buildSystemPrompt(userMessage: string, websiteLanguage?: AppLanguage): SystemPromptResult {
+export function buildSystemPrompt(userMessage: string): SystemPromptResult {
   const lang = detectLanguage(userMessage);
   const rules = LANGUAGE_RULES[lang];
   const category = detectCategory(userMessage);
-  const theme = getThemeForCategory(category, websiteLanguage ?? toAppLanguage(lang), userMessage);
+  const layout = pickRandomLayout(userMessage);
 
   const prompt = `
 You are an expert web developer building a ${category} website.
@@ -158,17 +79,13 @@ LANGUAGE: Reply in ${rules.replyIn}. All website content must be in ${rules.webs
 DIRECTION: ${rules.direction.toUpperCase()}
 ${rules.grammar.map(g => `- ${g}`).join('\n')}
 
-THEME SELECTED: ${theme.name} (${theme.id})
-CSS FILE TO USE: src/server/prompts/categories/${category}/themes/${theme.cssFile}
-PERSONALITY: ${theme.personality}
-LAYOUT: ${theme.layout}
-FONTS: ${theme.fonts.heading} (headings) + ${theme.fonts.body} (body)
+CATEGORY: ${category}
+LAYOUT STYLE: ${layout}
 
 GENERATION RULES:
-- Link the correct CSS file in the HTML <head> using: <link rel="stylesheet" href="${theme.cssFile}">
-- Load Google Fonts: ${theme.fonts.googleFontsUrl}
-- Write semantic HTML that fits the classes defined in that CSS file
-- Populate with realistic ${rules.websiteContentIn} placeholder content
+- Write ALL CSS yourself inside a single <style> tag in <head>
+- Choose your own creative color palette and Google Fonts pairing
+- Write semantic HTML with realistic ${rules.websiteContentIn} placeholder content
 - Add scroll animation JS: on DOMContentLoaded, observe [data-scroll] elements and add class .visible when in viewport
 - Only add dark mode toggle if user explicitly asked for it
 - Only add language dropdown if user explicitly asked for it
@@ -181,11 +98,11 @@ Return a JSON object with:
   "type": "website",
   "message": "brief friendly confirmation in ${rules.replyIn}",
   "code": {
-    "html": "complete HTML document with embedded CSS link and content"
+    "html": "complete HTML document with embedded CSS and content"
   }
 }
 
-CSS REFERENCE (use these exact class names):
+CSS CLASS CONVENTIONS (use these for structure):
 - Navigation: nav, .logo, nav ul, nav ul a
 - Hero: .hero, .hero h1, .hero p, .btn, .btn-primary
 - Sections: section, .section-title
@@ -196,16 +113,16 @@ CSS REFERENCE (use these exact class names):
 
   return {
     prompt,
-    theme,
     category,
+    layout,
     language: lang,
   };
 }
 
 // Re-exports for convenience
-export { pickThemeFromList, userMentionedStyleOrTheme } from './theme-selection';
+export { pickRandomLayout, userMentionedStyleOrTheme } from './theme-selection';
 export { detectLanguage, LANGUAGE_RULES } from './language-rules';
-export type { WebsiteTheme, ThemeFont, ThemeColors, LayoutType } from './theme-types';
+export type { LayoutType } from './theme-types';
 export { PERSONALITY } from "./personality";
 export { OUTPUT_FORMAT } from "./output-format";
 export { APP_KNOWLEDGE } from "./app-knowledge";
