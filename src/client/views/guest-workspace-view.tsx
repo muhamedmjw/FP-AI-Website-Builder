@@ -280,10 +280,30 @@ function GuestLimitBanner({
 function GuestWebsiteReadyBanner({
   language,
   queueChatSessionForAuth,
+  resetsAt,
+  onExpired,
 }: {
   language: AppLanguage;
   queueChatSessionForAuth: () => void;
+  resetsAt: string | null;
+  onExpired?: () => void;
 }) {
+  const resetTimestamp = resetsAt ? new Date(resetsAt).getTime() : null;
+  const { hours, minutes, seconds, isExpired } = useCountdown(resetTimestamp);
+
+  useEffect(() => {
+    if (isExpired && onExpired) {
+      onExpired();
+    }
+  }, [isExpired, onExpired]);
+
+  const timerText = isExpired
+    ? t("guestLimitReset", language)
+    : t("guestLimitTimer", language).replace(
+      "{time}",
+      formatCountdown(hours, minutes, seconds, language)
+    );
+
   return (
     <div className="mx-auto mb-2 w-[calc(100%-1rem)] max-w-md rounded-xl border border-[var(--app-card-border)] bg-[var(--app-card-bg)] p-3 sm:w-full sm:max-w-4xl sm:rounded-2xl sm:p-4">
       <h3 className="text-sm font-semibold text-[var(--app-text-heading)] sm:text-base">
@@ -292,6 +312,10 @@ function GuestWebsiteReadyBanner({
       <p className="mt-1 text-xs text-[var(--app-text-secondary)] sm:text-sm">
         {t("guestWebsiteReadyDesc", language)}
       </p>
+      <div className="mt-2 flex items-center gap-1.5 text-xs text-amber-500 font-medium">
+        <Clock size={12} />
+        <span>{timerText}</span>
+      </div>
       <div className="mt-2.5 grid gap-2 sm:mt-3 sm:grid-cols-2">
         <Link
           href="/signin"
@@ -333,7 +357,7 @@ export default function GuestWorkspaceView() {
     inputErrorMessage === t("guestLimitReached", language) ||
     inputErrorMessage.toLowerCase().includes("limit");
   const isLimitReached = promptsUsed >= MAX_GUEST_PROMPTS;
-  const isGuestInputLocked = websiteGenerated || isLimitReached;
+  const isGuestInputLocked = isLimitReached;
   const displayedInputError = hasLimitErrorMessage ? "" : inputErrorMessage;
   const guestInputPlaceholder = isSending
     ? t("generating", language)
@@ -359,11 +383,17 @@ export default function GuestWorkspaceView() {
         // Always update resetsAt from server
         setResetsAt(usage.resetsAt);
 
+        // If window expired (server shows 0 used), clear the chat history completely
+        if (usage.promptsUsed === 0 && usage.maxPrompts > 0) {
+          setMessages([]);
+          setHtml(null);
+          setWebsiteGenerated(false);
+          clearPersistedGuestSession();
+        }
+
         // Sync prompts used from server
         // Update if server has higher count OR if window expired (server shows 0 but local shows > 0)
-        if (usage.promptsUsed !== promptsUsed) {
-          setPromptsUsed(usage.promptsUsed);
-        }
+        setPromptsUsed((prev) => usage.promptsUsed !== prev ? usage.promptsUsed : prev);
       }
     });
   }, []);
@@ -560,6 +590,21 @@ export default function GuestWorkspaceView() {
                 <GuestWebsiteReadyBanner
                   language={language}
                   queueChatSessionForAuth={queueChatSessionForAuth}
+                  resetsAt={resetsAt}
+                  onExpired={() => {
+                    fetchGuestUsage().then((usage) => {
+                      if (usage) {
+                        setResetsAt(usage.resetsAt);
+                        setPromptsUsed(usage.promptsUsed);
+                        if (usage.promptsUsed === 0) {
+                          setMessages([]);
+                          setHtml(null);
+                          setWebsiteGenerated(false);
+                          clearPersistedGuestSession();
+                        }
+                      }
+                    });
+                  }}
                 />
               ) : isLimitReached ? (
                 <GuestLimitBanner
