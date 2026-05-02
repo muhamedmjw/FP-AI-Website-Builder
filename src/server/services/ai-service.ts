@@ -564,10 +564,23 @@ export async function generateAIResponse(
   language: "en" | "ar" | "ku" = "en",
   existingHtml: string | null = null,
   userImages: Array<{ fileName: string; dataUri: string }> = [],
-  isAgeRestricted = false
+  isAgeRestricted = false,
+  requestSignal?: AbortSignal
 ): Promise<{ response: AIResponse; intent: ClassifiedIntent }> {
   const abortController = new AbortController();
   registerGeneration(chatId, abortController);
+
+  const onClientAbort = () => {
+    abortController.abort("API Request aborted by client");
+  };
+
+  if (requestSignal) {
+    if (requestSignal.aborted) {
+      abortController.abort("API Request aborted by client");
+    } else {
+      requestSignal.addEventListener("abort", onClientAbort);
+    }
+  }
 
   try {
     const result = await generateAIResponseWithAbort(
@@ -582,6 +595,9 @@ export async function generateAIResponse(
     );
     return result;
   } finally {
+    if (requestSignal) {
+      requestSignal.removeEventListener("abort", onClientAbort);
+    }
     completeGeneration(chatId);
   }
 }
@@ -652,7 +668,8 @@ async function generateAIResponseWithAbort(
 export async function generateGuestAIResponse(
   history: Array<{ role: "user" | "assistant"; content: string }>,
   language: AppLanguage = "en",
-  userImages: Array<{ fileName: string; dataUri: string }> = []
+  userImages: Array<{ fileName: string; dataUri: string }> = [],
+  requestSignal?: AbortSignal
 ): Promise<AIResponse> {
   try {
     const historyMessages: HistoryMessage[] = history.map((msg, i) => ({
@@ -663,7 +680,7 @@ export async function generateGuestAIResponse(
       created_at: new Date().toISOString(),
     }));
 
-    const preparation = await prepareGeneration(historyMessages, language, null);
+    const preparation = await prepareGeneration(historyMessages, language, null, requestSignal);
     const config = buildIntentExecutionConfig(
       preparation.intent,
       historyMessages,
@@ -677,14 +694,19 @@ export async function generateGuestAIResponse(
       config.messages,
       config.maxTokens,
       config.temperature,
-      undefined,
+      requestSignal,
       language
     );
 
     let parsed = workerResult.parsed;
 
     if (parsed.type === "website") {
-      let enrichedHtml = await enrichWebsiteHtmlImages(parsed.html, historyMessages);
+      let enrichedHtml = await enrichWebsiteHtmlImages(parsed.html, historyMessages, requestSignal);
+      
+      if (requestSignal?.aborted) {
+        throw new GenerationCancelledError();
+      }
+
       enrichedHtml = injectUserImageDataUris(enrichedHtml, userImages);
       parsed = {
         ...parsed,
@@ -698,6 +720,9 @@ export async function generateGuestAIResponse(
 
     return parsed;
   } catch (error) {
+    if (error instanceof GenerationCancelledError || requestSignal?.aborted) {
+      throw new GenerationCancelledError();
+    }
     const message = error instanceof Error ? error.message : "Unknown guest AI error.";
     throw new Error(`Guest AI generation failed: ${message}`);
   }

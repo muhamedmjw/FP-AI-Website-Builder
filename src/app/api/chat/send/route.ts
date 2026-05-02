@@ -278,7 +278,8 @@ export async function POST(request: NextRequest) {
           effectiveLanguage,
           normalizeExistingHtmlForPrompt(existingHtml),
           userImages,
-          true // isAgeRestricted
+          true, // isAgeRestricted
+          request.signal
         );
 
         let aiResponse = aiResult.response;
@@ -404,7 +405,8 @@ export async function POST(request: NextRequest) {
       effectiveLanguage,
       normalizeExistingHtmlForPrompt(existingHtml),
       userImages,
-      isAgeRestricted
+      isAgeRestricted,
+      request.signal
     );
 
     let aiResponse = aiResult.response;

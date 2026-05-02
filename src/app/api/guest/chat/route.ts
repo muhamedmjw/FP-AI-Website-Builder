@@ -306,7 +306,9 @@ export async function POST(request: NextRequest) {
     try {
       aiResponse = await generateGuestAIResponse(
         conversationHistory,
-        preferredLanguage
+        preferredLanguage,
+        [],
+        request.signal
       );
     } catch (error) {
       console.error("POST /api/guest/chat AI generation error:", error);
