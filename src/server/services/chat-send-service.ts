@@ -9,7 +9,7 @@ import {
 } from "@/shared/utils/html-images";
 import { isMissingUploadColumns } from "@/shared/utils/db-guards";
 import type { AppLanguage, Website } from "@/shared/types/database";
-import type { generateAIResponse } from "@/server/services/ai-service";
+import type { generateAIResponse, AIResponse } from "@/server/services/ai-service";
 import {
   createWebsite,
   getWebsiteByChatId,
@@ -168,7 +168,7 @@ function promptRequestsUploadedImageSwap(prompt: string): boolean {
  * It also forces uploaded-image replacement when the prompt explicitly asks for it.
  */
 export function handleHtmlGeneration(params: {
-  aiResponse: Awaited<ReturnType<typeof generateAIResponse>>;
+  aiResponse: AIResponse;
   existingWebsiteId: string | null;
   existingHtml: string | null;
   content: string;
