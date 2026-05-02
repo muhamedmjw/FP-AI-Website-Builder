@@ -17,14 +17,15 @@ export async function checkEthicalCompliance(
   const promptLower = prompt.toLowerCase();
   
   // ── Instant failsafe: locked terms (English + Kurdish + Arabic) ──
+  // These are strictly non-ambiguous terms. Ambiguous terms are left to the AI for context evaluation.
   const lockPattern = new RegExp(
     [
       // English
-      'porn', 'nsfw', 'stripclub', 'nightclub', 'hitler', 'saddam', 'casino', 'gambling', 'sex', 'nude',
+      'pornography', 'nsfw', 'stripclub', 'hitler', 'saddam', 'casino',
       // Kurdish Sorani
-      'پۆرنۆ', 'پۆرنۆگرافی', 'ستریپ کلوب', 'کلوبی شەو', 'هیتلەر', 'سەددام', 'کازینۆ', 'قومار',
+      'پۆرنۆگرافی', 'ستریپ کلوب', 'هیتلەر', 'سەددام', 'کازینۆ',
       // Arabic
-      'إباحي', 'إباحية', 'بورنو', 'نادي ليلي', 'ملهى ليلي', 'نادي تعري', 'هتلر', 'صدام', 'كازينو', 'قمار', 'مقامرة',
+      'إباحية', 'نادي تعري', 'هتلر', 'صدام', 'كازينو'
     ].join('|'),
     'i'
   );
@@ -34,14 +35,15 @@ export async function checkEthicalCompliance(
   }
 
   // ── Instant failsafe: age-restricted terms (English + Kurdish + Arabic) ──
+  // Removed ambiguous terms like 'bar', 'smoke', 'pub' to let the AI evaluate context.
   const agePattern = new RegExp(
     [
       // English
-      'alcohol', 'beer', 'cocktail', 'wine', 'liquor', 'pub ', ' pub', 'bar ', ' bar', 'tobacco', 'cigar', 'vape', 'smoke',
+      'whiskey', 'vodka', 'tequila', 'cigarette', 'vape shop',
       // Kurdish Sorani
-      'مەی', 'بیرە', 'ئاڵکۆل', 'شەراب', 'ویسکی', 'بار', 'پاب', 'تووتن', 'جگەرە', 'ڤەیپ', 'نارگیلە',
+      'ویسکی', 'ڤۆدکا', 'تەکیلا', 'جگەرە کێشان', 'ڤەیپ شۆپ',
       // Arabic
-      'كحول', 'خمر', 'بيرة', 'نبيذ', 'ويسكي', 'مشروبات كحولية', 'حانة', 'تبغ', 'سيجار', 'فيب', 'شيشة', 'أرجيلة',
+      'ويسكي', 'فودكا', 'تيكيلا', 'متجر فيب'
     ].join('|'),
     'i'
   );
@@ -75,6 +77,15 @@ Rules for categorization:
 3. "pass":
    - Everything else not covered above.
    - Examples of "pass": normal businesses, e-commerce, portfolios, blogs, restaurants, cafes, etc.
+
+CRITICAL CONTEXT RULE: 
+Words can have multiple meanings. You MUST evaluate context across all languages (English, Kurdish, Arabic). 
+For example:
+- "bar" or "بار": A UI navigation bar (pass) vs a place serving alcohol (age_verification).
+- "club" or "نادي": A sports/book club (pass) vs a nightclub (lock).
+- "smoke" or "دخان": BBQ restaurant (pass) vs vape/tobacco shop (age_verification).
+- "nude" or "عاري": A makeup/color palette (pass) vs explicit content (lock).
+Always default to the safe/benign interpretation if the surrounding context implies a normal business or tech feature.
 
 You must reply with ONLY a valid JSON object matching this schema:
 {
