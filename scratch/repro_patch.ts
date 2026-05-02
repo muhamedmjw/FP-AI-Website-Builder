@@ -1,5 +1,5 @@
 
-import { applyEditPatches } from "./src/server/services/html-patch";
+import { applyEditPatches } from "../src/server/services/html-patch";
 
 const html = `
 <footer>
