@@ -58,8 +58,9 @@ function applySinglePatch(
     const lastIndex = html.lastIndexOf(search);
     if (firstIndex !== lastIndex) {
       console.warn(
-        `Ambiguous edit patch: multiple matches found for search string (length ${search.length}). Replacing the first occurrence only.`
+        `Ambiguous edit patch: multiple matches found for search string (length ${search.length}). Rejecting patch to prevent corruption.`
       );
+      return null;
     }
     return (
       html.slice(0, firstIndex) +
@@ -74,8 +75,9 @@ function applySinglePatch(
   if (matches && matches.length > 0) {
     if (matches.length > 1) {
       console.warn(
-        `Ambiguous whitespace-tolerant patch: ${matches.length} matches found. Replacing the first occurrence only.`
+        `Ambiguous whitespace-tolerant patch: ${matches.length} matches found. Rejecting patch to prevent corruption.`
       );
+      return null;
     }
     return html.replace(tolerantRegex, replace);
   }
@@ -92,8 +94,9 @@ function applySinglePatch(
     const lastTrimmedIndex = html.lastIndexOf(trimmedSearch);
     if (firstTrimmedIndex !== lastTrimmedIndex) {
       console.warn(
-        `Ambiguous trimmed-search patch: multiple matches found. Replacing the first occurrence only.`
+        `Ambiguous trimmed-search patch: multiple matches found. Rejecting patch to prevent corruption.`
       );
+      return null;
     }
     return (
       html.slice(0, firstTrimmedIndex) +

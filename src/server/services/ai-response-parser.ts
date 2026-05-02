@@ -159,7 +159,43 @@ function tryParseJson(text: string): Record<string, unknown> | null {
   try {
     return JSON.parse(text);
   } catch {
-    return null;
+    // LLMs often emit raw newlines inside JSON strings when writing HTML.
+    // We can use a simple state machine to escape them before parsing.
+    try {
+      let fixed = "";
+      let inString = false;
+      let escapeNext = false;
+      for (let i = 0; i < text.length; i++) {
+        const char = text[i];
+        if (escapeNext) {
+          fixed += char;
+          escapeNext = false;
+          continue;
+        }
+        if (char === '\\') {
+          fixed += char;
+          escapeNext = true;
+          continue;
+        }
+        if (char === '"') {
+          inString = !inString;
+          fixed += char;
+          continue;
+        }
+        if (char === '\n' && inString) {
+          fixed += '\\n';
+        } else if (char === '\r' && inString) {
+          fixed += '\\r';
+        } else if (char === '\t' && inString) {
+          fixed += '\\t';
+        } else {
+          fixed += char;
+        }
+      }
+      return JSON.parse(fixed);
+    } catch {
+      return null;
+    }
   }
 }
 

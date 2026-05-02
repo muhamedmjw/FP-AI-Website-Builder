@@ -124,6 +124,7 @@ export async function callModelOnce(
       messages,
       max_tokens: effectiveMaxTokens,
       temperature,
+      response_format: { type: "json_object" }
     },
     { signal: abortSignal }
   );
