@@ -144,6 +144,7 @@ export const ar: Record<string, string> = {
   generatingWebsite: "جارٍ العمل على طلبك...",
   generatingConversation: "جارٍ إنشاء ردك",
   editingWebsite: "جارٍ تعديل موقعك...",
+  redesigningWebsite: "جارٍ إعادة تصميم موقعك...",
   takingLonger: "يستغرق وقتاً أطول من المعتاد...",
   stillWorking: "لا يزال يعمل، يرجى الانتظار...",
   rename: "إعادة التسمية",

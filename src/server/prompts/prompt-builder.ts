@@ -11,6 +11,7 @@ import {
   WEBSITE_STRUCTURE,
   BUILD_MODE,
   EDIT_MODE,
+  REDESIGN_MODE,
   CHAT_MODE,
   detectCategory,
 } from "./index";
@@ -334,8 +335,9 @@ export function buildClassifierMessages(
     ? `
 
 CONTEXT — website already exists in this chat (saved preview HTML is present):
-- Prefer intent "edit" when the user asks to change, translate, fix, tweak, update, adjust, add, or remove something on the site, or to modify text, colors, layout, or CSS.
-- Use "build" only when they clearly want a brand-new website or to discard the current site and start over.
+- Use intent "edit" when the user asks to change, translate, fix, tweak, update, adjust, add, or remove something on the site, or to modify text, colors, layout, or CSS.
+- Use intent "redesign" when the user wants a completely new look, different theme, new design, or expresses dislike of the current design. Keywords: redesign, new look, different style, redo, make it look different, I don't like it, change the design, new theme, different design, start over with the design.
+- Use "build" only when they clearly want a brand-new website about a different topic or to discard the current site entirely.
 - Use "chat" for greetings, questions, or conversation that does not imply changing the site.`
     : "";
 
@@ -344,9 +346,17 @@ You are an intent and language classifier.
 Return ONLY raw JSON. No markdown. No explanation.
 
 Intent values:
-- "build" — user wants a new website
-- "edit" — user wants to change an existing website
+- "build" — user wants a new website (no existing site, or wants a completely different topic)
+- "edit" — user wants to change specific parts of an existing website (add, remove, modify elements)
+- "redesign" — user wants a completely new visual design/theme for the SAME website content
 - "chat" — user is chatting, asking questions, or greeting
+
+REDESIGN vs EDIT:
+- "redesign" = user dislikes the overall look and wants a fresh visual style (new colors, fonts, layout, entirely new theme)
+- "edit" = user wants specific changes (add a section, change a heading, fix colors, add animations, modify text)
+
+REDESIGN keywords: redesign, redo, new look, new design, different theme, new theme, different style, I don't like it, ugly, change the whole design, make it look different, start over, try again, another design, completely different, change the theme, change the layout
+EDIT keywords: add, remove, change, fix, update, translate, make it darker, make it light, add section, modify, tweak
 
 Language values: "en", "ar", "ku"
 
@@ -460,6 +470,57 @@ export function buildEditMessages(
     `Website content language: ${contentLanguage}`,
     `Conversation reply language: ${detectedUserLanguage}`,
     `CURRENT HTML:\n${existingHtml}`,
+    isAgeRestricted ? buildAgeRestrictionInstruction(contentLanguage) : "",
+  ].filter(Boolean);
+
+  const system = systemParts.join("\n\n");
+
+  return [
+    { role: "system", content: system },
+    ...mapHistoryToChatMessages(history),
+  ];
+}
+
+/**
+ * Builds system and history messages for a full redesign of an existing website.
+ * Keeps business content but instructs the AI to create a completely new visual design.
+ */
+export function buildRedesignMessages(
+  history: HistoryMessage[],
+  existingHtml: string,
+  contentLanguage: AppLanguage,
+  detectedUserLanguage: AppLanguage,
+  userImages?: PromptUserImage[],
+  isAgeRestricted = false
+): ChatMessage[] {
+  const isRtl = contentLanguage === "ar" || contentLanguage === "ku";
+  const category = detectCategory(
+    history.filter((m) => m.role === "user").at(-1)?.content ?? ""
+  );
+  const layout = pickRandomLayout(
+    history.filter((m) => m.role === "user").at(-1)?.content ?? ""
+  );
+  const currentYear = new Date().getFullYear();
+  const designBrief = buildCreativeDesignBrief(category, layout);
+  const redesignModeWithImages = REDESIGN_MODE.replace(
+    "{USER_IMAGES_BLOCK}",
+    buildUserImagesBlock(userImages)
+  );
+
+  const systemParts = [
+    PERSONALITY,
+    `CURRENT_SITE_YEAR (authoritative footer copyright year): ${currentYear}`,
+    redesignModeWithImages,
+    designBrief,
+    buildPremiumOutputBar(isRtl),
+    LANGUAGE_GUIDANCE,
+    DESIGN_SYSTEM,
+    MOBILE_RULES,
+    IMAGE_RULES,
+    isRtl ? RTL_RULES : "",
+    `Website content language: ${contentLanguage}`,
+    `Conversation reply language: ${detectedUserLanguage}`,
+    `CURRENT HTML (keep the business content, redesign the visuals):\n${existingHtml}`,
     isAgeRestricted ? buildAgeRestrictionInstruction(contentLanguage) : "",
   ].filter(Boolean);
 

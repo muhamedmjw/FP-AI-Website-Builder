@@ -145,6 +145,7 @@ export const en: Record<string, string> = {
   generatingWebsite: "Creating your website...",
   generatingConversation: "Generating your response...",
   editingWebsite: "Editing your website...",
+  redesigningWebsite: "Redesigning your website...",
   takingLonger: "Taking longer than usual...",
   stillWorking: "Still working, please wait...",
   rename: "Rename",

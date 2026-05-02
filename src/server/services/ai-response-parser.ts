@@ -30,7 +30,7 @@ export type AIResponse = AIResponseQuestions | AIResponseWebsite | AIResponseEdi
 
 // ── Classifier types ──
 
-type ClassifiedIntent = "build" | "edit" | "chat";
+type ClassifiedIntent = "build" | "edit" | "redesign" | "chat";
 
 export type ClassifierResult = {
   intent: ClassifiedIntent;
@@ -44,7 +44,7 @@ export function isAppLanguage(value: unknown): value is AppLanguage {
 }
 
 export function isClassifiedIntent(value: unknown): value is ClassifiedIntent {
-  return value === "build" || value === "edit" || value === "chat";
+  return value === "build" || value === "edit" || value === "redesign" || value === "chat";
 }
 
 export function stripCodeFences(raw: string): string {
@@ -176,8 +176,8 @@ function classifyParsedResponse(parsed: Record<string, unknown>, language: AppLa
     };
   }
 
-  // Handle full website HTML
-  if (parsed.type === "website" && typeof parsed.html === "string") {
+  // Handle full website HTML (or hallucinatory "redesign" type)
+  if ((parsed.type === "website" || parsed.type === "redesign") && typeof parsed.html === "string") {
     return {
       type: "website",
       html: parsed.html,

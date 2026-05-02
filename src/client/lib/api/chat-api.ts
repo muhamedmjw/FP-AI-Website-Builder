@@ -17,6 +17,7 @@ export type SendChatMessageResponse = {
   messages: HistoryMessage[];
   html?: string | null;
   aiResponseType?: string;
+  classifiedIntent?: "build" | "edit" | "redesign" | "chat";
 };
 
 export type AbortGenerationResponse = {

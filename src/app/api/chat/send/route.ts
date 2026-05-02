@@ -271,7 +271,7 @@ export async function POST(request: NextRequest) {
           sendRequest.selectedImageFileIds
         );
 
-        let aiResponse = await generateAIResponse(
+        const aiResult = await generateAIResponse(
           supabase,
           sendRequest.chatId,
           updatedHistory,
@@ -280,6 +280,8 @@ export async function POST(request: NextRequest) {
           userImages,
           true // isAgeRestricted
         );
+
+        let aiResponse = aiResult.response;
 
         // Handle patch-based edits
         if (aiResponse.type === "website_edit" && existingHtml) {
@@ -318,6 +320,7 @@ export async function POST(request: NextRequest) {
           assistantMessage,
           messages,
           aiResponseType: aiResponse.type,
+          classifiedIntent: aiResult.intent,
           html: typeof htmlForPreview === "string" ? htmlForPreview : aiResponse.type === "website" ? aiResponse.html : undefined,
         });
       } else {
@@ -394,7 +397,7 @@ export async function POST(request: NextRequest) {
     );
 
     // Generate AI response for the current chat.
-    let aiResponse = await generateAIResponse(
+    const aiResult = await generateAIResponse(
       supabase,
       sendRequest.chatId,
       historyForAI,
@@ -403,6 +406,8 @@ export async function POST(request: NextRequest) {
       userImages,
       isAgeRestricted
     );
+
+    let aiResponse = aiResult.response;
 
     // Handle patch-based edits: apply search/replace patches to the original HTML.
     if (aiResponse.type === "website_edit" && existingHtml) {
@@ -471,6 +476,7 @@ export async function POST(request: NextRequest) {
       assistantMessage,
       messages,
       aiResponseType: aiResponse.type,
+      classifiedIntent: aiResult.intent,
       html:
         typeof htmlForPreview === "string"
           ? htmlForPreview

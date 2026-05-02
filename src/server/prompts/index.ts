@@ -134,4 +134,5 @@ export { IMAGE_RULES } from "./content/images";
 export { WEBSITE_STRUCTURE } from "./content/structure";
 export { BUILD_MODE } from "./modes/build";
 export { EDIT_MODE } from "./modes/edit";
+export { REDESIGN_MODE } from "./modes/redesign";
 export { CHAT_MODE } from "./modes/chat";

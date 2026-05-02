@@ -144,6 +144,7 @@ export const ku: Record<string, string> = {
   generatingWebsite: "کار لەسەر داواکارییەکەت دەکرێت...",
   generatingConversation: "وەڵامەکەت ئامادە دەکرێت",
   editingWebsite: "دەستکاریکردنی وێبسایتەکەت دەکرێت...",
+  redesigningWebsite: "سەرلەنوێ دیزاینکردنەوەی وێبسایتەکەت دەکرێت...",
   takingLonger: "زیاتر لە بەرواری ئاسایی کات دەبرێت...",
   stillWorking: "هێشتا کار دەکات، تکایە چاوەڕوان بە...",
   rename: "ناونانی دووبارە",

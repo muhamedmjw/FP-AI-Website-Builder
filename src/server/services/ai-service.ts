@@ -16,6 +16,7 @@ import {
   buildClassifierMessages,
   buildEditMessages,
   buildGenerationMessages,
+  buildRedesignMessages,
 } from "@/server/prompts/prompt-builder";
 import { detectLanguage } from "@/server/prompts/language-rules";
 import { enrichHtmlWithStockImages } from "@/server/services/website-image-enrichment";
@@ -56,7 +57,7 @@ const CHAT_INTENT_TEMPERATURE = 0.7;
 
 // ── Internal types ──
 
-type ClassifiedIntent = "build" | "edit" | "chat";
+type ClassifiedIntent = "build" | "edit" | "redesign" | "chat";
 
 type IntentExecutionConfig = {
   messages: AIMessage[];
@@ -147,7 +148,7 @@ async function classifyIntent(
   hasExistingWebsite: boolean,
   websiteLanguage: AppLanguage,
   abortSignal?: AbortSignal
-): Promise<{ intent: "build" | "edit" | "chat"; detectedLanguage: AppLanguage }> {
+): Promise<{ intent: "build" | "edit" | "redesign" | "chat"; detectedLanguage: AppLanguage }> {
   const fallback = {
     intent: "build" as const,
     detectedLanguage: "en" as AppLanguage,
@@ -174,7 +175,7 @@ async function classifyIntent(
       const parsed = parseClassifierResult(rawText);
       if (!parsed) continue;
 
-      if (parsed.intent === "edit" && !hasExistingWebsite) {
+      if ((parsed.intent === "edit" || parsed.intent === "redesign") && !hasExistingWebsite) {
         return {
           intent: "build",
           detectedLanguage: parsed.detectedLanguage,
@@ -234,6 +235,36 @@ function buildIntentExecutionConfig(
       };
     }
 
+    return {
+      messages: buildGenerationMessages(
+        history,
+        contentLanguage,
+        detectedLanguage,
+        selectedUserImages,
+        isAgeRestricted
+      ) as AIMessage[],
+      maxTokens: AI_CONFIG.MAX_TOKENS,
+      temperature: 0.52,
+    };
+  }
+
+  if (intent === "redesign") {
+    if (existingHtml && existingHtml.trim().length > 0) {
+      return {
+        messages: buildRedesignMessages(
+          history,
+          existingHtml,
+          contentLanguage,
+          detectedLanguage,
+          selectedUserImages,
+          isAgeRestricted
+        ) as AIMessage[],
+        maxTokens: AI_CONFIG.MAX_TOKENS,
+        temperature: 0.65,
+      };
+    }
+
+    // No existing HTML to redesign — fall back to build
     return {
       messages: buildGenerationMessages(
         history,
@@ -454,7 +485,7 @@ async function generateAIResponseOnce(
   userImages: Array<{ fileName: string; dataUri: string }> = [],
   abortSignal?: AbortSignal,
   isAgeRestricted = false
-): Promise<AIResponse> {
+): Promise<{ response: AIResponse; intent: ClassifiedIntent }> {
   const startTime = Date.now();
 
   if (abortSignal?.aborted) {
@@ -496,7 +527,7 @@ async function generateAIResponseOnce(
       durationMs,
     });
 
-    return workerResult.parsed;
+    return { response: workerResult.parsed, intent: preparation.intent };
   } catch (error) {
     if (error instanceof GenerationCancelledError || abortSignal?.aborted) {
       throw new GenerationCancelledError();
@@ -534,7 +565,7 @@ export async function generateAIResponse(
   existingHtml: string | null = null,
   userImages: Array<{ fileName: string; dataUri: string }> = [],
   isAgeRestricted = false
-): Promise<AIResponse> {
+): Promise<{ response: AIResponse; intent: ClassifiedIntent }> {
   const abortController = new AbortController();
   registerGeneration(chatId, abortController);
 
@@ -564,7 +595,7 @@ async function generateAIResponseWithAbort(
   userImages: Array<{ fileName: string; dataUri: string }> = [],
   abortSignal?: AbortSignal,
   isAgeRestricted = false
-): Promise<AIResponse> {
+): Promise<{ response: AIResponse; intent: ClassifiedIntent }> {
   try {
     return await generateAIResponseOnce(
       supabase,

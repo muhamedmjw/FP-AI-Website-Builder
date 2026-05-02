@@ -136,26 +136,38 @@ export default function ChatPanel({
   // Deduce if the user is asking to build/edit a website or just chatting
   // based on a simple heuristic of their last message.
   let isWebsiteGeneration = false;
+  let isRedesign = false;
+  
   const lastUserMessage = visibleMessages
     .filter((m) => m.role === "user")
     .at(-1)?.content || "";
 
   if (lastUserMessage) {
     const normalized = lastUserMessage.trim().toLowerCase();
-    // English keywords
+    
+    // Website keywords
     const enKeywords = /\b(website|web\s*site|webpage|web\s*page|landing\s*page|site|build|create|make|design|generate)\b/i;
-    // Arabic keywords: موقع (site), صفحة (page), ويب (web), إنشاء (create), بناء (build), تصميم (design), اصنع (make), صمم (design)
     const arKeywords = /(موقع|صفحة|ويب|إنشاء|بناء|تصميم|اصنع|صمم|أنشئ)/;
-    // Kurdish Sorani keywords: وێبسایت (website), ماڵپەڕ (website), سایت (site), لاپەڕە (page), دروست (build/create), دیزاین (design)
     const kuKeywords = /(وێبسایت|ماڵپەڕ|سایت|لاپەڕە|دروست|دیزاین)/;
-    if (enKeywords.test(normalized) || arKeywords.test(normalized) || kuKeywords.test(normalized)) {
+    
+    // Redesign keywords
+    const enRedesignKeywords = /\b(redesign|redo|new look|new design|different theme|new theme|different style|start over|try again|another design|completely different|change the theme|change the layout)\b/i;
+    const arRedesignKeywords = /(إعادة تصميم|شكل جديد|تصميم جديد|ثيم مختلف|ثيم جديد)/;
+    const kuRedesignKeywords = /(سەرلەنوێ|دیزاینێکی نوێ|شێوەیەکی نوێ|شێوازێکی تر|ڕووخسارێکی نوێ)/;
+
+    if (enRedesignKeywords.test(normalized) || arRedesignKeywords.test(normalized) || kuRedesignKeywords.test(normalized)) {
+      isWebsiteGeneration = true;
+      isRedesign = true;
+    } else if (enKeywords.test(normalized) || arKeywords.test(normalized) || kuKeywords.test(normalized)) {
       isWebsiteGeneration = true;
     }
   }
 
   const generatingLabel = isWebsiteGeneration
     ? hasPreview
-      ? t("editingWebsite", language)
+      ? isRedesign
+        ? t("redesigningWebsite", language)
+        : t("editingWebsite", language)
       : t("generatingWebsite", language)
     : t("generatingConversation", language);
 
