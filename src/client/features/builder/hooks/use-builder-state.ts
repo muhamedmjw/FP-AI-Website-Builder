@@ -232,6 +232,10 @@ export function useBuilderState({
   const previousChatIdRef = useRef(chatId);
 
   const isSending = isRequestInFlight || pendingGenerationStartedAt !== null;
+  const isRequestInFlightRef = useRef(isRequestInFlight);
+  useEffect(() => {
+    isRequestInFlightRef.current = isRequestInFlight;
+  }, [isRequestInFlight]);
   const hasOptimisticMessage = messages.some((message) => message.id.startsWith("temp-"));
 
   useEffect(() => {
@@ -358,7 +362,14 @@ export function useBuilderState({
 
   const syncPendingGenerationState = useCallback(() => {
     const pending = getPendingChatGeneration(chatId);
-    setPendingGenerationStartedAt(pending?.startedAt ?? null);
+    setPendingGenerationStartedAt((prev) => {
+      // If we're midway through a local send, keep tracking our local start time
+      // even if the central pending store clears (e.g., from an intermediate age verification message)
+      if (isRequestInFlightRef.current && prev !== null) {
+        return prev;
+      }
+      return pending?.startedAt ?? null;
+    });
   }, [chatId]);
 
   useEffect(() => {
