@@ -72,6 +72,13 @@ export default function SafetyPoliciesModal({ isOpen, onClose }: SafetyPoliciesM
               {t("safetyAllowedDesc", language)}
             </p>
           </section>
+
+          <section>
+            <h3 className="mb-2 text-base font-medium text-[var(--app-text-heading)]">{t("safetyImageUploadTitle", language)}</h3>
+            <p>
+              {t("safetyImageUploadDesc", language)}
+            </p>
+          </section>
         </div>
 
         <div className={`mt-8 flex ${isRtl ? "justify-start" : "justify-end"}`}>

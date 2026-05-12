@@ -314,6 +314,9 @@ export const en: Record<string, string> = {
   safetyAllowedTitle: "3. Allowed Content",
   safetyAllowedDesc:
     "You are free to generate websites for standard businesses, e-commerce stores, portfolios, blogs, restaurants, and cafes. If you have any questions regarding a specific use case, please test it out or contact our support team.",
+  safetyImageUploadTitle: "4. Image Uploading",
+  safetyImageUploadDesc:
+    "Please note that our AI cannot recognize image content. Image uploading is strictly for appending images to the generated website. You are fully responsible for ensuring that uploaded images comply with our safety policy.",
   safetyPoliciesLabel: "Safety Policies",
 
   generatingWebsiteSuccess: "Website generated successfully.",
