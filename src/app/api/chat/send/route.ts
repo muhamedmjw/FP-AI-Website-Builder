@@ -294,7 +294,7 @@ export async function POST(request: NextRequest) {
           }
         }
 
-        const { htmlToSave, htmlForPreview } = handleHtmlGeneration({
+        const { htmlToSave, htmlForPreview } = await handleHtmlGeneration({
           aiResponse,
           existingWebsiteId: existingWebsite?.id ?? null,
           existingHtml,
@@ -437,7 +437,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Transform and persist generated HTML output.
-    const { htmlToSave, htmlForPreview } = handleHtmlGeneration({
+    const { htmlToSave, htmlForPreview } = await handleHtmlGeneration({
       aiResponse,
       existingWebsiteId: existingWebsite?.id ?? null,
       existingHtml,

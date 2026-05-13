@@ -8,6 +8,7 @@ import {
   type HtmlImageAsset,
 } from "@/shared/utils/html-images";
 import { isMissingUploadColumns } from "@/shared/utils/db-guards";
+import { formatHtml } from "@/server/services/html-formatter";
 import type { AppLanguage, Website } from "@/shared/types/database";
 import type { generateAIResponse, AIResponse } from "@/server/services/ai-service";
 import {
@@ -167,17 +168,17 @@ function promptRequestsUploadedImageSwap(prompt: string): boolean {
  * Converts AI output into persisted HTML and preview HTML.
  * It also forces uploaded-image replacement when the prompt explicitly asks for it.
  */
-export function handleHtmlGeneration(params: {
+export async function handleHtmlGeneration(params: {
   aiResponse: AIResponse;
   existingWebsiteId: string | null;
   existingHtml: string | null;
   content: string;
   userImages: HtmlImageAsset[];
   websiteImagePool: HtmlImageAsset[];
-}): {
+}): Promise<{
   htmlToSave: string | null;
   htmlForPreview?: string;
-} {
+}> {
   const {
     aiResponse,
     existingWebsiteId,
@@ -221,6 +222,10 @@ export function handleHtmlGeneration(params: {
       }
     }
 
+    // Pretty-print HTML so the editor shows formatted code and
+    // future AI edit patches match against clean, structured whitespace.
+    normalizedHtml = await formatHtml(normalizedHtml);
+
     htmlToSave = normalizedHtml;
     htmlForPreview = injectUploadedImagesForPreview(normalizedHtml, websiteImagePool);
   } else if (existingWebsiteId && existingHtml && shouldForceUploadedImageSwap) {
@@ -231,9 +236,10 @@ export function handleHtmlGeneration(params: {
     );
 
     if (forcedReplacement.replacedCount > 0) {
-      htmlToSave = forcedReplacement.html;
+      let formattedHtml = await formatHtml(forcedReplacement.html);
+      htmlToSave = formattedHtml;
       htmlForPreview = injectUploadedImagesForPreview(
-        forcedReplacement.html,
+        formattedHtml,
         websiteImagePool
       );
     }

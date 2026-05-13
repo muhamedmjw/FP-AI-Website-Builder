@@ -6,6 +6,7 @@ import { detectPromptLanguage } from "@/shared/utils/language-detection";
 import { MAX_GUEST_PROMPTS, MAX_PROMPT_LENGTH } from "@/shared/constants/limits";
 import { t } from "@/shared/constants/translations";
 import type { AppLanguage } from "@/shared/types/database";
+import { formatHtml } from "@/server/services/html-formatter";
 
 // Allow up to 60s for AI generation on Vercel (default is 10s which is too short).
 export const maxDuration = 60;
@@ -342,11 +343,17 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    // Format HTML for readable code in the editor
+    let finalHtml: string | undefined;
+    if (aiResponse.type === "website") {
+      finalHtml = await formatHtml(aiResponse.html);
+    }
+
     // Build the response and set the guest token cookie
     const jsonResponse = NextResponse.json({
       type: aiResponse.type,
       message: aiResponse.message,
-      html: aiResponse.type === "website" ? aiResponse.html : undefined,
+      html: finalHtml,
     });
 
     if (isNewToken) {
